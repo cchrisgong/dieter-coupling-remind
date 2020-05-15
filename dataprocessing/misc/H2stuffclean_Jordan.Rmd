@@ -1,0 +1,1002 @@
+---
+title: "H2stuffclean.Rmd"
+author: "Jordan Everall & Falko Ueckerdt"
+starting date: "December 2019"
+output: png figures
+
+TODO
+#insert WEIGHTING for MEAN calculation?
+---
+
+Attaching required libraries.
+```{r}
+library(gdxrrw)
+# library(ggalt)
+library(reshape2)
+library(quitte)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(grid)
+library(readxl)
+library(ggthemes)
+library(gridExtra)
+library(cowplot)
+library(lubridate)
+library(RColorBrewer)
+library(openxlsx)
+library(zoo)
+
+# knitr::opts_knit$set(root.dir = "D:/Project/last task/")
+```
+
+Updating packages
+```{r}
+
+packages <- c("gdxrrw", "reshape2", "quitte", "ggplot2", "dplyr", "tidyr", "grid", "readxl",
+              "ggthemes", "gridExtra", "cowplot", "lubridate", "RColorBrewer", "openxlsx", "zoo" )
+
+#updating packages
+for (i in packages) {
+  
+  if(!require(i, character.only=TRUE)){
+    install.packages(i, character.only=TRUE)
+    library(i,character.only=TRUE)
+  }
+}
+```
+
+Functions
+```{r}
+
+
+#generic reading and sorting for gdx files
+##fixed to work with new VRE data
+
+gdxread <- function(gdxName, Symbol_name) {
+  gdxName <- read.gdx(gdxName, Symbol_name)
+  
+  tempname <- gdxName[[2]]
+  
+  #sorting 
+  gdxName <- if (unique(gdxName[[3]] == 1)) {
+    gdxName %>%
+      arrange(gdxName[[2]])
+  } else {
+    gdxName %>%
+      arrange(gdxName[[2]], gdxName[[3]])
+  }
+  
+  #cleaning up timestep (can also change it to "period" here Falko)
+  gdxName[[1]] <- as.numeric(gdxName[[1]])
+  colnames(gdxName)[1] <- "hour"
+  
+  #seperate groups into  region/state (time series data)
+  gdxName <- gdxName %>%
+    separate(names(gdxName[2]), into = c("state", "region"), remove = FALSE)
+  gdxName[[2]] <- NULL
+  return(gdxName)
+  
+}
+
+```
+
+
+Parameters:  
+```{r}
+
+#color scheme
+theme_set(theme_bw())
+rainbow.pal <- rev(rainbow(100, start =0.63, end = 0.62))
+
+#calling shift legend script for facets
+#source("shift_legend.R")
+
+#Put GDX name here - below all scenarios are aggregated into one data frame
+scenario = 'noH2demand'
+scenario = '175percent'
+
+path <- "C:/Users/everall/Documents/R/H2REMIX/REMIXH2Analysis/Results/results_"
+GDX = paste0(path,scenario,'.gdx') #results_v26.gdx"
+
+#gdx stuff for later
+##replace with GAMS directory
+igdx("C:\\GAMS\\win64\\29.1")
+#igdx("C:\\GAMS\\win64\\27.2")
+
+#more gdx stuff
+
+#looking at GDX file variable names
+gdxInfo(gdxName = GDX, dump = FALSE, returnList = TRUE)
+
+```
+
+
+reading in datasets for generic variables
+```{r}
+scenarios =  c("noH2demand","175percent")
+variables =  c("SynFuel_electr_fuelProdAllConsumer_Save",#H2 production from electrolysis
+               "mcs_powerGeneration_Marginal",#marginals electricity balance equation
+               "mcs_totalPowerGeneration_Save",#total power generation - before storage?
+               "StorDtl_ChargePower_Out",
+               "StorDtl_DischargePower_Out",
+              "Re_FlucNoStor_generatedPowerOut",#VRE generation, curtailment?
+               "Re_flucNoStor_curtailedPowerOut",#combine it, show it negative addition shaded below storage
+              "SynFuel_electr_powerDemAllConsumer_Save",#line stacked on demand
+                #"SynFuel_stg_compressorGridLoad_save", #ignore for now, compressor load
+                "SynFuel_stg_charge_Save",#ignore
+                "SynFuel_stg_discharge_Save",#yes, area plo production
+                "SynFuel_transport_compressorGridLoad_save",
+                "heatPump_powerDemand_save"
+                
+              
+              )
+
+# test <- gdxread(GDX, "SynFuel_stg_discharge_Save")
+# test1 <- gdxread(GDX, "heatPump_powerDemand_save")
+ test3  <- read.gdx(GDX,"StorDtl_DischargePower_Out")
+#                 
+
+all = c()
+for (scenario in scenarios)  {
+  GDX = paste0(path,scenario,'.gdx') 
+  for (variable in variables)  {
+
+    tmp <- gdxread(GDX, variable)
+    
+    #some variables are subdivided (e.g.Re_FlucNoStor_generatedPowerOut is sub-divided into technologies)
+    variable_name <- names(tmp)[4]
+    if (nrow(unique(tmp[, variable_name])) > 1) {
+      tmp2 <- tmp %>% group_by(state, region, hour, years) %>% 
+        summarise(value = sum(value, na.rm = TRUE)) %>% 
+        ungroup()  %>% mutate(variable = variable, scenario = scenario, Model = "REMIX") %>%
+        select(Scenario = scenario, variable, period = hour, years, value, Model, state, region) 
+      tmp_quitte = as.quitte(tmp2)
+      
+      
+    } else{
+      tmp$Scenario = scenario
+      tmp$Model = "REMIX"
+      tmp$variable = variable
+      index = which("hour" == names(tmp))
+        names(tmp)[index] = "period"
+      tmp = tmp[c("state","region","years","value","period","Scenario","Model","variable")]
+  
+      tmp_quitte = as.quitte(tmp)
+
+    }
+      all <- rbind(all,tmp_quitte)
+  }
+}
+
+#test <- all %>%  filter(variable == "heatPump_powerDemand_save")
+
+all$technology <- NA
+
+
+```
+
+# New: Sorting for Wind/Solar time series & Merging with "all"
+
+```{r}
+
+All_RE <- tibble()
+RE_Production_Combined <- tibble()
+variables_RE <- c("DemandEl_Save", "Re_flucNoStor_curtailedPowerOut","Re_FlucNoStor_generatedPowerOut")
+
+for (scenario in scenarios)  {
+  GDX = paste0(path,scenario,'.gdx')
+  for (variable in variables_RE) {
+    
+  temp <- gdxread(GDX, variable)
+  temp$variable <- variable
+  temp$scenario <- scenario
+  
+
+  #name replacement
+  
+   if ("re_flucNoStor_technologies" %in% (colnames(temp))) {
+     
+     levels <- as.character(unique(temp$re_flucNoStor_technologies))
+                  
+  temp <- temp %>% spread(re_flucNoStor_technologies, value ) %>%
+  gather(key = "re_flucNoStor_technologies", value = "value", levels) 
+  temp$value[is.na(temp$value)] <- 0
+  
+
+ #}}
+  #aggregating technologies for new combined variable
+  RE_Production_Combined <-  temp %>% filter(!variable %in% c("DemandEl_Save")) %>%
+    group_by(hour, scenario, state, region, variable, years, re_flucNoStor_technologies) %>%
+    summarise(value = sum(value, na.rm = TRUE)) %>% 
+    ungroup()
+  
+  RE_Production_Combined$variable <- "RE_Production_Combined"
+  
+  
+  All_RE <- bind_rows(All_RE, RE_Production_Combined, temp)
+  
+   }
+  else {
+  temp$re_flucNoStor_technologies <- "Demand"
+  All_RE <- bind_rows(All_RE, temp)
+
+  }
+  }}
+
+#test <- All_RE %>%  filter(variable == "DemandEl_Save")
+
+
+#PV Aggregation
+  tmp_t <- All_RE %>% filter(substr(re_flucNoStor_technologies,1,2) == "PV" ) %>%
+   group_by(hour, scenario, years, state, region, variable) %>%
+     summarise(value = sum(value, na.rm = TRUE)) %>%
+     ungroup()
+     tmp_t$re_flucNoStor_technologies <- "PV"
+   
+    
+     
+  #Aggregation of Wind
+  tmp_H <- All_RE %>%  filter(substr(re_flucNoStor_technologies,1,4) == "Wind" ) %>%
+   group_by(hour, years, variable, state, region, scenario) %>%
+     summarise(value = sum(value, na.rm = TRUE))%>%
+     ungroup()
+    tmp_H$re_flucNoStor_technologies <- "Wind"
+    
+    All_RE <- bind_rows(All_RE, tmp_H, tmp_t)
+
+All_RE$model <- "REMIX"
+All_RE$unit <- NA
+names(All_RE)[names(All_RE) == "variable"] <- "variable"
+names(All_RE)[names(All_RE) == "re_flucNoStor_technologies"] <- "technology"
+names(All_RE)[names(All_RE) == "hour"] <- "period"
+temp$value[is.na(temp$value)] <- 0
+
+all <- bind_rows(all, All_RE)
+
+
+levels(all$region) <- c(levels(all$region),"Tasmania","Australia","H2ExportNode")
+ all[all$state=="Australia",]$region <- "Australia"
+ all[all$state=="H2ExportNode",]$region <- "H2ExportNode"
+ all[all$state=="Tasmania",]$region <- "Tasmania"
+
+#test <- all %>%  filter(variable == "heatPump_powerDemand_save")
+
+
+```
+
+Calculating and adding average annual data # partial TODO: include a weighted mean (all done?)
+```{r}
+#levels(all$region) <- c(levels(all$region),"MEAN","SUM")
+all_origin = all # save 
+
+# weighted means for prices
+price_var <-  all %>% filter(variable %in% c("mcs_powerGeneration_Marginal"))
+quan_var <- all %>% filter(variable %in% c("SynFuel_electr_powerDemAllConsumer_Save","DemandEl_Save")) %>% 
+  group_by(scenario, region, state, years, variable) %>%
+  mutate(sum_var = sum(value, na.rm = T)) %>%
+  ungroup()
+
+
+all_mean <- price_var %>% inner_join(quan_var, by = c("model","scenario","region","period","state","years")) %>%
+  mutate(value = (value.x*value.y)/sum_var) %>%
+  select(model,scenario,region,period,state,years, value, variable = variable.y) %>%
+  group_by(model,scenario,region,state, years, variable) %>%
+  summarise(value = sum(value), period = "mean") %>% ungroup() %>%
+  mutate(variable = as.character(variable), unit = NA) %>%  #please replace with respective unit.
+  mutate(variable = replace(variable, as.character(variable) == "DemandEl_Save", "Consumer_electricity_price")) %>% 
+  mutate(variable = replace(variable, as.character(variable) != "Consumer_electricity_price", "H2_weighted_electricity_price")) #the same!
+  all_mean$technology <- NA
+  
+
+all <- all %>% 
+  mutate(period = as.character(period))
+
+all <- bind_rows(all, all_mean)
+
+test <- all %>%  filter(variable == "DemandEl_Save")
+  
+
+#To do Falko
+#STATE-WIDE SUM and MEAN
+# states = unique(all$state)
+# for (state_1 in states){
+#   tmp <- all %>% filter(state == state_1) %>% spread(region, value) 
+#   row_numbers = which(colnames(tmp) %in% unique(all[all$state==state_1,]$region))
+#   tmp2 <- tmp %>% mutate(SUM = rowSums(.[row_numbers]),MEAN = rowMeans(.[row_numbers])) %>% group_by(model,scenario,variable,unit,period,state,years) %>% gather(c(colnames(tmp)[row_numbers],"SUM","MEAN"),key="region", value = value) %>% ungroup()# TODO: include a weighted mean
+#  
+#   tmp3 = tmp2[tmp2$region %in% c("SUM","MEAN"),] #rbind - only MEAN and SUM
+#   
+#   n = seq(1:length(tmp3))
+#   n2 = n
+#   n2[3] = length(tmp3)-1
+#   n2[4:(length(tmp3)-1)] = n[(4-1):(length(tmp3)-2)]
+#   tmp3 = tmp3[n2]
+#   all = rbind(all,tmp3)
+#  
+# }
+
+all_periods_unchanged = all
+
+#To do falkom
+# #TEMPORAL SUM and MEAN - time-weighted - maybe ADD load-weighted
+#   tmp <- all %>% filter(state == state_1) %>% spread(period, value) 
+#   row_numbers = which(colnames(tmp) %in% unique(all$period))
+#   tmp2 <- tmp %>% mutate(SUM = rowSums(.[row_numbers]),MEAN = rowMeans(.[row_numbers])) %>% group_by(model,scenario,region,variable,unit,state,years) %>% gather(c(colnames(tmp)[row_numbers],"SUM","MEAN"),key="period", value = value) %>% ungroup()# TODO: include a weighted mean
+# 
+#   tmp3 = tmp2[tmp2$period %in% c("SUM","MEAN"),] #rbind - only MEAN and SUM
+#   
+#   n = seq(1:length(tmp3))
+#   n2 = n
+#   n2[6] = length(tmp3)-1
+#   n2[7:(length(tmp3)-1)] = n[(7-1):(length(tmp3)-2)]
+#   tmp3 = tmp3[n2]
+#   all = rbind(all,tmp3)
+# 
+
+```
+
+a colored duration curve and time series (not combined)
+```{r}
+
+linesize = 0.1
+# variable_1 = "SynFuel_electr_fuelProdAllConsumer_Save"
+# scenario_1 = "175percent"
+# state_1 = "NSW"
+# region_1 = "SouthCoast"
+
+
+for (state_1 in unique(all$state)){ #c("WA","Vic","Tasmania","SA","QL")){ 
+for (scenario_1 in unique(all$scenario)){
+for (variable_1 in unique(all$variable)){
+  for (region_1 in unique(all[all$state==state_1,]$region)){
+  
+    test <- all_periods_unchanged %>% filter(variable == variable_1 & scenario == scenario_1 & state == state_1 & region == region_1 & (period != "SUM") & (period != "MEAN"))
+    test <- test  %>%  arrange(desc(value))
+    if ((nrow(test) > 0) & (!("TRUE" %in% is.na(unique(test$value))))){
+    test$sorted_time <- seq(1, 8760)
+    max <- max(test$value)
+    mean_value = mean(test$value)
+  
+  p1=ggplot(data = test) +
+    #geom_hline(yintercept = 0, color = "black", size = 0.9*linesize) +
+    geom_line(aes(x = sorted_time, y = value ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time, y = mean_value ), size = 1.2*linesize, alpha = 0.5, color="red") +
+    annotate(geom="text", x=7000, y=mean_value+0.03*max, label=paste0("mean=",round(mean_value)), color="red") +
+    geom_bar(aes(x = sorted_time, y = value, fill = period), stat ='identity')+
+    ylab("tbd") +
+    ggtitle(paste(variable_1,"_",state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    xlab("")+
+    coord_cartesian(expand = FALSE,  ylim = c(0, 1.1*(max(max))))+ 
+    scale_fill_gradientn(colours  = rainbow.pal,
+                         limits=c(1, 8760),
+                         breaks = (c(1,7,13,19,23)+.3)*8760/24,
+                         labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+                         name = "") 
+
+    ggsave (filename = paste0("plots/new/", "Duration_",variable_1,"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+  
+  p2=ggplot(data = test) +
+    #geom_hline(yintercept = 0, color = "black", size = 0.9*linesize) +
+    geom_line(aes(x = period, y = value ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time, y = mean_value ), size = 1.2*linesize, alpha = 0.5, color="red") +
+    annotate(geom="text", x=7000, y=mean_value+0.03*max, label=paste0("mean=",round(mean_value)), color="red") +
+    # geom_bar(aes(x = period, y = value, fill = period), stat ='identity')+
+    ylab("tbd") +
+    ggtitle(paste(variable_1,"_",state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylim = c(0, 1.1*(max(max)))
+    # xlab("")+
+    # coord_cartesian(expand = FALSE,  ylim = c(0, (max(max))))+
+    # scale_fill_gradientn(colours  = rainbow.pal,
+    #                      limits=c(1, 8760),
+    #                      breaks = (c(1,7,13,19,23)+.3)*8760/24,
+    #                      labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+    #                      name = "")
+    # 
+  ggsave (filename = paste0("plots/new/", "Timeseries_",variable_1,"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+    }
+}}}}
+```
+
+Combined: H2 and electricity prices, potentially VRE generation, demand.
+```{r}
+
+linesize = 0.1
+
+variables =  c("SynFuel_electr_fuelProdAllConsumer_Save","mcs_powerGeneration_Marginal","Re_FlucNoStor_generatedPowerOut","DemandEl_Save")
+label_fig = "wDemand"
+
+for (state_1 in c("NSW")){#unique(all$state)){#c("NSW")){ #c("NSW")){#unique(all$state)){#c("NSW")){ 
+for (scenario_1 in unique(all$scenario)){
+  for (region_1 in c("CentralCoast")){#unique(all[all$state==state_1,]$region)){#c("CentralCoast")){#unique(all[all$state==state_1,]$region)){
+  
+    test <- all_periods_unchanged %>% filter(scenario == scenario_1 & variable %in% variables & state == state_1 & region == region_1 & (period != "SUM") & (period != "MEAN"))
+    if (!("FALSE" %in% (variables %in% unique(test$variable))) & (nrow(test) > 0) & (!("TRUE" %in% is.na(unique(test$value))))){
+      test <- test %>% spread(variable, value) %>%  arrange(desc(mcs_powerGeneration_Marginal))
+      test$sorted_time <- seq(1, 8760)
+      
+      max1 = max(test$mcs_powerGeneration_Marginal)
+      max2 = max(test$SynFuel_electr_fuelProdAllConsumer_Save)
+      
+      tmp3 = test$Re_FlucNoStor_generatedPowerOut
+      tmp3[is.na(tmp3)] <- 0
+      max3 = max(tmp3)#max(test$Re_FlucNoStor_generatedPowerOut)
+
+      mean_value= mean(test$mcs_powerGeneration_Marginal)
+
+  p1=ggplot(data = test) +
+    geom_line(aes(x = sorted_time, y = mcs_powerGeneration_Marginal ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time, y = mean_value ), size = 3*linesize, alpha = 0.5, color="black") +
+    geom_bar(aes(x = sorted_time, y = mcs_powerGeneration_Marginal, fill = period), stat ='identity')+
+    geom_point(aes(x = sorted_time, y = 0.9*max1/max3*SynFuel_electr_fuelProdAllConsumer_Save), color = "blue", size = 0.1) +
+    geom_point(aes(x = sorted_time, y = 0.9*max1/max3*Re_FlucNoStor_generatedPowerOut), color = "red", size = 0.1) +
+    geom_point(aes(x = sorted_time, y = 0.9*max1/max3*DemandEl_Save), color = "black", size = 0.005) +
+    annotate(geom="text", x=7000, y=(mean_value+0.01*max1), label=paste0("mean=",round(mean_value)), color="black") +
+    scale_y_continuous(sec.axis = sec_axis(~.*max3/(0.9*max1), name = "GW"))+
+    ylab("tbd") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    xlab("")+
+#    ylim(0,1.3*max1)+
+    coord_cartesian(expand = FALSE,  ylim = c(0, 1.1*max1))+ 
+    scale_fill_gradientn(colours  = rainbow.pal,
+                         limits=c(1, 8760),
+                         breaks = (c(1,7,13,19,23)+.3)*8760/24,
+                         labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+                         name = "") 
+
+    ggsave (filename = paste0("plots/new/", "Duration_Comb_",label_fig,"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+  
+  p2=ggplot(data = test) +
+    geom_line(aes(x = period, y = mcs_powerGeneration_Marginal ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time, y = mean_value ), size = 1.2*linesize, alpha = 0.5, color="red") +
+    annotate(geom="text", x=7000, y=mean_value+0.03*max1, label=paste0("mean=",round(mean_value)), color="red") +
+    geom_point(aes(x = period, y = SynFuel_electr_fuelProdAllConsumer_Save), color = "black", size = 0.1) +
+    scale_y_continuous(sec.axis = sec_axis(~.*1, name = "GW"))+
+    # geom_bar(aes(x = period, y = value, fill = period), stat ='identity')+
+    ylab("tbd") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    # xlab("")+
+    # coord_cartesian(expand = FALSE,  ylim = c(0, (max(max))))+
+    # scale_fill_gradientn(colours  = rainbow.pal,
+    #                      limits=c(1, 8760),
+    #                      breaks = (c(1,7,13,19,23)+.3)*8760/24,
+    #                      labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+    #                      name = "")
+    # 
+  ggsave (filename = paste0("plots/new/", "Timeseries_Comb_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+    }
+  }}}
+```
+
+New: RLDC (before and after short-term storage. seasonal mismatch?)
+```{r}
+# combine DemandEl_Save and power demand for electrolysis
+
+linesize = 0.1
+  label_fig = "RLDC"
+    variables =  c("SynFuel_electr_fuelProdAllConsumer_Save","DemandEl_Save","Re_FlucNoStor_generatedPowerOut")
+
+for (state_1 in c("NSW")){#unique(all$state)){#c("NSW")){ #c("NSW")){#unique(all$state)){#c("NSW")){ 
+for (scenario_1 in unique(all$scenario)){
+  for (region_1 in c("CentralCoast")){#unique(all[all$state==state_1,]$region)){#c("CentralCoast")){#unique(all[all$state==state_1,]$region)){
+  
+    temp <- all_periods_unchanged %>% filter(scenario == scenario_1 & variable %in% variables & state == state_1 & region == region_1 & (period != "SUM") & (period != "MEAN"))
+    if (!("FALSE" %in% (variables %in% unique(temp$variable))) & (nrow(temp) > 0) & (!("TRUE" %in% is.na(unique(temp$value))))){
+      temp <- temp %>% spread(variable, value)
+      temp <- temp %>% mutate(residual_demand = (DemandEl_Save - 0.1*Re_FlucNoStor_generatedPowerOut))
+         temp <- temp %>% arrange(desc(residual_demand))
+         #VARARARARARARARRRRRRSSSSSSS
+      temp$sorted_time_RLDC <- seq(1, 8760)
+      temp <- temp %>% arrange(desc(DemandEl_Save))
+      temp$sorted_time_LDC <- seq(1, 8760)
+      
+      max1 = max(temp$DemandEl_Save)
+      tmp2 = temp$Re_FlucNoStor_generatedPowerOut
+      tmp2[is.na(tmp3)] <- 0
+      max2 = max(tmp3)#max(temp$Re_FlucNoStor_generatedPowerOut) gives error because of NA
+      temp$Re_FlucNoStor_generatedPowerOut = tmp2
+
+      mean_value= mean(temp$residual_demand)
+      
+      temp$color_code = "night"
+      temp[((temp$period %% 24)<20) & ((temp$period %% 24)>8),]$color_code = "day"
+      
+         
+       
+       plot_Variable = "residual_demand"# OR DemandEl_Save
+
+  p1=ggplot(data = temp) +
+    geom_line(aes(x = sorted_time_RLDC, y = residual_demand ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time_RLDC, y = mean_value ), size = 3*linesize, alpha = 0.5, color="black") +
+    geom_line(aes(x = sorted_time_LDC, y = DemandEl_Save ), size = 3*linesize, alpha = 0.5, color="black") +
+    #geom_bar(aes(x = sorted_time, y = DemandEl_Save, fill = period), stat ='identity')+
+    geom_bar(aes(x = sorted_time_RLDC, y = residual_demand, fill = color_code), stat ='identity')+
+    #geom_point(aes(x = sorted_time, y = 0.9*max1/max2*Re_FlucNoStor_generatedPowerOut), color = "red", size = 0.1) +
+    annotate(geom="text", x=7000, y=(mean_value+0.01*max1), label=paste0("mean=",round(mean_value)), color="black") +
+    scale_y_continuous(sec.axis = sec_axis(~.*max3/(0.9*max1), name = "GW"))+
+    ylab("tbd") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    xlab("")+
+#    ylim(0,1.3*max1)+
+    coord_cartesian(expand = FALSE,  ylim = c(0, 1.1*max1))+ 
+    scale_fill_manual("legend", values = c("day" = "yellow", "night" = "blue"))
+    # scale_fill_gradientn(colours  = rainbow.pal,
+    #                      limits=c(1, 8760),
+    #                      breaks = (c(1,7,13,19,23)+.3)*8760/24,
+    #                      labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+    #                      name = "") 
+
+    ggsave (filename = paste0("plots/new/","Duration_Comb_",label_fig,"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+  
+  p2=ggplot(data = temp) +
+    geom_line(aes(x = period, y = DemandEl_Save ), size = 1*linesize, alpha = 0.9) +
+    geom_line(aes(x = sorted_time, y = mean_value ), size = 1.2*linesize, alpha = 0.5, color="red") +
+    annotate(geom="text", x=7000, y=mean_value+0.03*max1, label=paste0("mean=",round(mean_value)), color="red") +
+    geom_point(aes(x = period, y = Re_FlucNoStor_generatedPowerOut), color = "black", size = 0.1) +
+    scale_y_continuous(sec.axis = sec_axis(~.*1, name = "GW"))+
+    # geom_bar(aes(x = period, y = value, fill = period), stat ='identity')+
+    ylab("tbd") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    # xlab("")+
+    # coord_cartesian(expand = FALSE,  ylim = c(0, (max(max))))+
+    # scale_fill_gradientn(colours  = rainbow.pal,
+    #                      limits=c(1, 8760),
+    #                      breaks = (c(1,7,13,19,23)+.3)*8760/24,
+    #                      labels = c("Jan", "Apr", "Jul", "Oct", "Dec"),
+    #                      name = "")
+    # 
+  ggsave (filename = paste0("plots/new/", "Timeseries_Comb_load",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+    }
+  }}}
+    
+```
+
+
+
+
+New: PV & Wind yearly time series
+
+```{r}
+linesize <- 0.1
+RE_vars = list("curtailed" = "Re_FlucNoStor_generatedPowerOut", "combined" = "RE_Production_Combined")
+state_1 <- "QL"
+region_1 <- "NorthCoast"	
+scenario_1 <- "175percent"
+ i <- 1
+
+for (state_1 in unique(all$state)){ 
+for (scenario_1 in unique(All_RE$scenario)){
+  for (region_1 in unique(all$region)) {
+    for (i in seq_along(RE_vars)) {
+  
+    temp <- all %>% filter(scenario == scenario_1 & state == state_1 & 
+                              region == region_1, variable %in% c("DemandEl_Save", RE_vars[[i]]) & 
+                              technology %in% c("Wind", "PV", "Demand")) %>%
+      mutate(week = ((period %/% 168) +1), day = ((period %/% 24) + 1)) %>%
+      #filter(!is.na(value)) %>%
+      replace(is.na(.), 0) %>%
+      group_by(state, variable, region, scenario, week, years, technology) %>%
+      mutate(mean = mean(value)) %>%
+      mutate(period = as.numeric(period)) %>% 
+      ungroup()
+      
+      temp$week[temp$week == -1] <- 0
+    
+    
+      max <- tapply(temp$value, temp$technology , max, na.rm = TRUE, simplify = FALSE)
+      mean <- tapply(temp$value, temp$technology, mean, na.rm = TRUE, simplify = FALSE)
+      meanPV <- mean$PV
+      meanWind <- mean$Wind
+      meanDemand <- mean$Demand
+      
+    
+      ##Calc for average days 
+    
+      temp_days <- temp %>% 
+      group_by(day, technology) %>% 
+      arrange(technology, period) %>% 
+      mutate(hour_of_day = seq_along(day)) %>%
+      ungroup()
+      
+      #Winter
+      means_wint <-temp_days %>%
+        filter(week %in% c(24:32))%>%
+        group_by(hour_of_day, technology) %>%
+        summarize(mean_day = mean(value), SD = sd(value)) %>%
+        ungroup()
+      
+      
+      #Summer
+      means_sum <- temp_days %>%
+        filter(week %in% c(48:56))%>%
+        group_by(hour_of_day, technology) %>%
+        summarize(mean_day = mean(value), SD = sd(value)) %>%
+        ungroup()
+    
+  
+  #PV 
+  if(!(is.null(mean$PV))) {
+    p1 <- ggplot(data = temp %>% filter(technology == "PV")) +
+    geom_line(aes(x = period, y = value), size = 1*linesize, color = "yellow", alpha = 0.8)  +
+    geom_line(aes(x = week * 168 , y = mean ), size = 7 * linesize, alpha = 1, color="red") +
+    geom_line(aes(x = period, y =  meanPV ), size = 3*linesize, alpha = 0.5, color="black") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylab("tbd")+
+    xlab("period")+
+    annotate(geom="text", x=7000, y=mean$PV+0.1*max$PV, label=paste0("mean=",round(mean$PV)), color="red")+
+    ylim(c(0, 1.1*(max(max$PV))))
+  
+  
+  ggsave (filename = paste0("plots/new/", "Timeseries_PV_", names(RE_vars[i]),"_", state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+  
+  }
+  
+    #Wind  
+  if(!(is.null(mean$Wind))) {
+  p2 <- ggplot(data = temp %>% filter(technology == "Wind")) +
+    geom_line(aes(x = period, y = value), size = 1*linesize, color = "blue", alpha = 0.8)  +
+    geom_line(aes(x = week * 168, y = mean), size = 7 * linesize , alpha = 1, color="red") +
+    geom_line(aes(x = period, y = meanWind), size = 5*linesize, alpha = 0.5, color="black") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylim(c(0, 1.1*(max(max$Wind)))) +
+    ylab("tbd") +
+    xlab("period")+
+    annotate(geom="text", x=7000, y=mean$Wind+0.1*max$Wind, label=paste0("mean=", round(mean$Wind)), color="red") 
+    
+    #print(p2)
+
+    ggsave (filename = paste0("plots/new/", "Timeseries_Wind_", names(RE_vars[i]),"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+  } 
+      
+    else {
+      
+    next
+    cat(region_1)
+    
+    }
+    
+    #Wind + Solar w/Demand
+    
+    p3 <- ggplot(data = temp) +
+    #geom_line(data = temp %>% filter(factor == "Wind"), aes(x = period, y = value ), size = 1*linesize, color = "blue", alpha = 0.8)  +
+    geom_line(data = temp %>% filter(technology == "Wind"), 
+              aes(x = week * 168, y = mean), size = 7 * linesize , alpha = 1, color="blue") +
+    geom_line(data = temp %>% filter(technology == "PV"), 
+              aes(x = week * 168, y = mean), size = 7*linesize, color = "red", alpha = 0.8) +
+    geom_line(data = temp %>% filter(technology == "Demand"),
+              aes(x = week * 168, y = mean), size = 7*linesize, color = "black", alpha = 0.8) +
+    # geom_line(aes(x = period,  y = meanWind), size = 5*linesize, alpha = 0.5, color="black") +
+    # geom_line(aes(x = period,  y = meanDemand), size = 5*linesize, alpha = 0.5, color="black") +
+    # geom_line(aes(x = period,  y = meanPV), size = 5*linesize, alpha = 0.5, color="black") +
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylim(c(0, 1.1*(max(unlist(max))))) +
+    ylab("tbd") +
+    xlab("period")
+     #print(p3)
+  
+     ggsave (filename = paste0("plots/new/", "timeseries_RE_demand_", names(RE_vars[i]),"_", state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+   
+    
+    #Average winter day
+    
+    p4 <- ggplot() +
+      geom_line(data = means_wint %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day), size = 12 * linesize , alpha = 1, color="blue") +
+     geom_line(data = means_wint %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day), size = 15 * linesize , alpha = 1, color="yellow")+
+    geom_line(data = means_wint %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day), size = 12 * linesize , alpha = 1, color="black")+
+      #SD+
+     geom_line(data = means_wint %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day + SD), size = 7 * linesize, linetype = "dotdash", alpha = 1, color="blue") +
+     geom_line(data = means_wint %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day+SD), size = 7 * linesize, linetype = "twodash", alpha = 1, color="yellow")+
+    geom_line(data = means_wint %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day+SD), size = 7 * linesize , linetype = "dashed", alpha = 1, color="black")+
+      
+    #SD-
+    geom_line(data = means_wint %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 7 * linesize, linetype = "dotdash", alpha = 1, color="blue") +
+     geom_line(data = means_wint %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 7 * linesize,linetype = "twodash", alpha = 1, color="yellow")+
+    geom_line(data = means_wint %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 7 * linesize, linetype = "dashed", alpha = 1, color="black")+
+      coord_cartesian(xlim=c(1,24), ylim =(c(min(means_wint["mean_day"]), 1.3*((max(means_wint["mean_day"])+(max(means_wint["SD"])))))), expand  = FALSE)+
+      scale_x_continuous(limits=c(1, 24), breaks=c(0, 5, 10, 15, 20))+
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylab("tbd")+
+    xlab("period")
+  
+    
+    #show(p4)
+    
+    ggsave (filename = paste0("plots/new/", "Average_day_winter_",names(RE_vars[i]),"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+    
+    
+     #Average summer day 
+    
+     p5 <- ggplot(means_sum) +
+      geom_line(data = means_sum %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day), size = 12 * linesize , alpha = 1, color="blue") +
+     geom_line(data = means_sum %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day), size = 12 * linesize , alpha = 1, color="yellow")+
+    geom_line(data = means_sum %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day), size = 12 * linesize , alpha = 1, color="black")+
+      #SD+
+     geom_line(data = means_sum %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day + SD), size = 5 * linesize, linetype = "dotdash", alpha = 1, color="blue") +
+     geom_line(data = means_sum %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day+SD), size = 5 * linesize, linetype = "twodash", alpha = 1, color="yellow")+
+    geom_line(data = means_sum %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day+SD), size = 5 * linesize , linetype = "dashed", alpha = 1, color="black")+
+      
+    #SD-
+    geom_line(data = means_sum %>% filter(technology == "Wind"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 5 * linesize, linetype = "dotdash", alpha = 1, color="blue") +
+     geom_line(data = means_sum %>% filter(technology == "PV"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 5 * linesize,linetype = "twodash", alpha = 1, color="yellow")+
+    geom_line(data = means_sum %>% filter(technology == "Demand"), 
+              aes(x = hour_of_day, y = mean_day-SD), size = 5 * linesize, linetype = "dashed", alpha = 1, color="black")+
+      coord_cartesian(xlim=c(0,24), ylim =(c(min(means_sum["mean_day"]), 1.3*((max(means_wint["mean_day"])+(max(means_wint["SD"])))))), expand  = FALSE)+
+      scale_x_continuous(limits=c(0, 24), breaks=c(0, 5, 10, 15, 20))+
+    ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+    ylab("tbd")+
+    xlab("period")
+  
+  #  print(p5)
+    
+     
+    ggsave (filename = paste0("plots/new/", "Average_day_summer_",names(RE_vars[i]),"_",state_1,"_",region_1,"_",scenario_1, ".png"),  width = 10, height = 10, units = "cm",dpi = 600)
+    
+
+      
+}}}}
+
+
+```
+
+
+
+New! Production Area PLots 
+```{r}
+linesize <- 0.1
+state_1 <- "Australia"
+region_1 <- "Australia"	
+scenario_1 <- "175percent"
+variables <- c("DemandEl_Save", #line, all but not h2/synfuel
+               #"mcs_totalPowerGeneration_Save",#total power generation - before storage?
+               "RE_Production_Combined",#VRE generation, curtailment?
+               "Re_flucNoStor_curtailedPowerOut",#combine it, show it negative addition shaded below storage
+              "SynFuel_electr_fuelProdAllConsumer_Save",#line stacked on demand
+                "SynFuel_stg_discharge_Save",
+              "SynFuel_stg_charge_Save",
+              "StorDtl_ChargePower_Out",
+               "StorDtl_DischargePower_Out")
+                #"SynFuel_transport_compressorGridLoad_save",
+                #"heatPump_powerDemand_save"
+
+for (state_1 in unique(all$state)){ 
+for (scenario_1 in unique(All_RE$scenario)){
+  for (region_1 in unique(all$region)) {
+
+     
+       temp <- all %>% filter(scenario == scenario_1 & state == state_1 & 
+                              region == region_1 & variable %in% variables & technology %in% c("Wind", "PV", "Demand", NA))%>%
+      mutate(week = ((as.numeric(period) %/% 168) +1), day = ((as.numeric(period) %/% 24) + 1)) %>%
+      mutate(technology = ifelse(variable == "StorDtl_DischargePower_Out", "Discharge", technology)) %>%
+      mutate(technology = ifelse(variable == "StorDtl_ChargePower_Out", "Charge", technology)) %>%
+      mutate(technology = ifelse(variable == "SynFuel_stg_discharge_Save", "Syn_Discharge", technology)) %>%
+      mutate(technology = ifelse(variable == "SynFuel_stg_charge_Save", "Syn_Charge", technology)) %>%
+      mutate(week = replace(week, week == -1, 0))%>%
+      #filter(!is.na(value)) %>%
+      mutate(value = replace(value, is.na(value),0)) %>%
+      group_by(state, variable, region, week, scenario, technology) %>%
+      #mutate(rollmean = rollapply(data = value, width = 168, FUN = mean, fill = NA, align = "right")) %>%
+      mutate(rollmean = rollmeanr(value, 168, fill = NA)) %>% 
+      mutate(period = as.numeric(period)) %>% 
+      ungroup()
+      
+      temp_negs <- temp %>% 
+        mutate_at(c("value", "rollmean"),  "-") %>%
+        filter(!(technology %in% c("Wind", "PV", "Demand"))) %>% 
+        mutate(technology = ifelse(variable == "Re_flucNoStor_curtailedPowerOut", "Curtailment", technology)) %>%
+        filter(technology %in% c("Curtailment", "Charge", "Syn_Charge")) %>%
+        ungroup()
+                                 
+              #ifelse(grepl("String", factor)
+      
+      temp_pos <- temp %>% 
+        filter(!is.na(technology) & !(technology %in% c("Curtailment", "Charge", "Syn_Charge", "Demand"))
+                                      & variable != "Re_flucNoStor_curtailedPowerOut")
+        
+      #  & variable != "Re_flucNoStor_curtailedPowerOut"
+    
+      temp_pos$technology <- factor(temp_pos$technology, levels = c("PV", "Wind", "Demand", "Syn_Discharge", 
+                                                                    "Discharge", "Curtailment",
+                                                            "Charge", "Syn_Charge"))
+      temp_negs$technology <- factor(temp_negs$technology, levels = c("Curtailment", "Syn_Charge", "Charge" ))
+  
+    
+    
+      max <- tapply(temp$rollmean, temp$technology , max, na.rm = TRUE, simplify = FALSE)
+      max_neg <- tapply(temp_negs$rollmean, temp_negs$technology , min, na.rm = TRUE, simplify = FALSE)
+      mean <- tapply(temp$rollmean, temp$technology, mean, na.rm = TRUE, simplify = FALSE)
+  
+     
+      
+      
+  
+      p1 <-  ggplot(data = temp_pos %>% drop_na(rollmean),
+                    aes(x = period, y = rollmean)) + 
+        geom_area(aes(fill = technology), colour = "black", linetype = 1, size = 0.1 * linesize,  position = "stack")
+       #ylim(c(1, 1.1*(max(unlist(max))))) 
+   
+
+      p1 <- p1 + geom_line(data = temp %>% drop_na(rollmean) %>% filter(variable == "DemandEl_Save"), 
+                          aes(x = period, y = rollmean, colour = "Demand", linetype = "Demand"), size = 4 * linesize)+
+                geom_line(data = temp %>% drop_na(rollmean) %>% filter(variable == "SynFuel_electr_fuelProdAllConsumer_Save"),
+                aes(x = period, y = rollmean, colour = "Electrolyser Demand", linetype = "Electrolyser Demand"), size = 3 * linesize)
+      
+    #Minus axis
+      
+      p1 <- p1 + geom_area(data = temp_negs %>% drop_na(rollmean) %>% group_by(technology),
+                          aes(x = period, y = rollmean, fill = technology), colour = "black", linetype = 1, 
+                          size = 0.1 * linesize, position = "stack")+
+      
+        scale_fill_manual(name = "Technology" , values =  alpha(c("Wind" = "blue", "Curtailment" = "grey29",
+                                                                    "Charge" = "tomato3", "Discharge" = "tomato1",
+                                                                  "Syn_Charge"= "skyblue3", 
+                                                                  "Syn_Discharge" = "skyblue1" , "PV" = "gold1"), 0.8),
+                              labels = c("Storage Charge", "Curtailment", "Storage Discharge", "PV", "Synfuel Charge",
+                                         "Synfuel Discharge", "Wind"
+                                         ))+
+          #scale_alpha_manual(values= c(0.1, 0.8, 0.8, 1))+
+        scale_linetype_manual(name = "Energy Demand", values = c("solid", "twodash"))+
+        scale_colour_manual(name = "Energy Demand", values = c("Demand" = "white", "Electrolyser Demand" = "white"))+
+        theme(legend.background = element_blank(), legend.key  = element_rect(colour ="black", fill = "black"))+
+        guides(fill = guide_legend(reverse = TRUE))+
+        coord_cartesian(expand = FALSE,  ylim = c(2.5 * min(unlist(max_neg)), 1.6*max(unlist(max))))+
+        #ylim(c(0, 1.1*(max(unlist(max)))))+
+        ggtitle(paste(state_1,"_",region_1,"_",scenario_1,"_","2050"))+
+        ylab("tbd")+
+        xlab("period")
+       
+        
+      show(p1)
+      ggsave (filename = paste0("plots/new/", "Production_", state_1,"_",region_1,"_",scenario_1, ".png"),  width = 15, height = 10, units = "cm",dpi = 600)
+     show(p1)
+
+
+      #Average weeks
+  
+      temp_weekp <- temp %>% 
+      group_by(week, technology, variable) %>% 
+      arrange(technology, week) %>% 
+      mutate(hour_of_week = seq_along(week)) %>%
+      ungroup()
+      
+      
+        temp_negs <- temp_weekp %>% 
+        mutate_at(c("value"),  "-") %>%
+        filter(!(technology %in% c("Wind", "PV", "Demand"))) %>% 
+        mutate(technology = ifelse(variable == "Re_flucNoStor_curtailedPowerOut", "Curtailment", technology)) %>%
+        filter(technology %in% c("Curtailment", "Charge", "Syn_Charge")) %>%
+        ungroup()
+                                 
+              #ifelse(grepl("String", factor)
+      
+        temp_pos <- temp_weekp %>% 
+        filter(!(technology %in% c("Curtailment", "Charge", "Syn_Charge"))
+                                      & variable != "Re_flucNoStor_curtailedPowerOut")
+  
+  
+    temps_season <- list("temp_negs" = temp_negs, "temp_pos" = temp_pos)
+    temps_seasons <- list()
+    
+    ##Calc for seasonal average weeks
+    for (i in seq_along(temps_season)) {
+      
+            
+        #Winter  
+       
+        temps_seasons[[paste0("winter_", names(temps_season[i]))]] <- temps_season[[i]] %>% 
+        filter(week %in% c(24:32)) %>%
+        group_by(hour_of_week,  technology, variable) %>%
+        summarize(mean_hour = mean(value), SD = sd(value)) %>%
+        ungroup()
+      
+        #Summer
+         temps_seasons[[paste0("summer_", names(temps_season[i]))]] <- temps_season[[i]]  %>%
+        filter(week %in% c(48:56))%>%
+        group_by(hour_of_week,  technology, variable) %>%
+        summarize(mean_hour = mean(value), SD = sd(value)) %>%
+        ungroup()
+        
+    }
+      
+
+    winter_w <- temps_seasons[c(1, 3)]
+    summer_w <- temps_seasons[c(2, 4)]
+    seasons_list <- list(winter_w, summer_w)
+    i <- 2
+    
+    
+      max <- max(unlist(lapply(temps_seasons, function(x) max(x$mean_hour, na.rm=T))))
+      min <- min(unlist(lapply(temps_seasons, function(x) min(x$mean_hour, na.rm=T))))
+      mean <- min(unlist(lapply(temps_seasons, function(x) max(x$mean_hour, na.rm=T))))
+  
+    
+    for (i in seq_along(seasons_list)) {
+  
+      p2 <-  ggplot(data = seasons_list[[i]][[2]] %>% filter (variable != "DemandEl_Save") %>% drop_na(technology),  
+                    aes(x = hour_of_week, y = mean_hour)) + 
+        geom_area(aes(fill = technology), colour = "black", linetype = 1, size = 0.1 * linesize,  position = "stack")
+       #ylim(c(1, 1.1*(max(unlist(max))))) 
+   
+
+      p2 <- p2 + geom_line(data = seasons_list[[i]][[2]] %>% filter(variable == "DemandEl_Save"), 
+                          aes(x = hour_of_week, y = mean_hour, colour = "Demand", linetype = "Demand"), size = 4 * linesize)+
+                geom_line(data = seasons_list[[i]][[2]] %>% filter(variable == "SynFuel_electr_fuelProdAllConsumer_Save"),
+                aes(x = hour_of_week, y = mean_hour, colour = "Electrolyser Demand", linetype = "Electrolyser Demand"), size = 3 * linesize)
+      
+    #Minus axis
+      
+      p2 <- p2 + geom_area(data = seasons_list[[i]][[1]] %>% 
+                             filter (variable != "DemandEl_Save")%>% drop_na(technology) %>% group_by(technology),
+                          aes(x = hour_of_week, y = mean_hour, fill = technology), colour = "black", linetype = 1, 
+                          size = 0.1 * linesize, position = "stack")+
+      
+        scale_fill_manual(name = "Technology" , values =  alpha(c("Wind" = "blue", "Curtailment" = "grey29",
+                                                                    "Charge" = "tomato3", "Discharge" = "tomato1",
+                                                                  "Syn_Charge"= "skyblue3", 
+                                                                  "Syn_Discharge" = "skyblue1" , "PV" = "gold1"), 0.8),
+                              labels = c("Storage Charge", "Curtailment", "Storage Discharge", "PV", "Synfuel Charge",
+                                         "Synfuel Discharge", "Wind"
+                                         ))+
+          #scale_alpha_manual(values= c(0.1, 0.8, 0.8, 1))+
+        scale_linetype_manual(name = "Energy Demand", values = c("solid", "twodash"))+
+        scale_colour_manual(name = "Energy Demand", values = c("Demand" = "white", "Electrolyser Demand" = "white"))+
+        theme(legend.background = element_blank(), legend.key  = element_rect(colour ="black", fill = "black"))+
+        guides(fill = guide_legend(reverse = TRUE))+
+        coord_cartesian(expand = FALSE,  ylim = c(2.2 * min, 1.3*max))+
+        ggtitle(paste(state_1,"_", substr(names(seasons_list[[i]][1]), 1, 6),"_",region_1,"_",scenario_1,"_","2050"))+
+        ylab("tbd")+
+        xlab("period")
+       
+        
+      # 
+      # ggsave (filename = paste0("plots/new/", "Production_Weekly_",
+      #                           substr(names(seasons_list[[i]][1]), 1, 6), seasons,"_",state_1,"_",region_1,"_",scenario_1, ".png"), 
+      #         width = 15, height = 10, units = "cm",dpi = 600)
+     show(p2)
+
+    }
+
+     
+     
+
+
+
+}}}
+```
+
+
+
+
+
+
+Summary Stats
+```{r}
+
+comparison <- summary(temp)
+
+
+
+
+
+
+
+
+```
+
+
