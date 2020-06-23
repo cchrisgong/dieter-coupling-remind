@@ -17,6 +17,27 @@ $offtext
 *===== Defines and uploads parameters      =====
 *======================================================
 
+Parameters
+*=========== for loading remind output ===========
+vm_cap(reg, te_remind, grade) 
+remind_cap(yr, reg, te_remind, grade)
+v32_seelDem(reg, se_remind) 
+remind_totdemand(yr, reg, se_remind)
+remind_totdemand_inMWh
+P_RES(res)     Renewable technology built in MW
+*iternum Current remind iteration number
+*o_iterationNumber remind iteration number parameter
+*=========== for scaling dieter demand ===========
+dieter_OLDtotdem
+demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
+;
+
+*remember to load sets first
+$gdxin fulldata.gdx
+$load  yr = t
+$load  remind_cap = vm_cap.l
+$load  remind_totdemand = v32_seelDem.l
+$gdxin
 
 Parameters
 
@@ -46,8 +67,7 @@ Parameters
 
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
 *con_fuelprice_reg(ct,reg)        Fuel price conventionals in Euro per MWth for different regions
-con_CO2price             CO2 price /50/
-
+con_CO2price             CO2 price /0/
 
 *====== Renewables ======
 
@@ -69,7 +89,7 @@ m_res_e(res)             Investment: maximum installable energy in TWh per a
 
 *d_y(year,h)              Demand hour h for cost minimization for different years
 *d_y_reg(year,reg,h)      Demand hour h for cost minimization for different years and specific regions
-d(h)                     Demand hour h for cost minimization
+d(h)             Demand hour h for cost minimization
 *price_data(h)            Spot market prices 2012
 *phi_res_y(year,res,h)    Renewables availability technology res in hour h for different years
 phi_res_y_reg(year,reg,h,res)
@@ -216,9 +236,6 @@ $offdelim
 /;
 
 
-
-
-
 parameter stodata(all_storage,sto)      "Various Data for storage"
 /
 $ondelim
@@ -226,6 +243,7 @@ $include "Storage.csv"
 $offdelim
 /;
 
+*%reserves%$ontext
 parameter reservedata(all_reserve,reserves)      "Various Data for storage"
 /
 $ondelim
@@ -240,21 +258,26 @@ $offdelim
 ;
 reserves_slope(reserves,res) = t_reserves_slope(reserves,res);
 
+
 Table t_phi_reserves_call_y(year,h,reserves)      "Hourly share of reserve provision that is actually activated"
 $ondelim
 $include "Reserves_hourly.csv"
 $offdelim
 ;
+
 phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
+
+*$ontext
+*$offtext
 
 $onecho >temp.tmp
 
 par=phi_reserves_call_y          rng=Reserves!b49:lya73  rdim=2 cdim=1
 $offecho
 
-%skip_Excel%$call "gdxxrw Data_Input_v1.0.2.xlsx @temp.tmp o=Data_input.gdx";
+*%skip_Excel%$call "gdxxrw Data_Input_v1.0.2.xlsx @temp.tmp o=Data_input.gdx";
 
-$GDXin Data_input.gdx
+*$GDXin Data_input.gdx
 *$load phi_ror
 *$load eta_con carbon_content c_up c_do c_fix_con c_var_con c_inv_overnight_con inv_lifetime_con inv_recovery_con inv_interest_con m_con m_con_e grad_per_min
 *$load  con_CO2price

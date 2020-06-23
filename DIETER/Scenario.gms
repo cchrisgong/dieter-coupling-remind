@@ -16,12 +16,11 @@ $offtext
 *===== Scenario file                   =====
 *===== only restrictions on parameters =====
 *==================================================*
-Set reg        /DEU,IND/;
+*Set reg        /DEU,IND/;
 
-set reg_solve(reg);
-reg_solve("DEU")=NO;
-reg_solve("IND")=YES;
-
+*set reg_solve(reg);
+*reg_solve("DEU")=NO;
+*reg_solve("IND")=YES;
 
 * For example, PV costs decrease by 50%
 *c_ri('Solar') = 0.5 * c_ri('Solar') ;
@@ -29,14 +28,14 @@ reg_solve("IND")=YES;
 Set share / 0*150 / ;
 
 *######################################
-Set loop_phi_spv(share) /1,10,20,30,40,50,60/;
+Set loop_phi_spv(share) /15/;
 *Set loop_phi_spv(share) /50/;
 
 Parameter phi_spv(share);
 phi_spv(loop_phi_spv) = loop_phi_spv.val/100;
 
 *######################################
-Set loop_phi_wind_on(share) /11/;
+Set loop_phi_wind_on(share) /15/;
 *Set loop_phi_wind_on(share) /1,10,20,30,40,50,60/;
 
 Parameter phi_wind_on(share);
@@ -51,7 +50,7 @@ phi_wind_off(loop_phi_wind_off) = loop_phi_wind_off.val/100;
 
 *######################################
 * power to gas share
-Set loop_phi_p2g(share) / 10 / ;
+Set loop_phi_p2g(share) / 0/ ;
 
 Parameter phi_p2g(share);
 phi_p2g(loop_phi_p2g) = loop_phi_p2g.val/100;
