@@ -1,0 +1,5 @@
+Scenario No.;CO2 price;Alltech;Greenfield/brownfield;Year
+s1;0;NoBatt;Quasi greenfield;2030
+s2;50;NoBatt;Quasi greenfield;2030
+s3;0;Batt;Quasi greenfield;2030
+s4;50;Batt;Quasi greenfield;2030

@@ -2,8 +2,8 @@ library.path <- .libPaths()
 print(library.path)
 
 library(stringr)
+# library(xlsx)
 library(purrr)
-library(gdxrrw)
 library(reshape2)
 library(quitte)
 library(ggplot2)
@@ -16,7 +16,6 @@ library(gridExtra)
 library(cowplot)
 library(lubridate)
 library(RColorBrewer)
-library(openxlsx)
 library(zoo)
 
 library(tibble)
@@ -30,6 +29,8 @@ library(lubridate)
 library(RColorBrewer)
 library("car")
 library(openxlsx)
+
+library(gdxrrw)
 
 packages <- c("gdxrrw", "reshape2", "quitte", "ggplot2", "dplyr", "tidyr", "grid", "readxl",
               "ggthemes", "gridExtra", "cowplot", "lubridate", "RColorBrewer", "openxlsx", "zoo" )
