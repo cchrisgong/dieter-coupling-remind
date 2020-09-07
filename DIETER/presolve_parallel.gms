@@ -1,1 +1,1 @@
-execute 'DIETER_parallel.sh';
+execute 'DIETER_parallel.sh'

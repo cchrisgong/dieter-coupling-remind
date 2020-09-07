@@ -13,7 +13,7 @@ $offtext
 
 
 *Fluctuating renewable Scenarios within each loop
-$include Scenario.gms
+*$include Scenario.gms
 
 *For endogenous VRE shares
 *parameter spv_share, wind_share_on, wind_share_off;
@@ -55,7 +55,6 @@ $setglobal second_hour ""
 $setglobal em_share ""
 $setglobal sec_hour "1"
 
-
 %second_hour%$ontext
 $setglobal sec_hour "8760/2208"
 $ontext
@@ -68,20 +67,32 @@ $if "%ror_parameter%" == "*" $if "%ror_variable%" == "*" $abort Choose appropria
 
 Sets
 *============== remind sets ==================
-se_remind   secondary energy of remind             /seel/
-yr          year for remind power sector
-t           year from remind to be loaded                
-te_remind   remind technonlogy					  /spv, wind/
-grade 	    remind grade level for technology	  /1*12/
-reg        region set                              /IND,DEU/
-r(reg)     one region set                          /IND/
+yr          year for remind power sector             /2015/
+yr_before   previous year from remind                /2010/
+*t           year from remind to be loaded                
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs/
+gas_remind  remind emission gases                    /co2/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
+
+pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol, pebiolc, peur,pehyd/
+se_remind   remind secondary energy                  /seel,seh2/
+*omf is for fixed O&M cost
+char_remind remind character                         /omf, lifetime/
+grade 	    remind grade level for technology	    /1*12/
+reg         region set                               /DEU/
 
 *============== DIETER sets ==================
-year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth/
+year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2018/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
+non_coal_ct(ct) Conv. Technologies except coal   /ror, nuc, CCGT, OCGT_eff, OCGT_ineff, bio/
+non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 res       Renewable technologies                 /Wind_on, Wind_off, Solar/
+flexTe    flexible sector coupling techno        /Electrolysis/
 sto       Storage technolgies                    /Sto1*Sto7/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -94,6 +105,7 @@ h         hour                                   /h1*h8760/
 
 Alias (h,hh) ;
 alias (res,resres) ;
+alias(se_remind,se_remind2);
 alias (reserves,reservesreserves) ;
 
 *==========
@@ -101,7 +113,17 @@ alias (reserves,reservesreserves) ;
 $include dataload.gms
 *$stop
 
-P_RES("Wind_off") = 0;
+Parameter P ratio of fixed power load and flexible power load /1/ ;
+Parameter totFixedLoad total fixed load;
+Parameter totFlexLoad total flexible load;
+Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
+Parameter capfac_ror constant cap. factor of hydro power /0.35/;
+Parameter r Investment interest rate /0.06/;
+Parameter disc_fac_con(ct) Discount factor for overnight investment;
+Parameter disc_fac_res(res) Discount factor for overnight investment;
+Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
+Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
+Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
 
 *==========
 
@@ -121,6 +143,7 @@ STO_IN(sto,h)    Storage inflow technology sto hour h in MWh
 STO_OUT(sto,h)   Storage outflow technology sto hour h in MWh
 STO_L(sto,h)     Storage level technology sto hour h in MWh
 
+P_RES(res)     Renewable technology built in MW
 N_CON(ct)        Conventional technology ct built in MW
 
 N_STO_E(sto)     Storage technology built - Energy in MWh
@@ -146,13 +169,180 @@ RP_DSM_SHIFT(reserves,dsm_shift,h)        Reserve provision by DSM load shifting
 demand
 ;
 
-P_RES("Solar") = sum(grade, remind_cap("2050", "DEU", "spv", grade)) * 1e6;
-P_RES("Wind_on") = sum(grade, remind_cap("2050", "DEU", "wind", grade)) * 1e6;
-*converting TWa to MWh
-DIETER_OLDtotdem = sum( h , d_y_reg('2013',"IND",h));
-d(h) = d_y_reg('2013',"IND", h) * remind_totdemand("2050", "DEU", "seel") * 365 * 24 * 1e6 / DIETER_OLDtotdem;
+****************
+*REMIND disinvestments cap: disinvestments = (early_reti(t) - early_reti(t-1) ) * cap(t) / (1 - early_reti(t)), it doesn't go into DIETER, I am only using DIETER for reporting
+earlyRetiCap_reporting("2015", reg, te_remind) = (remind_capEarlyReti("2015", reg, te_remind) - remind_capEarlyReti2("2010", reg, te_remind) ) * remind_cap("2015", reg, te_remind, "1")
+                                                                            / (1 - remind_capEarlyReti("2015", reg, te_remind)) ;
+
+****************
+*pass on VRE gen share from RM to DT instead of capacities, using the following transformation
+*(total generation X gen.share) / (cap.fac. X 8760) = capacity, where (total generation X gen.share) = generation
+*capacity = VRE_seProd / sum(h, cap.fac.(h))
+
+capfac_const(res) = sum(h, phi_res_y_reg("2018", "DEU", h, res));
+
+* the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSE(t) *(vm_deltacap(t)/vm_cap(t))
+preInv_remind_prodSe("2015", "DEU", pe_remind, se_remind, te_remind)$(remind_cap("2015", "DEU", te_remind, "1") ne 0 ) = remind_prodSe("2015", "DEU", pe_remind, se_remind, te_remind)
+                                                                       - remind_pm_ts("2015") /2 * remind_prodSe("2015", "DEU", pe_remind, se_remind, te_remind)
+                                                                       * remind_deltaCap("2015", "DEU", te_remind, "1")
+                                                                       /remind_cap("2015", "DEU", te_remind, "1");
+
+P_RES.lo("Solar") = preInv_remind_prodSe("2015", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2015", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+N_CON.lo("ror") = preInv_remind_prodSe("2015", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+P_RES.fx("Wind_off") = 0; 
+
+*****************
+* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) 
+preInv_remind_cap("2015", "DEU", te_remind, grade) = remind_cap("2015", "DEU", te_remind, grade) - remind_pm_ts("2015") /2 * remind_deltaCap("2015", "DEU", te_remind, grade);
+added_remind_cap("2015", "DEU", te_remind, grade) = remind_pm_ts("2015") /2 * remind_deltaCap("2015", "DEU", te_remind, grade);
+
+* half-half split between lig and hc for DEU
+*N_CON.lo("lig") = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*                    ) * 1e6 ;
+                    
+N_CON.lo("lig") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2;
+
+N_CON.lo("hc") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2;
+                    
+*N_CON.fx("hc") = 0;
+
+*N_CON.lo("ror") = sum(  grade, preInv_remind_cap("2015", "DEU", "hydro", grade)  ) * 1e6;
+
+
+N_CON.lo("nuc") = sum(te_remind,
+                   sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+                  ) * 1e6;
+
+*N_CON.fx("nuc") = 0;
+                    
+N_CON.fx("OCGT_ineff") = 0;
+
+N_CON.lo("CCGT") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+                    ) * 1e6;
+
+N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2015", "DEU", "ngt", grade)) * 1e6;
+      
+N_CON.lo("bio") =  sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+                    ) * 1e6;
+                
+*N_STO_P.fx('Sto1') = remind_cap("2015", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2015", "DEU", "storwind", "1") * 0.3* 1e6;
+
+N_STO_P.fx(sto) = 0 ;
+N_STO_P.fx(sto) = 0 ;
+N_STO_E.fx(sto) = 0 ;
+STO_IN.fx(sto,h) = 0 ;
+STO_OUT.fx(sto,h) = 0 ;
+STO_L.fx(sto,h) = 0 ;
+RP_STO_IN.fx(reserves,sto,h) = 0 ;
+RP_STO_OUT.fx(reserves,sto,h) = 0 ;
+
+*================================================================
+*================ read in fuel price from remind ================
+*1.2 is the conversion btw 2015$ and 2015$
+*1e12 is the conversion btw Trillion$ to $
+*remind_budget is kind of like inflation rate
+** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
+con_fuelprice_reg("lig",reg) = -remind_fuelcost("2015",reg,"pecoal") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg("hc",reg) = -remind_fuelcost("2015",reg,"pecoal") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg("CCGT",reg) = -remind_fuelcost("2015",reg,"pegas") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("OCGT_eff",reg) = con_fuelprice_reg("CCGT",reg);
+con_fuelprice_reg("bio",reg) = -remind_fuelcost("2015",reg,"pebiolc") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("nuc",reg) = -remind_fuelcost("2015",reg,"peur") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+
+
+*eta from remind
+** split pecoal into lignite and hc for rough comparison (not finalized)
+cdata("eta_con","lig") = remind_eta1("2015","DEU","pc");
+cdata("eta_con","hc") = remind_eta1("2015","DEU","pc") * 0.92;
+cdata("eta_con","CCGT") = remind_eta1("2015","DEU","ngcc");
+cdata("eta_con","OCGT_eff") = remind_eta1("2015","DEU","ngt");
+cdata("eta_con","bio") = remind_eta1("2015","DEU","bioigcc");
+cdata("eta_con","ror") = remind_eta2("2015","DEU","hydro");
+cdata("eta_con","nuc") = remind_eta2("2015","DEU","tnrs");
+
+*carbon content from remind
+*dieter value (tCO2/MWh) = remind value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = remind value * (44/12 * 1e9) / (8760000000) 
+cdata("carbon_content","lig") = remind_carboncontent("pecoal","seel","pc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+cdata("carbon_content","hc") = remind_carboncontent("pecoal","seel","pc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+cdata("carbon_content","CCGT") = remind_carboncontent("pegas","seel","ngcc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+
+c_m_reg(ct,reg) = con_fuelprice_reg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price + cdata("c_var_con",ct)   ;
+c_m(ct) = c_m_reg(ct,"DEU");
+
+*================================================================
+*=======annualize investment cost ==================
+*disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
+disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
+disc_fac_con("hc") = disc_fac_con("lig");
+disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
+disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
+disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "biochp") / (-1+(1+r) ** remind_lifetime("lifetime", "biochp")) ;
+disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
+disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
+
+disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
+disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
+
+*=======read in investment cost from remind ========
+*overnight investment cost
+*# conversion from tr USD 2015/TW to USD2015/MW
+** split pecoal into lignite and hc for rough comparison (not finalized):  set lignite as REMIND-pc cost + 300€/kW
+c_i_ovnt("lig") = remind_CapCost("2015", "DEU", "pc") * 1e6 * 1.2 ;
+c_i_ovnt("hc") = c_i_ovnt("lig") + 300000 ;
+c_i_ovnt("CCGT") = remind_CapCost("2015", "DEU", "ngcc")  * 1e6 * 1.2;
+c_i_ovnt("OCGT_eff") = remind_CapCost("2015", "DEU", "ngt") * 1e6 * 1.2;
+c_i_ovnt("bio") = remind_CapCost("2015", "DEU", "biochp") * 1e6 * 1.2;
+c_i_ovnt("ror") = remind_CapCost("2015", "DEU", "hydro") * 1e6 * 1.2;
+c_i_ovnt("nuc") = remind_CapCost("2015", "DEU", "tnrs") * 1e6 * 1.2;
+ 
+c_i_ovnt_res("Solar") = remind_CapCost("2015", "DEU", "spv") * 1e6 * 1.2 ;
+c_i_ovnt_res("Wind_on") = remind_CapCost("2015", "DEU", "wind") * 1e6 * 1.2;
+
+*annualized investment cost
+c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
+c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
+
+*================================================================
+*=======read in fixed OM cost from remind ========
+*note that omf is the proportion from overnight investment cost, not annualized
+** split pecoal into lignite and hc for rough comparison (not finalized)
+
+cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
+cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
+cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
+cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
+cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
+cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
+
+rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
+rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
+
+*================================================================
+*================ scale up demand ===============================
+DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
+totFixedLoad = remind_totdemand("2015", "DEU", "seel") * sm_TWa_2_MWh;
+*totFlexLoad = remind_totdemand("2015", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
+d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 *==========
+*scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
+DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
+phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
+*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
+
+phi_res(res,h) = phi_res_y_reg('2018',"DEU",h,res) ;
+
+
 
 
 Equations
@@ -162,13 +352,16 @@ obj                      Objective cost minimization
 * Energy balance
 con1a_bal                Supply Demand Balance in case of cost minimization
 
+* Flex load total
+*eq1_flexload
+
 * Load change costs
 con2a_loadlevel          Load change costs: Level
 con2b_loadlevelstart     Load change costs: Level for first period
 
 *full-load hours
-con2c_maxprodannual_conv Full load hour constraint (for coal)
-
+con2c_maxprodannual_conv Full load hour constraint (for non-nuclear conventional)
+con2c_maxprodannual_conv_nuc Full load hour constraint (for coal)
 * Capacity contraints and flexibility constraints
 con3a_maxprod_conv       Capacity Constraint conventionals
 con3b_minprod_conv       Minimum production conventionals if reserves contracted
@@ -219,8 +412,8 @@ con7b_DSMshift_granular_max      Maximum shifting in either direction per period
 con7c_DSM_distrib_up             Distribution of upshifts between wholesale and reserves
 con7d_DSM_distrib_do             Distribution of downshifts between wholesale and reserves
 con7e_DSMshift_recovery          Recovery times
-con7f_DSMshift_profile           AC profile to give DSM a time-dependant nature
-con7g_DSMshift_profile_maxACpower      Maximum AC power limit
+*con7f_DSMshift_profile           AC profile to give DSM a time-dependant nature
+*con7g_DSMshift_profile_maxACpower      Maximum AC power limit
 * Maximum installation conditions
 con8a_max_I_con                 Maximum installable capacity: Conventionals
 con8b_max_I_res                 Maximum installable capacity: Renewables
@@ -319,6 +512,10 @@ $ontext
 $offtext
 ;
 
+*eq1_flexload..
+*         sum( h , d2(h))  =E=  totFlexLoad
+*;
+*
 con2a_loadlevel(ct,h)$(ord(h) > 1)..
         G_L(ct,h) =E= G_L(ct,h-1) + G_UP(ct,h) - G_DO(ct,h)
 ;
@@ -328,12 +525,15 @@ con2b_loadlevelstart(ct,'h1')..
 ;
 
 * ---------------------------------------------------------------------------- *
-*==========           cONSTRAINING ANNUAL FULL/LOAD HOURS FOR CONVENTIONAL TECHNOLOGIES   *==========
+*==========           CONSTRAINING ANNUAL FULL/LOAD HOURS FOR CONVENTIONAL TECHNOLOGIES   *==========
 * ---------------------------------------------------------------------------- *
-con2c_maxprodannual_conv(ct)$(ord(ct)>1 )..
-       sum(h, G_L(ct,h) ) =L=  0.85*8760*N_CON(ct)
+con2c_maxprodannual_conv(ct)$(non_nuc_ct(ct))..
+       sum(h, G_L(ct,h) ) =L= 0.8*8760*N_CON(ct)
 ;
 
+con2c_maxprodannual_conv_nuc("nuc")..
+       sum(h, G_L("nuc",h) ) =L= 0.85*8760*N_CON("nuc")
+;
 
 * ---------------------------------------------------------------------------- *
 *==========           Hourly maximum generation caps and constraints related to reserves   *==========
@@ -459,7 +659,7 @@ con3i_maxprod_ror(h)..
         + RP_CON('MR_do','ror',h) * phi_reserves_call('MR_do',h)
 $ontext
 $offtext
-        =L= phi_ror("2013","IND",h)*N_CON('ror')
+        =L= capfac_ror *N_CON('ror')
 ;
 
 con3j_minprod_ror(h)..
@@ -588,31 +788,31 @@ con4k_PHS_EtoP('Sto5')..
 
 
 
-
-con5a_spv_share..
-sum( h , G_RES("Solar",h))
-        =E= spv_share * sum(h,d(h)) ;
-
-con5b_wind_on_share..
-sum( h , (G_RES("Wind_on",h) ))
-        =E= wind_share_on * sum(h,d(h));
-
-
-con5c_wind_off_share..
-        sum( h , (G_RES("Wind_off",h)+CU("Wind_off",h) ))
-        =E= wind_share_off * sum(h,d(h));
-
-
-con5d_maxBIO..
-         sum( h , G_L('bio',h) ) =L= cdata("m_con_e",'bio')
-;
-
-
-*power to gas share
-con5e_P2Gshare..
-sum( h , STO_OUT("sto7",h) )
-        =E= p2g_share * sum(h,d(h)) ;
-
+*
+*con5a_spv_share..
+*sum( h , G_RES("Solar",h))
+*        =E= spv_share * sum(h,d(h)) ;
+*
+*con5b_wind_on_share..
+*sum( h , (G_RES("Wind_on",h) ))
+*        =E= wind_share_on * sum(h,d(h));
+*
+*
+*con5c_wind_off_share..
+*        sum( h , (G_RES("Wind_off",h)+CU("Wind_off",h) ))
+*        =E= wind_share_off * sum(h,d(h));
+*
+*
+*con5d_maxBIO..
+*         sum( h , G_L('bio',h) ) =L= cdata("m_con_e",'bio')
+*;
+*
+*
+**power to gas share
+*con5e_P2Gshare..
+*sum( h , STO_OUT("sto7",h) )
+*        =E= p2g_share * sum(h,d(h)) ;
+*
 
 
 * ---------------------------------------------------------------------------- *
@@ -686,26 +886,26 @@ con7e_DSMshift_recovery(dsm_shift,h)..
          sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_shift("t_off_dsm_shift",dsm_shift) ) , DSM_UP(dsm_shift,hh))
          =L= N_DSM_SHIFT(dsm_shift) * dsmdata_shift("t_dur_dsm_shift",dsm_shift)
 ;
-con7f_DSMshift_profile(dsm_shift,h)..
-
-        DSM_DO_DEMAND(dsm_shift,h)
-
-           =L=
-
-phi_AC('2013','IND',h)* N_DSM_SHIFT(dsm_shift)
-
-;
-
-
-con7g_DSMshift_profile_maxACpower(dsm_shift,h)..
-
-        DSM_UP_DEMAND(dsm_shift,h)
-
-           =L=
-
-        1.2 * N_DSM_SHIFT(dsm_shift) -  N_DSM_SHIFT(dsm_shift)* phi_AC('2013','IND',h)
-;
-
+*con7f_DSMshift_profile(dsm_shift,h)..
+*
+*        DSM_DO_DEMAND(dsm_shift,h)
+*
+*           =L=
+*
+*phi_AC('2013','IND',h)* N_DSM_SHIFT(dsm_shift)
+*
+*;
+*
+*
+*con7g_DSMshift_profile_maxACpower(dsm_shift,h)..
+*
+*        DSM_UP_DEMAND(dsm_shift,h)
+*
+*           =L=
+*
+*        1.2 * N_DSM_SHIFT(dsm_shift) -  N_DSM_SHIFT(dsm_shift)* phi_AC('2013','IND',h)
+*;
+*
 * ---------------------------------------------------------------------------- *
 *==========           Maximum installation constraints *==========
 * ---------------------------------------------------------------------------- *
@@ -769,10 +969,12 @@ model DIETER /
 obj
 
 con1a_bal
+*eq1_flexload
 con2a_loadlevel
 con2b_loadlevelstart
 
 con2c_maxprodannual_conv
+con2c_maxprodannual_conv_nuc
 
 con3a_maxprod_conv
 con3i_maxprod_ror
@@ -788,12 +990,12 @@ con4i_maxin_lev
 con4j_ending
 con4k_PHS_EtoP
 
-con5d_maxBIO
+*con5d_maxBIO
 
-con8a_max_I_con
-con8b_max_I_res
-con8c_max_I_sto_e
-con8d_max_I_sto_p
+*con8a_max_I_con
+*con8b_max_I_res
+*con8c_max_I_sto_e
+*con8d_max_I_sto_p
 
 %DSM%$ontext
 con6a_DSMcurt_duration_max
@@ -803,9 +1005,9 @@ con7a_DSMshift_upanddown
 con7b_DSMshift_granular_max
 con7c_DSM_distrib_up
 con7d_DSM_distrib_do
-* con_7e_DSMshift_recovery
-con7f_DSMshift_profile
-con7g_DSMshift_profile_maxACpower
+*con_7e_DSMshift_recovery
+*con7f_DSMshift_profile
+*con7g_DSMshift_profile_maxACpower
 
 con8e_max_I_dsm_cu
 con8f_max_I_dsm_shift_pos
@@ -836,7 +1038,13 @@ $offtext
 *==========           Options, fixings, report preparation *==========
 *==========
 
-* Parameters for the report file
+*==========
+*==========           SOLVER OPTIONS *==========
+*==========
+
+option lp = cplex;
+option threads = 6;
+
 parameter
 corr_fac_con
 corr_fac_res
@@ -844,25 +1052,24 @@ corr_fac_sto
 corr_fac_dsm_cu
 corr_fac_dsm_shift
 gross_energy_demand
-
+calc_maxprice
+calc_minprice
+report4RM
+report
+report_tech
+report_tech_hours
+report_hours
+report_reserves
+report_reserves_hours
+report_reserves_tech
+report_reserves_tech_hours
+res_min
 ;
 
-
-* Parameters for default base year
-*d(h) = d_y('2013',h) ;
-*phi_res(res,h) = phi_res_y('2013',res,h) ;
-phi_reserves_call(reserves,h) = phi_reserves_call_y('2013',h,reserves) ;
-phi_mean_reserves_call(reserves) = phi_mean_reserves_call_y('2013',reserves) ;
-
-
-
-*==========
-*==========           Solve *==========
-*==========
-
-
-phi_res(res,h) = phi_res_y_reg('2013',"IND",h,res) ;
-c_m(ct) = c_m_reg(ct,"IND");
+* Min and max for prices
+calc_maxprice = 0 ;
+calc_minprice = 1000 ;
+res_min       = 0;
 
 * Assign default correction factors
 corr_fac_con(ct,h) = 0 ;
@@ -871,21 +1078,37 @@ corr_fac_sto(sto,h) = 0 ;
 corr_fac_dsm_cu(dsm_curt,h) = 0 ;
 corr_fac_dsm_shift(dsm_shift,h) = 0 ;
 
-set varname /Capacity/;
-Parameter report(yr, varname, sto) 'report';
-
-*==========
-*==========           SOLVER OPTIONS *==========
-*==========
-
-option lp = cplex;
-option threads = 6;
-
 solve DIETER using lp minimizing Z ;
-  
-report("2050", varname, sto) = N_STO_P.l(sto);
+$include reporting.gms
 
-execute_unload "results_DIETER_2", report ;
+report4RM(yr,reg,ct,'capacity') = N_CON.l(ct);
+report4RM(yr,reg,res,'capacity') = P_RES.l(res);
+
+report4RM(yr,reg,"all_te",'peakDem_relFac') = SMax(h, d(h))/sum(h,d(h));
+
+report4RM(yr,reg,"all_te",'peakDem') = SMax(h, d(h));
+
+report4RM(yr,reg,ct,'capfac')$( N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h));
+*combine hc and lig together into one CF to pass onto REMIND
+report4RM(yr,reg,'coal','capfac')$( N_CON.l("hc") + N_CON.l("lig") ne 0 ) = sum( h , (G_L.l("hc",h) + G_L.l("lig",h))) / ((N_CON.l("hc") + N_CON.l("lig")) * card(h));
+report4RM(yr,reg,res,'capfac')$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h));
+
+report4RM(yr,reg,res,'generation') = sum( h , G_RES.l(res,h) );
+report4RM(yr,reg,ct,'generation') = sum( h , G_L.l(ct,h) );
+
+*also export zero values (prevent compression)
+report4RM(yr,reg,ct,'capacity')$(not report4RM(yr,reg,ct,'capacity')) = eps;
+report4RM(yr,reg,res,'capacity')$(not report4RM(yr,reg,res,'capacity')) = eps;
+report4RM(yr,reg,ct,'capfac')$(not report4RM(yr,reg,ct,'capfac')) = eps;
+report4RM(yr,reg,'coal','capfac')$(not report4RM(yr,reg,'coal','capfac')) = eps;
+report4RM(yr,reg,res,'capfac')$(not report4RM(yr,reg,res,'capfac')) = eps;
+report4RM(yr,reg,ct,'generation')$(not report4RM(yr,reg,ct,'generation')) = eps;
+report4RM(yr,reg,res,'generation')$(not report4RM(yr,reg,res,'generation')) = eps;
+
+execute_unload "results_DIETER_y2", report4RM;
+
+execute_unload "full_DIETER_y2";
+execute_unload "report_DIETER_y2", report, report_tech, report_hours, report_tech_hours;
 
 %write_to_excel%$ontext
 $include report_to_excel
@@ -896,3 +1119,4 @@ $offtext
 * ---------------------------------------------------------------------------- *
 * ---------------------------------------------------------------------------- *
 * ---------------------------------------------------------------------------- *
+
