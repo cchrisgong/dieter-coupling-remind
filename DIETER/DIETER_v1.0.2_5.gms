@@ -77,7 +77,7 @@ NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
 BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
 NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
 
-pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol, pebiolc, peur,pehyd/
+pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, lifetime/
@@ -89,7 +89,7 @@ year      yearly time data                       /2011, 2012, 2013, 2013_windons
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
-non_coal_ct(ct) Conv. Technologies except coal   /ror, nuc, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 res       Renewable technologies                 /Wind_on, Wind_off, Solar/
 flexTe    flexible sector coupling techno        /Electrolysis/
@@ -124,6 +124,10 @@ Parameter disc_fac_res(res) Discount factor for overnight investment;
 Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
 Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
 Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
+Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional
+Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable
+Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
+Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for conventional
 
 *==========
 
@@ -187,21 +191,47 @@ preInv_remind_prodSe("2030", "DEU", pe_remind, se_remind, te_remind)$(remind_cap
                                                                        * remind_deltaCap("2030", "DEU", te_remind, "1")
                                                                        /remind_cap("2030", "DEU", te_remind, "1");
 
+**********************************************************************
+*Remind post-investment cap ( TW-> MW )
+RM_postInv_cap_con(yr,reg,"coal") = sum(te_remind, sum( grade, remind_cap(yr, reg, te_remind, grade)$(COALte(te_remind)) )) * 1e6;
+RM_postInv_cap_con(yr,reg,"CCGT") =  sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(NonPeakGASte(te_remind)) )) * 1e6;
+RM_postInv_cap_con(yr,reg,"OCGT_eff") = sum(   grade, remind_cap(yr, reg, "ngt", grade) )* 1e6;
+RM_postInv_cap_con(yr,reg,"bio") = sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(BIOte(te_remind)) )) * 1e6;
+RM_postInv_cap_con(yr,reg,"nuc") = sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(NUCte(te_remind)) )) * 1e6;
+RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grade)) * 1e6;
+RM_postInv_cap_res(yr,reg,"Wind_on") = sum( grade, remind_cap(yr, reg, "wind", grade))* 1e6;
+RM_postInv_cap_con(yr,reg,"ror") = sum( grade, remind_cap(yr, reg, "hydro", grade)) * 1e6;
+
+* Remind post-investment gen for reporting ( TWa-> MWh )
+RM_postInv_prodSe_con(yr,reg,"coal") = sum(te_remind, remind_prodSe(yr,reg, "pecoal", "seel", te_remind)$(COALte(te_remind)) )* sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,"CCGT") = sum(te_remind, remind_prodSe(yr,reg, "pegas", "seel", te_remind)$(NonPeakGASte(te_remind)) )* sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,"OCGT_eff") = remind_prodSe(yr,reg, "pegas", "seel", "ngt") * sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,"bio") = sum(te_remind, remind_prodSe(yr,reg, "pebiolc", "seel", te_remind)$(BIOte(te_remind)) )* sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,"nuc") = sum(te_remind, remind_prodSe(yr,reg, "peur", "seel", te_remind)$(NUCte(te_remind)) )* sm_TWa_2_MWh;
+RM_postInv_prodSe_res(yr,reg,"Solar") = remind_prodSe(yr, reg, "pesol", "seel", "spv")* sm_TWa_2_MWh;
+RM_postInv_prodSe_res(yr,reg,"Wind_on") = remind_prodSe(yr, reg, "pewin", "seel", "wind")* sm_TWa_2_MWh ;
+RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
+**********************************************************************
+
+P_RES.fx("Wind_off") = 0; 
+N_CON.fx("OCGT_ineff") = 0;
+
+**********************************************************************
+*********************** VALIDATION MODE ******************************
+***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
+**********************************************************************
+
 P_RES.lo("Solar") = preInv_remind_prodSe("2030", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2030", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
 N_CON.lo("ror") = preInv_remind_prodSe("2030", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
-P_RES.fx("Wind_off") = 0; 
 
 *****************
-* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) 
-preInv_remind_cap("2030", "DEU", te_remind, grade) = remind_cap("2030", "DEU", te_remind, grade) - remind_pm_ts("2030") /2 * remind_deltaCap("2030", "DEU", te_remind, grade);
-added_remind_cap("2030", "DEU", te_remind, grade) = remind_pm_ts("2030") /2 * remind_deltaCap("2030", "DEU", te_remind, grade);
+* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) 
+preInv_remind_cap("2030", "DEU", te_remind, grade) = remind_cap("2030", "DEU", te_remind, grade) - remind_pm_ts("2030") / 2 * remind_deltaCap("2030", "DEU", te_remind, grade) * (1 - remind_capEarlyReti("2030", "DEU", te_remind));
+added_remind_cap("2030", "DEU", te_remind, grade) = remind_pm_ts("2030") / 2 * remind_deltaCap("2030", "DEU", te_remind, grade);
 
 * half-half split between lig and hc for DEU
-*N_CON.lo("lig") = sum(te_remind,
-*                    sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(COALte(te_remind))   )
-*                    ) * 1e6 ;
-                    
+* TW-> MW
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
@@ -210,29 +240,46 @@ N_CON.lo("hc") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
                     
-*N_CON.fx("hc") = 0;
-
-*N_CON.lo("ror") = sum(  grade, preInv_remind_cap("2030", "DEU", "hydro", grade)  ) * 1e6;
-
-
 N_CON.lo("nuc") = sum(te_remind,
                    sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(NUCte(te_remind))   )
                   ) * 1e6;
-
-*N_CON.fx("nuc") = 0;
-                    
-N_CON.fx("OCGT_ineff") = 0;
 
 N_CON.lo("CCGT") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
                     ) * 1e6;
 
 N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2030", "DEU", "ngt", grade)) * 1e6;
+
       
 N_CON.lo("bio") =  sum(te_remind,
                     sum(   grade, preInv_remind_cap("2030", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
-                
+              
+**********************************************************************
+*********************** END OF VALIDATION MODE ***********************
+**********************************************************************
+
+**********************************************************************
+*********************** COUPLED MODE ******************************
+***   THIS MEANS CAP FROM REMIND IS PASSED AS FIXED BOUNDS ********
+**********************************************************************
+
+*P_RES.fx("Solar") = remind_prodSe("2030", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
+*P_RES.fx("Wind_on") = remind_prodSe("2030", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+*N_CON.fx("ror") = remind_prodSe("2030", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+*N_CON.fx("CCGT")= RM_postInv_cap_con("2030", "DEU", "CCGT") ;
+*N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2030", "DEU", "OCGT_eff") ;
+*N_CON.fx("bio")= RM_postInv_cap_con("2030", "DEU", "bio") ;
+*N_CON.fx("nuc")= RM_postInv_cap_con("2030", "DEU", "nuc") ;
+*N_CON.fx("lig") = RM_postInv_cap_con("2030", "DEU", "coal")/2 ;
+*N_CON.fx("hc") = RM_postInv_cap_con("2030", "DEU", "coal")/2 ;
+
+**********************************************************************
+*********************** END OF COUPLED MODE ***********************
+**********************************************************************
+
+
+  
 *N_STO_P.fx('Sto1') = remind_cap("2030", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2030", "DEU", "storwind", "1") * 0.3* 1e6;
 
 N_STO_P.fx(sto) = 0 ;
@@ -246,7 +293,7 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *================================================================
 *================ read in fuel price from remind ================
-*1.2 is the conversion btw 2030$ and 2030$
+*1.2 is the conversion btw 2025$ and 2015$
 *1e12 is the conversion btw Trillion$ to $
 *remind_budget is kind of like inflation rate
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
@@ -256,7 +303,7 @@ con_fuelprice_reg("CCGT",reg) = -remind_fuelcost("2030",reg,"pegas") / (-remind_
 con_fuelprice_reg("OCGT_eff",reg) = con_fuelprice_reg("CCGT",reg);
 con_fuelprice_reg("bio",reg) = -remind_fuelcost("2030",reg,"pebiolc") / (-remind_budget("2030",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg("nuc",reg) = -remind_fuelcost("2030",reg,"peur") / (-remind_budget("2030",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-
+con_fuelprice_reg("ror",reg) = 0;
 
 *eta from remind
 ** split pecoal into lignite and hc for rough comparison (not finalized)
@@ -294,7 +341,7 @@ disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1
 
 *=======read in investment cost from remind ========
 *overnight investment cost
-*# conversion from tr USD 2030/TW to USD2030/MW
+*# conversion from tr USD 2025/TW to USD2015/MW
 ** split pecoal into lignite and hc for rough comparison (not finalized):  set lignite as REMIND-pc cost + 300€/kW
 c_i_ovnt("lig") = remind_CapCost("2030", "DEU", "pc") * 1e6 * 1.2 ;
 c_i_ovnt("hc") = c_i_ovnt("lig") + 300000 ;
@@ -341,8 +388,6 @@ phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on"
 *phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
 
 phi_res(res,h) = phi_res_y_reg('2018',"DEU",h,res) ;
-
-
 
 
 Equations
@@ -437,9 +482,10 @@ con10b_reserve_prov_PR          Reserve provision PR
 obj..
          Z =E=
                  sum( (ct,h) , c_m(ct)*G_L(ct,h) )
-                 + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
-                 + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
-                 + sum( (res,h) , rdata("c_cu",res)*CU(res,h) )
+*  turning off ramping cost for the coupled version for consistency reasons
+*                 + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
+*                 + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
+*                 + sum( (res,h) , rdata("c_cu",res)*CU(res,h) )
                  + sum( (sto,h) , stodata("c_m_sto",sto) * ( STO_OUT(sto,h) + STO_IN(sto,h) ) )
 %DSM%$ontext
                  + sum( (dsm_curt,h) , dsmdata_cu("c_m_dsm_cu",dsm_curt)*DSM_CU(dsm_curt,h) )

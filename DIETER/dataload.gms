@@ -68,6 +68,10 @@ remind_capEarlyReti2(yr_before, reg, te_remind)
 vm_capEarlyReti(yr, reg, te_remind)
 earlyRetiCap_reporting(yr, reg, te_remind)
 *-------------------------------------
+*for reporting REMIND
+remind_CF(yr,reg,te_remind)
+pm_cf(yr,reg,te_remind)
+*-------------------------------------
 remind_totdemand_inMWh
 sm_TWa_2_MWh Conversion factor between TWa and MWh /8760000000/
 *-------------------------------------
@@ -106,6 +110,7 @@ $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
+$load  remind_CF = pm_cf
 $gdxin
 
 Parameters

@@ -17,8 +17,8 @@ def rewriteGAMS(i, filename_i):
 
 	for j in range(len(lines)):
 		line = lines[j]
-		line = line.replace("2010", str(year_list[i]))
-		line = line.replace("2005", str(year_list[i-1]))
+		line = line.replace(str(year_list[1]), str(year_list[i]))
+		line = line.replace(str(year_list[0]), str(year_list[i-1]))
 		line = line.replace("results_DIETER_y1", "results_DIETER_y"+ str(i) )
 		line = line.replace("full_DIETER_y1", "full_DIETER_y"+ str(i) )
 		line = line.replace("report_DIETER_y1", "report_DIETER_y"+ str(i) )
@@ -27,7 +27,7 @@ def rewriteGAMS(i, filename_i):
 	f2.close()
 
 if __name__ == "__main__":
-	for i in range(2,16):
+	for i in range(2,len(year_list)):
 		filename_i = "DIETER_v1.0.2_"+ str(i) + ".gms"
 		rewriteGAMS(i, filename_i)
 
