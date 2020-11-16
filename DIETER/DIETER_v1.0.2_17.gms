@@ -6,7 +6,7 @@ Written by Alexander Zerrahn and Wolf-Peter Schill.
 This work is licensed under the MIT License (MIT).
 For more information on this license, visit http://opensource.org/licenses/mit-license.php.
 Whenever you use this code, please refer to http://www.diw.de/DIETER.
-This version constitutes a minor revision of the model documented in Zerrahn, A., Schill, W.-P. (2015): A greenfield model to evaluate long-run power storage requirements for high shares of renewables. DIW Discussion Paper 1457. http://www.diw.de/documents/publikationen/73/diw_01.c.498475.de/dp1457.pdf
+This version constitutes a minor revision of the model documented in Zerrahn, A., Schill, W.-P. (2130): A greenfield model to evaluate long-run power storage requirements for high shares of renewables. DIW Discussion Paper 1457. http://www.diw.de/documents/publikationen/73/diw_01.c.498475.de/dp1457.pdf
 We are happy to receive feedback under azerrahn@diw.de and wschill@diw.de.
 $offtext
 *==========
@@ -67,8 +67,8 @@ $if "%ror_parameter%" == "*" $if "%ror_variable%" == "*" $abort Choose appropria
 
 Sets
 *============== remind sets ==================
-yr          year for remind power sector             /2015/
-yr_before   previous year from remind                /2010/
+yr          year for remind power sector             /2130/
+yr_before   previous year from remind                /2110/
 *t           year from remind to be loaded                
 te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs/
 gas_remind  remind emission gases                    /co2/
@@ -175,7 +175,7 @@ demand
 
 ****************
 *REMIND disinvestments cap: disinvestments = (early_reti(t) - early_reti(t-1) ) * cap(t) / (1 - early_reti(t)), it doesn't go into DIETER, I am only using DIETER for reporting
-earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = (remind_capEarlyReti(yr, reg, te_remind) - remind_capEarlyReti2("2010", reg, te_remind) ) * remind_cap(yr, reg, te_remind, "1")
+earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = (remind_capEarlyReti(yr, reg, te_remind) - remind_capEarlyReti2("2110", reg, te_remind) ) * remind_cap(yr, reg, te_remind, "1")
                                                                             / (1 - remind_capEarlyReti(yr, reg, te_remind)) ;
 ****************
 *pass on VRE gen share from RM to DT instead of capacities, using the following transformation
@@ -220,9 +220,9 @@ N_CON.fx("OCGT_ineff") = 0;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 
-P_RES.lo("Solar") = preInv_remind_prodSe("2015", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2015", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
-N_CON.lo("ror") = preInv_remind_prodSe("2015", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+P_RES.lo("Solar") = preInv_remind_prodSe("2130", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2130", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+N_CON.lo("ror") = preInv_remind_prodSe("2130", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 
 *****************
 * the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) 
@@ -233,71 +233,71 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 * TW-> MW
 
 N_CON.lo("lig") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
 
 N_CON.lo("hc") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
                     
 N_CON.lo("nuc") = sum(te_remind,
-                   sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+                   sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(NUCte(te_remind))   )
                   ) * 1e6;
 
 N_CON.lo("CCGT") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
                     ) * 1e6;
 
-N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2015", "DEU", "ngt", grade)) * 1e6;
+N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2130", "DEU", "ngt", grade)) * 1e6;
 
       
 N_CON.lo("bio") =  sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
                     
 *
 *** if no early retirement from last REMIND iteration, DIETER gets REMIND capacity as lower bound      
-*N_CON.lo("lig")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(COALte(te_remind))) = 0) = sum(te_remind,
-*                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*N_CON.lo("lig")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(COALte(te_remind))) = 0) = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(COALte(te_remind))   )
 *                    ) * 1e6 /2;
 *
-*N_CON.lo("hc")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(COALte(te_remind))) = 0) = sum(te_remind,
-*                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*N_CON.lo("hc")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(COALte(te_remind))) = 0) = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(COALte(te_remind))   )
 *                    ) * 1e6 /2;
 *                    
-*N_CON.lo("nuc")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(NUCte(te_remind))) = 0)  = sum(te_remind,
-*                   sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+*N_CON.lo("nuc")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(NUCte(te_remind))) = 0)  = sum(te_remind,
+*                   sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(NUCte(te_remind))   )
 *                  ) * 1e6;
 *
-*N_CON.lo("CCGT")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(NonPeakGASte(te_remind))) = 0) = sum(te_remind,
-*                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+*N_CON.lo("CCGT")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(NonPeakGASte(te_remind))) = 0) = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
 *                    ) * 1e6;
 *
-*N_CON.lo("OCGT_eff")$(earlyRetiCap_reporting("2015", "DEU", "ngt") = 0) = sum(grade, preInv_remind_cap("2015", "DEU", "ngt", grade)) * 1e6;
+*N_CON.lo("OCGT_eff")$(earlyRetiCap_reporting("2130", "DEU", "ngt") = 0) = sum(grade, preInv_remind_cap("2130", "DEU", "ngt", grade)) * 1e6;
 *
 *      
-*N_CON.lo("bio")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(BIOte(te_remind))) = 0) =  sum(te_remind,
-*                    sum(   grade, preInv_remind_cap("2015", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+*N_CON.lo("bio")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(BIOte(te_remind))) = 0) =  sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2130", "DEU", te_remind, grade)$(BIOte(te_remind))   )
 *                    ) * 1e6;
 *
 **** if there is early retirement from last REMIND iteration, DIETER gets REMIND capacity as fx
-*N_CON.fx("lig")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(COALte(te_remind))) > 0) =
-*                        RM_postInv_cap_con("2015", "DEU", "coal") * 1e6 /2;
+*N_CON.fx("lig")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(COALte(te_remind))) > 0) =
+*                        RM_postInv_cap_con("2130", "DEU", "coal") * 1e6 /2;
 *
-*N_CON.fx("hc")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(COALte(te_remind))) > 0) =
-*                        RM_postInv_cap_con("2015", "DEU", "coal") * 1e6 /2;
+*N_CON.fx("hc")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(COALte(te_remind))) > 0) =
+*                        RM_postInv_cap_con("2130", "DEU", "coal") * 1e6 /2;
 *                    
-*N_CON.fx("nuc")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(NUCte(te_remind))) > 0)  =
-*                        RM_postInv_cap_con("2015", "DEU", "nuc") * 1e6;
+*N_CON.fx("nuc")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(NUCte(te_remind))) > 0)  =
+*                        RM_postInv_cap_con("2130", "DEU", "nuc") * 1e6;
 *
-*N_CON.fx("CCGT")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(NonPeakGASte(te_remind))) > 0) =
-*                        RM_postInv_cap_con("2015", "DEU", "CCGT") * 1e6;
+*N_CON.fx("CCGT")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(NonPeakGASte(te_remind))) > 0) =
+*                        RM_postInv_cap_con("2130", "DEU", "CCGT") * 1e6;
 *
-*N_CON.fx("OCGT_eff")$(earlyRetiCap_reporting("2015", "DEU", "ngt") > 0) = RM_postInv_cap_con("2015", "DEU", "OCGT_eff") * 1e6;
+*N_CON.fx("OCGT_eff")$(earlyRetiCap_reporting("2130", "DEU", "ngt") > 0) = RM_postInv_cap_con("2130", "DEU", "OCGT_eff") * 1e6;
 *
 *
-*N_CON.fx("bio")$(sum(te_remind, earlyRetiCap_reporting("2015", "DEU", te_remind)$(BIOte(te_remind))) > 0) =
-*                        RM_postInv_cap_con("2015", "DEU", "bio") * 1e6;
+*N_CON.fx("bio")$(sum(te_remind, earlyRetiCap_reporting("2130", "DEU", te_remind)$(BIOte(te_remind))) > 0) =
+*                        RM_postInv_cap_con("2130", "DEU", "bio") * 1e6;
                     
 **********************************************************************
 *********************** END OF VALIDATION MODE ***********************
@@ -308,15 +308,15 @@ N_CON.lo("bio") =  sum(te_remind,
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS FIXED BOUNDS ********
 **********************************************************************
 
-*P_RES.fx("Solar") = remind_prodSe("2015", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-*P_RES.fx("Wind_on") = remind_prodSe("2015", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
-*N_CON.fx("ror") = remind_prodSe("2015", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
-*N_CON.fx("CCGT")= RM_postInv_cap_con("2015", "DEU", "CCGT") ;
-*N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2015", "DEU", "OCGT_eff") ;
-*N_CON.fx("bio")= RM_postInv_cap_con("2015", "DEU", "bio") ;
-*N_CON.fx("nuc")= RM_postInv_cap_con("2015", "DEU", "nuc") ;
-*N_CON.fx("lig") = RM_postInv_cap_con("2015", "DEU", "coal")/2 ;
-*N_CON.fx("hc") = RM_postInv_cap_con("2015", "DEU", "coal")/2 ;
+*P_RES.fx("Solar") = remind_prodSe("2130", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
+*P_RES.fx("Wind_on") = remind_prodSe("2130", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+*N_CON.fx("ror") = remind_prodSe("2130", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+*N_CON.fx("CCGT")= RM_postInv_cap_con("2130", "DEU", "CCGT") ;
+*N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2130", "DEU", "OCGT_eff") ;
+*N_CON.fx("bio")= RM_postInv_cap_con("2130", "DEU", "bio") ;
+*N_CON.fx("nuc")= RM_postInv_cap_con("2130", "DEU", "nuc") ;
+*N_CON.fx("lig") = RM_postInv_cap_con("2130", "DEU", "coal")/2 ;
+*N_CON.fx("hc") = RM_postInv_cap_con("2130", "DEU", "coal")/2 ;
 
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
@@ -324,7 +324,7 @@ N_CON.lo("bio") =  sum(te_remind,
 
 
   
-*N_STO_P.fx('Sto1') = remind_cap("2015", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2015", "DEU", "storwind", "1") * 0.3* 1e6;
+*N_STO_P.fx('Sto1') = remind_cap("2130", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2130", "DEU", "storwind", "1") * 0.3* 1e6;
 
 N_STO_P.fx(sto) = 0 ;
 N_STO_P.fx(sto) = 0 ;
@@ -337,27 +337,27 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *================================================================
 *================ read in fuel price from remind ================
-*1.2 is the conversion btw 2010$ and 2015$
+*1.2 is the conversion btw 2110$ and 2015$
 *1e12 is the conversion btw Trillion$ to $
 *remind_budget is kind of like inflation rate
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
-con_fuelprice_reg("lig",reg) = -remind_fuelcost("2015",reg,"pecoal") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
-con_fuelprice_reg("hc",reg) = -remind_fuelcost("2015",reg,"pecoal") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
-con_fuelprice_reg("CCGT",reg) = -remind_fuelcost("2015",reg,"pegas") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("lig",reg) = -remind_fuelcost("2130",reg,"pecoal") / (-remind_budget("2130",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg("hc",reg) = -remind_fuelcost("2130",reg,"pecoal") / (-remind_budget("2130",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg("CCGT",reg) = -remind_fuelcost("2130",reg,"pegas") / (-remind_budget("2130",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg("OCGT_eff",reg) = con_fuelprice_reg("CCGT",reg);
-con_fuelprice_reg("bio",reg) = -remind_fuelcost("2015",reg,"pebiolc") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg("nuc",reg) = -remind_fuelcost("2015",reg,"peur") / (-remind_budget("2015",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("bio",reg) = -remind_fuelcost("2130",reg,"pebiolc") / (-remind_budget("2130",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("nuc",reg) = -remind_fuelcost("2130",reg,"peur") / (-remind_budget("2130",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg("ror",reg) = 0;
 
 *eta from remind
 ** split pecoal into lignite and hc for rough comparison (not finalized)
-cdata("eta_con","lig") = remind_eta1("2015","DEU","pc");
-cdata("eta_con","hc") = remind_eta1("2015","DEU","pc") * 0.92;
-cdata("eta_con","CCGT") = remind_eta1("2015","DEU","ngcc");
-cdata("eta_con","OCGT_eff") = remind_eta1("2015","DEU","ngt");
-cdata("eta_con","bio") = remind_eta1("2015","DEU","bioigcc");
-cdata("eta_con","ror") = remind_eta2("2015","DEU","hydro");
-cdata("eta_con","nuc") = remind_eta2("2015","DEU","tnrs");
+cdata("eta_con","lig") = remind_eta1("2130","DEU","pc");
+cdata("eta_con","hc") = remind_eta1("2130","DEU","pc") * 0.92;
+cdata("eta_con","CCGT") = remind_eta1("2130","DEU","ngcc");
+cdata("eta_con","OCGT_eff") = remind_eta1("2130","DEU","ngt");
+cdata("eta_con","bio") = remind_eta1("2130","DEU","bioigcc");
+cdata("eta_con","ror") = remind_eta2("2130","DEU","hydro");
+cdata("eta_con","nuc") = remind_eta2("2130","DEU","tnrs");
 
 *carbon content from remind
 *dieter value (tCO2/MWh) = remind value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = remind value * (44/12 * 1e9) / (8760000000) 
@@ -387,16 +387,16 @@ disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1
 *overnight investment cost
 *# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** split pecoal into lignite and hc for rough comparison (not finalized):  set lignite as REMIND-pc cost + 300€/kW
-c_i_ovnt("lig") = remind_CapCost("2015", "DEU", "pc") * 1e6 * 1.2 ;
+c_i_ovnt("lig") = remind_CapCost("2130", "DEU", "pc") * 1e6 * 1.2 ;
 c_i_ovnt("hc") = c_i_ovnt("lig") + 300000 ;
-c_i_ovnt("CCGT") = remind_CapCost("2015", "DEU", "ngcc")  * 1e6 * 1.2;
-c_i_ovnt("OCGT_eff") = remind_CapCost("2015", "DEU", "ngt") * 1e6 * 1.2;
-c_i_ovnt("bio") = remind_CapCost("2015", "DEU", "biochp") * 1e6 * 1.2;
-c_i_ovnt("ror") = remind_CapCost("2015", "DEU", "hydro") * 1e6 * 1.2;
-c_i_ovnt("nuc") = remind_CapCost("2015", "DEU", "tnrs") * 1e6 * 1.2;
+c_i_ovnt("CCGT") = remind_CapCost("2130", "DEU", "ngcc")  * 1e6 * 1.2;
+c_i_ovnt("OCGT_eff") = remind_CapCost("2130", "DEU", "ngt") * 1e6 * 1.2;
+c_i_ovnt("bio") = remind_CapCost("2130", "DEU", "biochp") * 1e6 * 1.2;
+c_i_ovnt("ror") = remind_CapCost("2130", "DEU", "hydro") * 1e6 * 1.2;
+c_i_ovnt("nuc") = remind_CapCost("2130", "DEU", "tnrs") * 1e6 * 1.2;
  
-c_i_ovnt_res("Solar") = remind_CapCost("2015", "DEU", "spv") * 1e6 * 1.2 ;
-c_i_ovnt_res("Wind_on") = remind_CapCost("2015", "DEU", "wind") * 1e6 * 1.2;
+c_i_ovnt_res("Solar") = remind_CapCost("2130", "DEU", "spv") * 1e6 * 1.2 ;
+c_i_ovnt_res("Wind_on") = remind_CapCost("2130", "DEU", "wind") * 1e6 * 1.2;
 
 *annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
@@ -421,8 +421,8 @@ rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res(
 *================================================================
 *================ scale up demand ===============================
 DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
-totFixedLoad = remind_totdemand("2015", "DEU", "seel") * sm_TWa_2_MWh;
-*totFlexLoad = remind_totdemand("2015", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
+totFixedLoad = remind_totdemand("2130", "DEU", "seel") * sm_TWa_2_MWh;
+*totFlexLoad = remind_totdemand("2130", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
 d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 *==========
@@ -1235,10 +1235,10 @@ reportmk_4RM(yr,reg,ct,'mult_markup')$(report_tech('DIETER',yr,reg,'market value
 reportmk_4RM(yr,reg,'coal','mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') = 0)  = 1;    
 reportmk_4RM(yr,reg,res,'mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) = 0) = 1;
 
-execute_unload "results_DIETER_y2", report4RM, reportmk_4RM;
+execute_unload "results_DIETER_y17", report4RM, reportmk_4RM;
 
-execute_unload "full_DIETER_y2";
-execute_unload "report_DIETER_y2", report, report_tech, report_hours, report_tech_hours;
+execute_unload "full_DIETER_y17";
+execute_unload "report_DIETER_y17", report, report_tech, report_hours, report_tech_hours;
 
 %write_to_excel%$ontext
 $include report_to_excel
