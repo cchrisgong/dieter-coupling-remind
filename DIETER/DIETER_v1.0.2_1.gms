@@ -85,7 +85,7 @@ grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
 
 *============== DIETER sets ==================
-year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2018/
+year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
@@ -183,7 +183,7 @@ earlyRetiCap_reporting("2010", reg, te_remind) = (remind_capEarlyReti("2010", re
 *(total generation X gen.share) / (cap.fac. X 8760) = capacity, where (total generation X gen.share) = generation
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
-capfac_const(res) = sum(h, phi_res_y_reg("2018", "DEU", h, res));
+capfac_const(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res));
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
 preInv_remind_prodSe("2010", "DEU", pe_remind, se_remind, te_remind)$(remind_cap("2010", "DEU", te_remind, "1") ne 0 ) = remind_prodSe("2010", "DEU", pe_remind, se_remind, te_remind)
@@ -213,7 +213,7 @@ RM_postInv_prodSe_res(yr,reg,"Wind_on") = remind_prodSe(yr, reg, "pewin", "seel"
 RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
 **********************************************************************
 
-P_RES.fx("Wind_off") = 0; 
+*P_RES.fx("Wind_off") = 0; 
 N_CON.fx("OCGT_ineff") = 0; 
 
 **********************************************************************
@@ -222,7 +222,12 @@ N_CON.fx("OCGT_ineff") = 0;
 **********************************************************************
 
 P_RES.lo("Solar") = preInv_remind_prodSe("2010", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2010", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+*AO* 80.5% of wind-based generation in DEU in 2019 is from onshore
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2010", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") * 0.805 ;
+*AO* 19.5% of wind-based generation in DEU in 2019 is from offshore
+P_RES.lo("Wind_off") = preInv_remind_prodSe("2010", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_off") * 0.195;
+* Quick workaround: limit wind offshore deployment to +10% of REMIND value
+P_RES.up("Wind_off") = preInv_remind_prodSe("2010", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_off") * 0.195 *1.1;
 N_CON.lo("ror") = preInv_remind_prodSe("2010", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 
 *****************
@@ -376,18 +381,18 @@ rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res(
 
 *================================================================
 *================ scale up demand ===============================
-DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
+DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
 totFixedLoad = remind_totdemand("2010", "DEU", "seel") * sm_TWa_2_MWh;
 *totFlexLoad = remind_totdemand("2010", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
-d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
+d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 *==========
 *scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
-DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
-phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
+*DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
+*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
 *phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
 
-phi_res(res,h) = phi_res_y_reg('2018',"DEU",h,res) ;
+phi_res(res,h) = phi_res_y_reg('2019',"DEU",h,res) ;
 
 
 Equations

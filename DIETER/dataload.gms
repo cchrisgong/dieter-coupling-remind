@@ -85,8 +85,6 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
-*=========== for scaling up wind =================
-DIETER_OLDWindOnCapfac Old average DIETER theoretical capfac of wind_on
 ;
 
 
@@ -243,7 +241,7 @@ phi_reserves_pr                          ??? /0.05/
 parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
 /
 $ondelim
-$include "Load_DEU.csv"
+$include "Load_DEU_2019.csv"
 $offdelim
 /;
 
@@ -270,7 +268,7 @@ $offdelim
 
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
-$include "VRE_potential_DEU.csv"
+$include "VRE_potential_DEU_2019.csv"
 $offdelim
 ;
 
