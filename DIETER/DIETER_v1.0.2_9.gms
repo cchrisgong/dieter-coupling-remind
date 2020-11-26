@@ -81,11 +81,12 @@ pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, lifetime/
+char_remind_dataren "remind character for renewable" /nur/
 grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
 
 *============== DIETER sets ==================
-year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2018/
+year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
@@ -178,14 +179,51 @@ demand
 earlyRetiCap_reporting("2050", reg, te_remind) = (remind_capEarlyReti("2050", reg, te_remind) - remind_capEarlyReti2("2045", reg, te_remind) ) * remind_cap("2050", reg, te_remind, "1")
                                                                             / (1 - remind_capEarlyReti("2050", reg, te_remind)) ;
 
+
+*==========
+*scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
+*DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
+*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
+*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
+
+
+****************
+*AO* Match VRE CFs of DIETER to REMIND values
+* General idea for wind: Read in 2019 input data for both wind onshore (CF 25%) and offshore (CF 50%).
+*                        Calculate wind time series as a weighted average of onshore and offshore to match the REMIND CF.
+*                        Of course, this only works if the REMIND CF is in between the values of onshore and offshore.
+* General idea for solar: Simply scale up or down CF 
+****************
+Parameter
+remind_VRECapFac(res)   "VRE capacity factors from REMIND"
+dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
+share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
+;
+
+*AO* Calculate REMIND VRE CFs from grades
+remind_VRECapFac("wind_on") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "wind") * remind_vm_CapDistr("2050", "DEU", "wind", grade) / remind_cap("2050", "DEU", "wind", "1"));
+remind_VRECapFac("Solar") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "spv") * remind_vm_CapDistr("2050", "DEU", "spv", grade) / remind_cap("2050", "DEU", "spv", "1"));
+
+*AO* Calculate DIETER VRE CFs as given by the input data
+dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
+
+*AO* Calculate necessary share of onshore wind to match DIETER wind CF to REMIND values according to:
+* CF_{REMIND}  = x * CF_{DIETER, onshore} + (1 - x) * CF_{DIETER, offshore}
+* ==> x = ( CF_{REMIND} - CF_{DIETER, offshore} ) / ( CF_{DIETER, onshore} - CF_{DIETER, offshore} ) 
+share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
+
+*AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
+phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
+*AO* Scale up time series of solar potential to match the CF of REMIND
+phi_res("Solar", h) = phi_res_y_reg("2019", "DEU", h, "Solar") * remind_VRECapFac("Solar") / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, "Solar")) / card(hh));
+
+
 ****************
 *pass on VRE gen share from RM to DT instead of capacities, using the following transformation
 *(total generation X gen.share) / (cap.fac. X 8760) = capacity, where (total generation X gen.share) = generation
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
-capfac_const(res) = sum(h, phi_res_y_reg("2018", "DEU", h, res));
-
-* the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSE(t) *(vm_deltacap(t)/vm_cap(t))
+* the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
 preInv_remind_prodSe("2050", "DEU", pe_remind, se_remind, te_remind)$(remind_cap("2050", "DEU", te_remind, "1") ne 0 ) = remind_prodSe("2050", "DEU", pe_remind, se_remind, te_remind)
                                                                        - remind_pm_ts("2050") /2 * remind_prodSe("2050", "DEU", pe_remind, se_remind, te_remind)
                                                                        * remind_deltaCap("2050", "DEU", te_remind, "1")
@@ -214,15 +252,15 @@ RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "h
 **********************************************************************
 
 P_RES.fx("Wind_off") = 0; 
-N_CON.fx("OCGT_ineff") = 0;
+N_CON.fx("OCGT_ineff") = 0; 
 
 **********************************************************************
 *********************** VALIDATION MODE ******************************
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 
-P_RES.lo("Solar") = preInv_remind_prodSe("2050", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2050", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+P_RES.lo("Solar") = preInv_remind_prodSe("2050", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) ;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2050", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) ;
 N_CON.lo("ror") = preInv_remind_prodSe("2050", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 
 *****************
@@ -326,7 +364,7 @@ c_m_reg(ct,reg) = con_fuelprice_reg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_
 c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
-*=======annualize investment cost ==================
+*=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
 disc_fac_con("hc") = disc_fac_con("lig");
@@ -354,14 +392,14 @@ c_i_ovnt("nuc") = remind_CapCost("2050", "DEU", "tnrs") * 1e6 * 1.2;
 c_i_ovnt_res("Solar") = remind_CapCost("2050", "DEU", "spv") * 1e6 * 1.2 ;
 c_i_ovnt_res("Wind_on") = remind_CapCost("2050", "DEU", "wind") * 1e6 * 1.2;
 
-*annualized investment cost
+*annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
 c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
 
 *================================================================
 *=======read in fixed OM cost from remind ========
-*note that omf is the proportion from overnight investment cost, not annualized
-** split pecoal into lignite and hc for rough comparison (not finalized)
+*note that omf is the proportion from overnight investment cost, not annuitized
+** split pecoal into lignite and hc for rough comparison (not finalized)annuitized
 
 cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
 cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
@@ -376,18 +414,10 @@ rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res(
 
 *================================================================
 *================ scale up demand ===============================
-DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
+DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
 totFixedLoad = remind_totdemand("2050", "DEU", "seel") * sm_TWa_2_MWh;
 *totFlexLoad = remind_totdemand("2050", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
-d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
-
-*==========
-*scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
-DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
-phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
-*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
-
-phi_res(res,h) = phi_res_y_reg('2018',"DEU",h,res) ;
+d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 
 Equations

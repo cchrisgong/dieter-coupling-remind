@@ -68,6 +68,10 @@ remind_capEarlyReti2(yr_before, reg, te_remind)
 vm_capEarlyReti(yr, reg, te_remind)
 earlyRetiCap_reporting(yr, reg, te_remind)
 *-------------------------------------
+*for passing the capacity factor of REMIND for VRE techs
+remind_pm_dataren(reg, char_remind_dataren, grade,te_remind)
+remind_vm_capDistr(yr, reg, te_remind, grade)
+*-------------------------------------
 *for reporting REMIND
 remind_CF(yr,reg,te_remind)
 pm_cf(yr,reg,te_remind)
@@ -82,6 +86,7 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *----------------------------- capacity is exogenous from remind
 *P_RES(res)     Renewable technology built in MW
 *N_CON(ct)        Conventional technology ct built in MW
+
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
@@ -109,6 +114,8 @@ $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
 $load  remind_CF = pm_cf
+$load  remind_pm_dataren = pm_dataren
+$load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 
 Parameters
