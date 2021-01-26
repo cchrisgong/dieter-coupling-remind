@@ -191,11 +191,11 @@ earlyRetiCap_reporting("2010", reg, te_remind) = (remind_capEarlyReti("2010", re
 *AO* Match VRE CFs of DIETER to REMIND values
 * General idea for wind: Read in 2019 input data for both wind onshore (CF 25%) and offshore (CF 50%).
 *                        Calculate wind time series as a weighted average of onshore and offshore to match the REMIND CF.
-*                        Of course, this only works if the REMIND CF is in between the values of onshore and offshore.
-* General idea for solar: Simply scale up or down CF 
+* General idea for solar: Simply scale up or down time series
 ****************
 Parameter
 remind_VRECapFac(res)   "VRE capacity factors from REMIND"
+remind_HydroCapFac      "Hydro capacity factor from REMIND"
 dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
 share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
 ;
@@ -203,6 +203,7 @@ share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wi
 *AO* Calculate REMIND VRE CFs from grades
 remind_VRECapFac("wind_on") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "wind") * remind_vm_CapDistr("2010", "DEU", "wind", grade) / remind_cap("2010", "DEU", "wind", "1"));
 remind_VRECapFac("Solar") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "spv") * remind_vm_CapDistr("2010", "DEU", "spv", grade) / remind_cap("2010", "DEU", "spv", "1"));
+remind_HydroCapFac = sum(grade, remind_pm_dataren("DEU", "nur", grade, "hydro") * remind_vm_CapDistr("2010", "DEU", "hydro", grade) / remind_cap("2010", "DEU", "hydro", "1"));
 
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
@@ -217,6 +218,8 @@ phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h,
 *AO* Scale up time series of solar potential to match the CF of REMIND
 phi_res("Solar", h) = phi_res_y_reg("2019", "DEU", h, "Solar") * remind_VRECapFac("Solar") / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, "Solar")) / card(hh));
 
+*AO* For hydro simply set CF to that of REMIND
+capfac_ror = remind_HydroCapFac;
 
 ****************
 *pass on VRE gen share from RM to DT instead of capacities, using the following transformation
