@@ -147,21 +147,21 @@ STO_IN(sto,h)    Storage inflow technology sto hour h in MWh
 STO_OUT(sto,h)   Storage outflow technology sto hour h in MWh
 STO_L(sto,h)     Storage level technology sto hour h in MWh
 
-P_RES(res)     Renewable technology built in MW
+P_RES(res)       Renewable technology built in MW
 N_CON(ct)        Conventional technology ct built in MW
 
 N_STO_E(sto)     Storage technology built - Energy in MWh
 N_STO_P(sto)     Storage loading and discharging capacity built - Capacity in MW
 
-DSM_CU(dsm_curt,h)       DSM: Load curtailment hour h in MWh
-DSM_UP(dsm_shift,h)      DSM: Load shifting up hour h technology dsm in MWh
-DSM_DO(dsm_shift,h,hh)   DSM: Load shifting down in hour hh to account for upshifts in hour h technology dsm in MWh
+DSM_CU(dsm_curt,h)           DSM: Load curtailment hour h in MWh
+DSM_UP(dsm_shift,h)          DSM: Load shifting up hour h technology dsm in MWh
+DSM_DO(dsm_shift,h,hh)       DSM: Load shifting down in hour hh to account for upshifts in hour h technology dsm in MWh
 
 DSM_UP_DEMAND(dsm_shift,h)   DSM: Load shifting up active for wholesale demand in hour h of technology dsm in MWh
 DSM_DO_DEMAND(dsm_shift,h)   DSM: Load shifting down active for wholesale demand in hour h of technology dsm in MWh
 
-N_DSM_CU(dsm_curt)        DSM: Load curtailment capacity in MW
-N_DSM_SHIFT(dsm_shift)    DSM: Load shifting capacity in MWh
+N_DSM_CU(dsm_curt)           DSM: Load curtailment capacity in MW
+N_DSM_SHIFT(dsm_shift)       DSM: Load shifting capacity in MWh
 
 RP_CON(reserves,ct,h)                     Reserve provision by conventionals in hour h in MW
 RP_RES(reserves,res,h)                    Reserve provision by renewables in hour h in MW
@@ -172,6 +172,14 @@ RP_DSM_SHIFT(reserves,dsm_shift,h)        Reserve provision by DSM load shifting
 
 demand
 ;
+
+*================================================================
+*================ scale up demand ===============================
+DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
+totFixedLoad = remind_totdemand("2070", "DEU", "seel") * sm_TWa_2_MWh;
+*totFlexLoad = remind_totdemand("2070", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
+d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
+
 
 ****************
 *REMIND disinvestments cap: disinvestments = (early_reti(t) - early_reti(t-1) ) * cap(t) / (1 - early_reti(t)), it doesn't go into DIETER, I am only using DIETER for reporting
@@ -220,10 +228,10 @@ N_CON.fx("OCGT_ineff") = 0;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 
-P_RES.lo("Solar") = preInv_remind_prodSe("2070", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2070", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
-N_CON.lo("ror") = preInv_remind_prodSe("2070", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
-
+*P_RES.lo("Solar") = preInv_remind_prodSe("2070", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
+*P_RES.lo("Wind_on") = preInv_remind_prodSe("2070", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
+*N_CON.lo("ror") = preInv_remind_prodSe("2070", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+*
 *****************
 * the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) 
 preInv_remind_cap(yr, "DEU", te_remind, grade) = remind_cap(yr, "DEU", te_remind, grade) - remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
@@ -232,29 +240,29 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 * half-half split between lig and hc for DEU
 * TW-> MW
 
-N_CON.lo("lig") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2;
+*N_CON.lo("lig") = min(sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*                    ) * 1e6 /2, 0.2* SMax(h, d(h)));
+*
+*N_CON.lo("hc") = min(sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*                    ) * 1e6 /2, 0.2* SMax(h, d(h)));
+*                    
+*N_CON.lo("nuc") = min(sum(te_remind,
+*                   sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+*                    ) * 1e6, 0.2* SMax(h, d(h)));
+*
+*N_CON.lo("CCGT") = min(sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+*                    ) * 1e6, 0.2* SMax(h, d(h)));
+*
+*N_CON.lo("OCGT_eff") = min(sum(grade, preInv_remind_cap("2070", "DEU", "ngt", grade)) * 1e6, 0.2* SMax(h, d(h)));
+*
+*      
+*N_CON.lo("bio") =  min(sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+*                    ) * 1e6, 0.2* SMax(h, d(h)));
 
-N_CON.lo("hc") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2;
-                    
-N_CON.lo("nuc") = sum(te_remind,
-                   sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(NUCte(te_remind))   )
-                  ) * 1e6;
-
-N_CON.lo("CCGT") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
-                    ) * 1e6;
-
-N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2070", "DEU", "ngt", grade)) * 1e6;
-
-      
-N_CON.lo("bio") =  sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2070", "DEU", te_remind, grade)$(BIOte(te_remind))   )
-                    ) * 1e6;
-                    
 *
 *** if no early retirement from last REMIND iteration, DIETER gets REMIND capacity as lower bound      
 *N_CON.lo("lig")$(sum(te_remind, earlyRetiCap_reporting("2070", "DEU", te_remind)$(COALte(te_remind))) = 0) = sum(te_remind,
@@ -323,8 +331,7 @@ N_CON.lo("bio") =  sum(te_remind,
 **********************************************************************
 
 
-  
-*N_STO_P.fx('Sto1') = remind_cap("2070", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2070", "DEU", "storwind", "1") * 0.3* 1e6;
+*N_STO_P.fx('Sto1') = remind_cap("2070", "DEU", "storspv", "1") * 3 * 1e6 + remind_cap("2070", "DEU", "storwind", "1") * 0.3* 1e6;
 
 N_STO_P.fx(sto) = 0 ;
 N_STO_P.fx(sto) = 0 ;
@@ -341,12 +348,24 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 *1e12 is the conversion btw Trillion$ to $
 *remind_budget is kind of like inflation rate
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
-con_fuelprice_reg("lig",reg) = -remind_fuelcost("2070",reg,"pecoal") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
-con_fuelprice_reg("hc",reg) = -remind_fuelcost("2070",reg,"pecoal") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
-con_fuelprice_reg("CCGT",reg) = -remind_fuelcost("2070",reg,"pegas") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg0("lig",reg) = -remind_fuelcost2("2060",reg,"pecoal") / (-remind_budget2("2060",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg0("hc",reg) = -remind_fuelcost2("2060",reg,"pecoal") / (-remind_budget2("2060",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg0("CCGT",reg) = -remind_fuelcost2("2060",reg,"pegas") / (-remind_budget2("2060",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg0("bio",reg) = -remind_fuelcost2("2060",reg,"pebiolc") / (-remind_budget2("2060",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg0("nuc",reg) = -remind_fuelcost2("2060",reg,"peur") / (-remind_budget2("2060",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+
+con_fuelprice_reg1("lig",reg) = -remind_fuelcost("2070",reg,"pecoal") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg1("hc",reg) = -remind_fuelcost("2070",reg,"pecoal") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg1("CCGT",reg) = -remind_fuelcost("2070",reg,"pegas") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg1("bio",reg) = -remind_fuelcost("2070",reg,"pebiolc") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg1("nuc",reg) = -remind_fuelcost("2070",reg,"peur") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+
+con_fuelprice_reg("lig",reg) = (con_fuelprice_reg0("lig",reg) + con_fuelprice_reg1("lig",reg)) / 2;
+con_fuelprice_reg("hc",reg) = (con_fuelprice_reg0("hc",reg) + con_fuelprice_reg1("hc",reg)) / 2;
+con_fuelprice_reg("CCGT",reg) = (con_fuelprice_reg0("CCGT",reg) + con_fuelprice_reg1("CCGT",reg)) / 2;
 con_fuelprice_reg("OCGT_eff",reg) = con_fuelprice_reg("CCGT",reg);
-con_fuelprice_reg("bio",reg) = -remind_fuelcost("2070",reg,"pebiolc") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg("nuc",reg) = -remind_fuelcost("2070",reg,"peur") / (-remind_budget("2070",reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg("bio",reg) = (con_fuelprice_reg0("bio",reg) + con_fuelprice_reg1("bio",reg)) / 2;
+con_fuelprice_reg("nuc",reg) = (con_fuelprice_reg0("nuc",reg) + con_fuelprice_reg1("nuc",reg)) / 2;
 con_fuelprice_reg("ror",reg) = 0;
 
 *eta from remind
@@ -411,19 +430,14 @@ cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
 cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
 cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
 cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","biochp") * c_i_ovnt("bio");
 cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
 cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
 rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
 rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
 
-*================================================================
-*================ scale up demand ===============================
-DIETER_OLDtotdem = sum( h , d_y_reg('2018',"DEU",h));
-totFixedLoad = remind_totdemand("2070", "DEU", "seel") * sm_TWa_2_MWh;
-*totFlexLoad = remind_totdemand("2070", "DEU", "seel") * sm_TWa_2_MWh * (1 - P);
-d(h) = d_y_reg('2018',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
+
 
 *==========
 *scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
@@ -453,14 +467,6 @@ con2c_maxprodannual_conv Full load hour constraint (for non-nuclear conventional
 con2c_maxprodannual_conv_nuc Full load hour constraint (for coal)
 * Capacity contraints and flexibility constraints
 con3a_maxprod_conv       Capacity Constraint conventionals
-con3b_minprod_conv       Minimum production conventionals if reserves contracted
-
-con3c_flex_PR_up        Flexibility of conventionals - provision PR up
-con3d_flex_PR_do        Flexibility of conventionals - provision PR do
-con3e_flex_SR_up        Flexibility of conventionals - provision SR up
-con3f_flex_SR_do        Flexibility of conventionals - provision SR do
-con3g_flex_MR_up        Flexibility of conventionals - provision MR up
-con3h_flex_MR_do        Flexibility of conventionals - provision MR do
 
 con3i_maxprod_ror        Capacity constraint Run-of-river
 con3j_minprod_ror        Minimum production RoR if reserves contracted
@@ -475,8 +481,8 @@ con4b_stolev              Storage Level Dynamics
 con4c_stolev_max          Storage Power Capacity
 con4d_maxin_sto           Storage maximum inflow
 con4e_maxout_sto          Storage maximum outflow
-con4f_resrv_sto           Constraint on reserves (up)
-con4g_resrv_sto           Constraint on reserves (down)
+*con4f_resrv_sto           Constraint on reserves (up)
+*con4g_resrv_sto           Constraint on reserves (down)
 
 con4h_maxout_lev          Maximum storage outflow - no more than level of last period
 con4i_maxin_lev           Maximum storage inflow - no more than ebergy capacity minus level of last period
@@ -492,15 +498,15 @@ con5_demand
 con5e_P2Gshare              Gross power to gas share
 
 * DSM conditions: Load curtailment
-con6a_DSMcurt_duration_max       Maximum curtailment energy budget per time
-con6b_DSMcurt_max                Maximum curtailment per period
+*con6a_DSMcurt_duration_max       Maximum curtailment energy budget per time
+*con6b_DSMcurt_max                Maximum curtailment per period
 
 * DSM conditions: Load shifting
-con7a_DSMshift_upanddown         Equalization of upshifts and downshifts in due time
-con7b_DSMshift_granular_max      Maximum shifting in either direction per period
-con7c_DSM_distrib_up             Distribution of upshifts between wholesale and reserves
-con7d_DSM_distrib_do             Distribution of downshifts between wholesale and reserves
-con7e_DSMshift_recovery          Recovery times
+*con7a_DSMshift_upanddown         Equalization of upshifts and downshifts in due time
+*con7b_DSMshift_granular_max      Maximum shifting in either direction per period
+*con7c_DSM_distrib_up             Distribution of upshifts between wholesale and reserves
+*con7d_DSM_distrib_do             Distribution of downshifts between wholesale and reserves
+*con7e_DSMshift_recovery          Recovery times
 *con7f_DSMshift_profile           AC profile to give DSM a time-dependant nature
 *con7g_DSMshift_profile_maxACpower      Maximum AC power limit
 * Maximum installation conditions
@@ -511,9 +517,7 @@ con8d_max_I_sto_p               Maximum installable capacity: Storage inflow-out
 con8e_max_I_dsm_cu              Maximum installable capacity: DSM load curtailment
 con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
 
-* Reserves
-con10a_reserve_prov             Reserve provision SR and MR
-con10b_reserve_prov_PR          Reserve provision PR
+
 ;
 
 
@@ -551,19 +555,6 @@ $offtext
                  + sum( dsm_curt , dsmdata_cu("c_fix_dsm_cu",dsm_curt)*N_DSM_CU(dsm_curt) )
                  + sum( dsm_shift , c_i_dsm_shift(dsm_shift)*N_DSM_SHIFT(dsm_shift) )
                  + sum( dsm_shift , dsmdata_shift("c_fix_dsm_shift",dsm_shift)*N_DSM_SHIFT(dsm_shift) )
-$ontext
-$offtext
-%reserves%$ontext
-                 - sum( (reserves,sto,h)$(ord(reserves) = 1 or ord(reserves) = 3 or ord(reserves) = 5) , RP_STO_IN(reserves,sto,h)* phi_reserves_call(reserves,h) * c_m_sto(sto) )
-                 + sum( (reserves,sto,h)$(ord(reserves) = 2 or ord(reserves) = 4 or ord(reserves) = 6) , RP_STO_IN(reserves,sto,h)* phi_reserves_call(reserves,h) * c_m_sto(sto) )
-                 + sum( (reserves,sto,h)$(ord(reserves) = 1 or ord(reserves) = 3 or ord(reserves) = 5) , RP_STO_OUT(reserves,sto,h)* phi_reserves_call(reserves,h) * c_m_sto(sto) )
-                 - sum( (reserves,sto,h)$(ord(reserves) = 2 or ord(reserves) = 4 or ord(reserves) = 6) , RP_STO_OUT(reserves,sto,h)* phi_reserves_call(reserves,h) * c_m_sto(sto) )
-$ontext
-$offtext
-%DSM%$ontext
-%reserves%$ontext
-                 + sum( (reserves,dsm_curt,h)$(ord(reserves) = 3 or ord(reserves) = 5) , RP_DSM_CU(reserves,dsm_curt,h) * phi_reserves_call(reserves,h) * dsmdata_cu("c_m_dsm_cu",dsm_curt) )
-                 + sum( (reserves,dsm_shift,h)$(ord(reserves) > 2) , RP_DSM_SHIFT(reserves,dsm_shift,h) * phi_reserves_call(reserves,h) * dsmdata_shift("c_m_dsm_shift",dsm_shift) )
 $ontext
 $offtext
 ;
@@ -631,141 +622,14 @@ con2c_maxprodannual_conv_nuc("nuc")..
 
 con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
         G_L(ct,h)
-%reserves%$ontext
-        + RP_CON('PR_up',ct,h)
-        + RP_CON('SR_up',ct,h)
-        + RP_CON('MR_up',ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h)
-$ontext
-$offtext
         =L= N_CON(ct)
-;
-
-con3b_minprod_conv(ct,h)..
-        RP_CON('PR_do',ct,h)
-        + RP_CON('SR_do',ct,h)
-        + RP_CON('MR_do',ct,h)
-        =L= G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h)
-;
-
-con3c_flex_PR_up(ct,h)$(ord(ct)>1 )..
-        RP_CON('PR_up',ct,h)
-        =L= cdata("grad_per_min",ct) * 0.5 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
-;
-
-con3d_flex_PR_do(ct,h)$(ord(ct)>1 )..
-        RP_CON('PR_do',ct,h)
-        =L= cdata("grad_per_min",ct) * 0.5 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
-;
-
-con3e_flex_SR_up(ct,h)$(ord(ct)>1 )..
-        RP_CON('SR_up',ct,h)
-        =L= cdata("grad_per_min",ct) * 5 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
-;
-
-con3f_flex_SR_do(ct,h)$(ord(ct)>1 )..
-        RP_CON('SR_do',ct,h)
-        =L= cdata("grad_per_min",ct) * 5 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
-;
-
-con3g_flex_MR_up(ct,h)$(ord(ct)>1 )..
-        RP_CON('MR_up',ct,h)
-        =L= cdata("grad_per_min",ct) * 15 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
-;
-
-con3h_flex_MR_do(ct,h)$(ord(ct)>1 )..
-        RP_CON('MR_do',ct,h)
-        =L= cdata("grad_per_min",ct) * 15 * ( G_L(ct,h)
-* Balancing Correction Factor
-        - RP_CON('PR_up',ct,h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up',ct,h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up',ct,h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do',ct,h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do',ct,h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do',ct,h) * phi_reserves_call('MR_do',h) )
 ;
 
 * Constraints on run of river
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-%reserves%$ontext
-        + RP_CON('PR_up','ror',h)
-        + RP_CON('SR_up','ror',h)
-        + RP_CON('MR_up','ror',h)
-* Balancing Correction Factor
-        - RP_CON('PR_up','ror',h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up','ror',h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up','ror',h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do','ror',h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do','ror',h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do','ror',h) * phi_reserves_call('MR_do',h)
-$ontext
-$offtext
         =L= capfac_ror *N_CON('ror')
 ;
-
-con3j_minprod_ror(h)..
-        RP_CON('PR_do','ror',h)
-        + RP_CON('SR_do','ror',h)
-        + RP_CON('MR_do','ror',h)
-        =L= G_L('ror',h)
-* Balancing Correction Factor
-        - RP_CON('PR_up','ror',h) * phi_reserves_call('PR_up',h)
-        - RP_CON('SR_up','ror',h) * phi_reserves_call('SR_up',h)
-        - RP_CON('MR_up','ror',h) * phi_reserves_call('MR_up',h)
-        + RP_CON('PR_do','ror',h) * phi_reserves_call('PR_do',h)
-        + RP_CON('SR_do','ror',h) * phi_reserves_call('SR_do',h)
-        + RP_CON('MR_do','ror',h) * phi_reserves_call('MR_do',h)
-;
-
 
 * Constraints on renewables
 con3k_maxprod_res(res,h)..
@@ -826,16 +690,6 @@ con4e_maxout_sto(sto,h)..
 $ontext
 $offtext
         =L= N_STO_P(sto)
-;
-
-con4f_resrv_sto(sto,h)..
-        RP_STO_IN('PR_up',sto,h) + RP_STO_IN('SR_up',sto,h) + RP_STO_IN('MR_up',sto,h)
-        =L= STO_IN(sto,h)
-;
-
-con4g_resrv_sto(sto,h)..
-        RP_STO_OUT('PR_do',sto,h) + RP_STO_OUT('SR_do',sto,h) + RP_STO_OUT('MR_do',sto,h)
-        =L= STO_OUT(sto,h)
 ;
 
 con4h_maxout_lev(sto,h)..
@@ -909,73 +763,75 @@ con4k_PHS_EtoP('Sto5')..
 *==========           DSM constraints - curtailment *==========
 * ---------------------------------------------------------------------------- *
 
-con6a_DSMcurt_duration_max(dsm_curt,h)..
-         sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_cu("t_off_dsm_cu",dsm_curt) ) , DSM_CU(dsm_curt,hh)
-%reserves%$ontext
-         + RP_DSM_CU('SR_up',dsm_curt,hh) * phi_reserves_call('SR_up',hh)
-         + RP_DSM_CU('MR_up',dsm_curt,hh) * phi_reserves_call('MR_up',hh)
-$ontext
-$offtext
-         )
-         =L= N_DSM_CU(dsm_curt) * dsmdata_cu("t_dur_dsm_cu",dsm_curt)
-;
-
-con6b_DSMcurt_max(dsm_curt,h)..
-        DSM_CU(dsm_curt,h)
-%reserves%$ontext
-        + RP_DSM_CU('SR_up',dsm_curt,h)
-        + RP_DSM_CU('MR_up',dsm_curt,h)
-$ontext
-$offtext
-          =L= N_DSM_CU(dsm_curt)
-;
-
+*con6a_DSMcurt_duration_max(dsm_curt,h)..
+*         sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_cu("t_off_dsm_cu",dsm_curt) ) , DSM_CU(dsm_curt,hh)
+*%reserves%$ontext
+*         + RP_DSM_CU('SR_up',dsm_curt,hh) * phi_reserves_call('SR_up',hh)
+*         + RP_DSM_CU('MR_up',dsm_curt,hh) * phi_reserves_call('MR_up',hh)
+*$ontext
+*$offtext
+*         )
+*         =L= N_DSM_CU(dsm_curt) * dsmdata_cu("t_dur_dsm_cu",dsm_curt)
+*;
+*
+*con6b_DSMcurt_max(dsm_curt,h)..
+*        DSM_CU(dsm_curt,h)
+*%reserves%$ontext
+*        + RP_DSM_CU('SR_up',dsm_curt,h)
+*        + RP_DSM_CU('MR_up',dsm_curt,h)
+*$ontext
+*$offtext
+*          =L= N_DSM_CU(dsm_curt)
+*;
+*
 
 * ---------------------------------------------------------------------------- *
 *==========           DSM constraints - shifting *==========
 * ---------------------------------------------------------------------------- *
+*
+*con7a_DSMshift_upanddown(dsm_shift,h)..
+*    DSM_UP(dsm_shift,h) * dsmdata_shift("eta_dsm_shift",dsm_shift)
+*    =E=
+*   sum( hh$( ( ord(hh) >= ord(h) ) AND ( ord(hh) <= ( ord(h) + dsmdata_shift("t_dur_dsm_shift",dsm_shift) ) ) ) ,
+*    DSM_DO(dsm_shift,h,hh)
+*  )
+*;
+*
+*con7b_DSMshift_granular_max(dsm_shift,h)..
+*         DSM_UP_DEMAND(dsm_shift,h) + DSM_DO_DEMAND(dsm_shift,h)
+*%reserves%$ontext
+*         + sum( reserves$(ord(reserves) > 2) , RP_DSM_SHIFT(reserves,dsm_shift,h) )
+*$ontext
+*$offtext
+*         =L= N_DSM_SHIFT(dsm_shift)
+*;
+*
+*con7c_DSM_distrib_up(dsm_shift,h)..
+*         DSM_UP(dsm_shift,h) =E= DSM_UP_DEMAND(dsm_shift,h)
+*%reserves%$ontext
+*         + RP_DSM_SHIFT('SR_do',dsm_shift,h) * phi_reserves_call('SR_do',h)
+*         + RP_DSM_SHIFT('MR_do',dsm_shift,h) * phi_reserves_call('MR_do',h)
+*$ontext
+*$offtext
+*;
+*
+*con7d_DSM_distrib_do(dsm_shift,h)..
+*         sum( hh$( ord(hh) >= ord(h) - dsmdata_shift("t_dur_dsm_shift",dsm_shift) AND ord(hh) <= ord(h) + dsmdata_shift("t_dur_dsm_shift",dsm_shift) ) , DSM_DO(dsm_shift,hh,h) )
+*                 =E=
+*         DSM_DO_DEMAND(dsm_shift,h)
+*%reserves%$ontext
+*         + RP_DSM_SHIFT('SR_up',dsm_shift,h) * phi_reserves_call('SR_up',h)
+*         + RP_DSM_SHIFT('MR_up',dsm_shift,h) * phi_reserves_call('MR_up',h)
+*$ontext
+*$offtext
+*;
+*
+*con7e_DSMshift_recovery(dsm_shift,h)..
+*         sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_shift("t_off_dsm_shift",dsm_shift) ) , DSM_UP(dsm_shift,hh))
+*         =L= N_DSM_SHIFT(dsm_shift) * dsmdata_shift("t_dur_dsm_shift",dsm_shift)
+*;
 
-con7a_DSMshift_upanddown(dsm_shift,h)..
-    DSM_UP(dsm_shift,h) * dsmdata_shift("eta_dsm_shift",dsm_shift)
-    =E=
-   sum( hh$( ( ord(hh) >= ord(h) ) AND ( ord(hh) <= ( ord(h) + dsmdata_shift("t_dur_dsm_shift",dsm_shift) ) ) ) ,
-    DSM_DO(dsm_shift,h,hh)
-  )
-;
 
-con7b_DSMshift_granular_max(dsm_shift,h)..
-         DSM_UP_DEMAND(dsm_shift,h) + DSM_DO_DEMAND(dsm_shift,h)
-%reserves%$ontext
-         + sum( reserves$(ord(reserves) > 2) , RP_DSM_SHIFT(reserves,dsm_shift,h) )
-$ontext
-$offtext
-         =L= N_DSM_SHIFT(dsm_shift)
-;
-
-con7c_DSM_distrib_up(dsm_shift,h)..
-         DSM_UP(dsm_shift,h) =E= DSM_UP_DEMAND(dsm_shift,h)
-%reserves%$ontext
-         + RP_DSM_SHIFT('SR_do',dsm_shift,h) * phi_reserves_call('SR_do',h)
-         + RP_DSM_SHIFT('MR_do',dsm_shift,h) * phi_reserves_call('MR_do',h)
-$ontext
-$offtext
-;
-
-con7d_DSM_distrib_do(dsm_shift,h)..
-         sum( hh$( ord(hh) >= ord(h) - dsmdata_shift("t_dur_dsm_shift",dsm_shift) AND ord(hh) <= ord(h) + dsmdata_shift("t_dur_dsm_shift",dsm_shift) ) , DSM_DO(dsm_shift,hh,h) )
-                 =E=
-         DSM_DO_DEMAND(dsm_shift,h)
-%reserves%$ontext
-         + RP_DSM_SHIFT('SR_up',dsm_shift,h) * phi_reserves_call('SR_up',h)
-         + RP_DSM_SHIFT('MR_up',dsm_shift,h) * phi_reserves_call('MR_up',h)
-$ontext
-$offtext
-;
-
-con7e_DSMshift_recovery(dsm_shift,h)..
-         sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_shift("t_off_dsm_shift",dsm_shift) ) , DSM_UP(dsm_shift,hh))
-         =L= N_DSM_SHIFT(dsm_shift) * dsmdata_shift("t_dur_dsm_shift",dsm_shift)
-;
 *con7f_DSMshift_profile(dsm_shift,h)..
 *
 *        DSM_DO_DEMAND(dsm_shift,h)
@@ -1024,32 +880,6 @@ con8f_max_I_dsm_shift_pos(dsm_shift)..
          N_DSM_SHIFT(dsm_shift) =L= dsmdata_shift("m_dsm_shift",dsm_shift)
 ;
 
-* ---------------------------------------------------------------------------- *
-*==========          Reserve constraints *==========
-* ---------------------------------------------------------------------------- *
-
-con10a_reserve_prov(reserves,h)$( ord(reserves) > 2)..
-        sum(ct, RP_CON(reserves,ct,h))
-        + sum(res, RP_RES(reserves,res,h))
-        + sum(sto, RP_STO_IN(reserves,sto,h) + RP_STO_OUT(reserves,sto,h))
-%DSM%$ontext
-        + sum(dsm_curt, RP_DSM_CU(reserves,dsm_curt,h))$( ord(reserves) = 3 OR ord(reserves) = 5 )
-        + sum(dsm_shift , RP_DSM_SHIFT(reserves,dsm_shift,h) )
-$ontext
-$offtext
-        =E= (
-            1000 * phi_reserves_share(reserves) * (
-            reservedata("reserves_intercept",reserves) + sum( res , reserves_slope(reserves,res) * P_RES(res)/1000 ) ) )$(ord(h) > 1)
-;
-
-con10b_reserve_prov_PR(reserves,h)$( ord(reserves) < 3)..
-        sum(ct, RP_CON(reserves,ct,h))
-        + sum(res, RP_RES(reserves,res,h))
-        + sum(sto, RP_STO_IN(reserves,sto,h) + RP_STO_OUT(reserves,sto,h) )
-         =E= phi_reserves_pr* sum( reservesreserves$( ord(reservesreserves) > 2), 1000 * phi_reserves_share(reservesreserves) * (
-            reservedata("reserves_intercept",reservesreserves) + sum( res , reserves_slope(reservesreserves,res) * P_RES(res)/1000 ) ) )$(ord(h) > 1)
-;
-
 
 ********************************************************************************
 *==========           MODEL *==========
@@ -1082,19 +912,20 @@ con4k_PHS_EtoP
 
 *con5d_maxBIO
 
-*con8a_max_I_con
-*con8b_max_I_res
-*con8c_max_I_sto_e
-*con8d_max_I_sto_p
+con8a_max_I_con
+con8b_max_I_res
+con8c_max_I_sto_e
+con8d_max_I_sto_p
 
 %DSM%$ontext
-con6a_DSMcurt_duration_max
-con6b_DSMcurt_max
+*con6a_DSMcurt_duration_max
+*con6b_DSMcurt_max
+*
+*con7a_DSMshift_upanddown
+*con7b_DSMshift_granular_max
+*con7c_DSM_distrib_up
+*con7d_DSM_distrib_do
 
-con7a_DSMshift_upanddown
-con7b_DSMshift_granular_max
-con7c_DSM_distrib_up
-con7d_DSM_distrib_do
 *con_7e_DSMshift_recovery
 *con7f_DSMshift_profile
 *con7g_DSMshift_profile_maxACpower
@@ -1104,24 +935,6 @@ con8f_max_I_dsm_shift_pos
 $ontext
 $offtext
 
-%reserves%$ontext
-con3b_minprod_conv
-con3c_flex_PR_up
-con3d_flex_PR_do
-con3e_flex_SR_up
-con3f_flex_SR_do
-con3g_flex_MR_up
-con3h_flex_MR_do
-con3j_minprod_ror
-con3l_minprod_res
-
-con4f_resrv_sto
-con4g_resrv_sto
-
-con10a_reserve_prov
-con10b_reserve_prov_PR
-$ontext
-$offtext
 /;
 
 *==========
@@ -1191,6 +1004,8 @@ report4RM(yr,reg,res,'capfac')$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) /
 report4RM(yr,reg,res,'generation') = sum( h , G_RES.l(res,h) );
 report4RM(yr,reg,ct,'generation') = sum( h , G_L.l(ct,h) );
 
+report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/sum(h,d(h)) *1e2;
+
 *also export zero values (prevent compression)
 report4RM(yr,reg,ct,'capacity')$(not report4RM(yr,reg,ct,'capacity')) = eps;
 report4RM(yr,reg,res,'capacity')$(not report4RM(yr,reg,res,'capacity')) = eps;
@@ -1199,7 +1014,8 @@ report4RM(yr,reg,'coal','capfac')$(not report4RM(yr,reg,'coal','capfac')) = eps;
 report4RM(yr,reg,res,'capfac')$(not report4RM(yr,reg,res,'capfac')) = eps;
 report4RM(yr,reg,ct,'generation')$(not report4RM(yr,reg,ct,'generation')) = eps;
 report4RM(yr,reg,res,'generation')$(not report4RM(yr,reg,res,'generation')) = eps;
-
+report4RM(yr,reg,res,'gen_share')$(not report4RM(yr,reg,res,'gen_share')) = eps;
+       
 *** calculate multiplicative factor - markup
 
 *** calculate hourly price with scarcity price thrown out, i.e. setting the highest price hour prices to the price of the hour with the highest short term cost
@@ -1221,19 +1037,19 @@ report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal')$(sum( h, (
 annual_load_weighted_price = sum(h,hourly_price(h)*d(h))/sum(h,d(h));
 
 *if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value
-reportmk_4RM(yr,reg,ct,'mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',ct) ne 0) =
+reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',ct) ne 0) =
     report_tech('DIETER',yr,reg,'market value w/o scarcity price',ct) / annual_load_weighted_price;
     
-reportmk_4RM(yr,reg,'coal','mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') ne 0) =
+reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') ne 0) =
     report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') / annual_load_weighted_price;
     
-reportmk_4RM(yr,reg,res,'mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) ne 0) = 
+reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) ne 0) = 
     report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) / annual_load_weighted_price;
 
 *if there is generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
-reportmk_4RM(yr,reg,ct,'mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',ct) = 0) = 1;
-reportmk_4RM(yr,reg,'coal','mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') = 0)  = 1;    
-reportmk_4RM(yr,reg,res,'mult_markup')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) = 0) = 1;
+reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',ct) = 0) = 1;
+reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price','coal') = 0)  = 1;    
+reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'market value w/o scarcity price',res) = 0) = 1;
 
 execute_unload "results_DIETER_y12", report4RM, reportmk_4RM;
 

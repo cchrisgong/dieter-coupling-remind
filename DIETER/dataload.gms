@@ -22,7 +22,7 @@ Parameters
 vm_cap(reg, te_remind, grade) 
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
-v32_seelDem(reg, se_remind) 
+p32_seelDem(reg, se_remind) 
 remind_totdemand(yr, reg, se_remind)
 *-------------------------
 *vm_capFac(yr, reg, te_remind)
@@ -30,9 +30,11 @@ remind_totdemand(yr, reg, se_remind)
 *-------------------------
 q_balPe(yr,reg,pe_remind)
 remind_fuelcost(yr,reg,pe_remind)
+remind_fuelcost2(yr_before,reg,pe_remind)
 *-------------------------
 qm_budget(yr,reg)
 remind_budget(yr,reg)
+remind_budget2(yr_before,reg)
 *------------------------------------
 *vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
 *remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
@@ -95,10 +97,12 @@ $gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 *$load  remind_capFac = vm_capFac.l
-$load  remind_totdemand = v32_seelDem.l
+$load  remind_totdemand = p32_seelDem
 *$load  remind_seDem = vm_demSe.l
 $load  remind_fuelcost = q_balPe.m
+$load  remind_fuelcost2 = q_balPe.m
 $load  remind_budget = qm_budget.m
+$load  remind_budget2 = qm_budget.m
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
@@ -140,8 +144,10 @@ Parameters
 *====== Fuel and CO2 costs ======
 
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-*con_fuelprice_reg(ct,reg)        Fuel price conventionals in Euro per MWth for different regions
-con_CO2price             CO2 price /25/
+con_fuelprice_reg(ct,reg) Fuel price conventionals in Euro per MWth for different regions
+con_fuelprice_reg0(ct,reg) 
+con_fuelprice_reg1(ct,reg) 
+con_CO2price              CO2 price in $ per tCO2 /25/
 
 *====== Renewables ======
 
@@ -166,15 +172,15 @@ m_res_e(res)             Investment: maximum installable energy in TWh per a
 
 *d_y(year,h)              Demand hour h for cost minimization for different years
 *d_y_reg(year,reg,h)      Demand hour h for cost minimization for different years and specific regions
-d(h)             Demand hour h for cost minimization
+d(h)                      Demand hour h for cost minimization
 *price_data(h)            Spot market prices 2012
 *phi_res_y(year,res,h)    Renewables availability technology res in hour h for different years
 phi_res_y_reg(year,reg,h,res)
-phi_res(res,h)           Renewables availability technology res in hour h
+phi_res(res,h)            Renewables availability technology res in hour h
 *phi_ror(h)               Run-of-river availability in hour h
 
-elasticity_upload        Upload parameter for demand elasticity
-elasticity               Demand elasticity
+elasticity_upload         Upload parameter for demand elasticity
+elasticity                Demand elasticity
 *alpha(h)                 Reservation price hour h for elastic demand
 *beta(h)                  Slope on linear demand curve hour h
 
@@ -187,15 +193,15 @@ elasticity               Demand elasticity
 *eta_sto_in(sto)          Storage loading efficiency
 *eta_sto_out(sto)         Storage discharging efficiency
 *stodata("phi_sto_ini",sto)         Initial storage level
-*etop_max(sto)            Maximum E to P ratio of storage types
+*etop_max(sto)                      Maximum E to P ratio of storage types
 *stodata("c_fix_sto",sto)           Annual fixed costs per MW
 
 *--- Investment ---*
 *c_inv_overnight_sto_e(sto)       Investment costs for storage energy in MWh: Overnight
 *c_inv_overnight_sto_p(sto)       Investment costs for storage capacity in MW: Overnight
-*stodata("inv_lifetime_sto",sto)            Investment costs for storage: technical lifetime
+*stodata("inv_lifetime_sto",sto)  Investment costs for storage: technical lifetime
 *inv_recovery_sto(sto)            Investment costs for storage: Recovery period
-*stodata("inv_interest_sto",sto)            Investment costs for storage: Interest rate
+*stodata("inv_interest_sto",sto)  Investment costs for storage: Interest rate
 *m_sto_e(sto)                     Investment into storage: maximum installable energy in MWh
 *m_sto_p(sto)                     Investment into storage: maximum installable capacity in MW
 
@@ -261,12 +267,12 @@ $include "Renewables.csv"
 $offdelim
 /;
 
-parameter con_fuelprice_reg(ct,reg)      "Fuel price conventionals in Euro per MWth for different regions"
-/
-$ondelim
-$include "FuelPrice.csv"
-$offdelim
-/;
+*parameter con_fuelprice_reg(ct,reg)      "Fuel price conventionals in Euro per MWth for different regions"
+*/
+*$ondelim
+*$include "FuelPrice.csv"
+*$offdelim
+*/;
 
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
@@ -322,28 +328,28 @@ $offdelim
 /;
 
 *%reserves%$ontext
-parameter reservedata(all_reserve,reserves)      "Various Data for storage"
-/
-$ondelim
-$include "Reserves.csv"
-$offdelim
-/;
-
-Table t_reserves_slope(reserves,res)      ""
-$ondelim
-$include "Reserves2.csv"
-$offdelim
-;
-reserves_slope(reserves,res) = t_reserves_slope(reserves,res);
-
-
-Table t_phi_reserves_call_y(year,h,reserves)      "Hourly share of reserve provision that is actually activated"
-$ondelim
-$include "Reserves_hourly.csv"
-$offdelim
-;
-
-phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
+*parameter reservedata(all_reserve,reserves)      "Various Data for storage"
+*/
+*$ondelim
+*$include "Reserves.csv"
+*$offdelim
+*/;
+*
+*Table t_reserves_slope(reserves,res)      ""
+*$ondelim
+*$include "Reserves2.csv"
+*$offdelim
+*;
+*reserves_slope(reserves,res) = t_reserves_slope(reserves,res);
+*
+*
+*Table t_phi_reserves_call_y(year,h,reserves)      "Hourly share of reserve provision that is actually activated"
+*$ondelim
+*$include "Reserves_hourly.csv"
+*$offdelim
+*;
+*
+*phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
 
 *$ontext
 *$offtext
@@ -422,5 +428,5 @@ $offtext
 *cdata("m_con_e",'bio') = cdata("m_con_e",'bio')*card(h)/8760 ;
 *
 
-parameter phi_mean_reserves_call, phi_mean_reserves_call_y ;
-phi_mean_reserves_call_y(year,reserves) = sum(h, phi_reserves_call_y(year,h,reserves) ) / card(h) + eps ;
+*parameter phi_mean_reserves_call, phi_mean_reserves_call_y ;
+*phi_mean_reserves_call_y(year,reserves) = sum(h, phi_reserves_call_y(year,h,reserves) ) / card(h) + eps ;
