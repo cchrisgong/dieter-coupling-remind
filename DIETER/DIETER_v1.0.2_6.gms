@@ -180,13 +180,6 @@ earlyRetiCap_reporting("2035", reg, te_remind) = (remind_capEarlyReti("2035", re
                                                                             / (1 - remind_capEarlyReti("2035", reg, te_remind)) ;
 
 
-*==========
-*scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
-*DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2018',"DEU",h,"Wind_on"))/8760;
-*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
-*phi_res_y_reg('2018',"DEU",h,"Wind_on") = phi_res_y_reg('2018',"DEU",h,"Wind_on");
-
-
 ****************
 *AO* Match VRE CFs of DIETER to REMIND values
 * General idea for wind: Read in 2019 input data for both wind onshore (CF 25%) and offshore (CF 50%).
@@ -212,6 +205,10 @@ dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 * CF_{REMIND}  = x * CF_{DIETER, onshore} + (1 - x) * CF_{DIETER, offshore}
 * ==> x = ( CF_{REMIND} - CF_{DIETER, offshore} ) / ( CF_{DIETER, onshore} - CF_{DIETER, offshore} ) 
 share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
+
+* Limit 0<weight<1
+share_wind_on_CF_match$(share_wind_on_CF_match>1) = 1;
+share_wind_on_CF_match$(share_wind_on_CF_match<0) = 0;
 
 *AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
 phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
