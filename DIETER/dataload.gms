@@ -28,13 +28,12 @@ remind_totdemand(yr, reg, se_remind)
 *vm_capFac(yr, reg, te_remind)
 *remind_capFac(yr, reg, te_remind)
 *-------------------------
-q_balPe(yr,reg,pe_remind)
-remind_fuelcost(yr,reg,pe_remind)
-remind_fuelcost2(yr_before,reg,pe_remind)
+q_balPe(all_yr,reg,pe_remind)
+remind_fuelcost(all_yr,reg,pe_remind)
+
 *-------------------------
 qm_budget(yr,reg)
-remind_budget(yr,reg)
-remind_budget2(yr_before,reg)
+remind_budget(all_yr,reg)
 *------------------------------------
 *vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
 *remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
@@ -99,13 +98,9 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 $gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
-*$load  remind_capFac = vm_capFac.l
 $load  remind_totdemand = p32_seelDem
-*$load  remind_seDem = vm_demSe.l
-$load  remind_fuelcost = q_balPe.m
-$load  remind_fuelcost2 = q_balPe.m
+*$load  remind_fuelcost = q_balPe.m
 $load  remind_budget = qm_budget.m
-$load  remind_budget2 = qm_budget.m
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
@@ -121,6 +116,12 @@ $load  remind_CF = pm_cf
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
+
+$gdxin fulldata_2.gdx
+$load  remind_fuelcost = q_balPe.m
+$gdxin
+
+
 
 Parameters
 
@@ -149,9 +150,8 @@ Parameters
 *====== Fuel and CO2 costs ======
 
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-con_fuelprice_reg(ct,reg) Fuel price conventionals in Euro per MWth for different regions
-con_fuelprice_reg0(ct,reg) 
-con_fuelprice_reg1(ct,reg) 
+con_fuelprice_reg(all_yr,ct,reg) Fuel price conventionals in Euro per MWth for different regions
+con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
 con_CO2price              CO2 price in $ per tCO2 /25/
 
 *====== Renewables ======

@@ -70,8 +70,8 @@
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',ct) = cdata("c_fix_con",ct) / 1e3;
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',res) = rdata("c_fix_res",res) / 1e3;
 *       fuel cost
-        report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg(ct,reg);
-        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg(ct,reg)/cdata("eta_con",ct);
+        report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg);
+        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct);
 *       CO2 cost
         report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct) = cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price;
         
@@ -79,15 +79,15 @@
 ***     LCOE (for investment c_i "lig" is the same as "coal" ) LCOE = (IC+OM) * cap /gen + CO2 + FC
 *       IC cost: $/MW, CAP: MW, PRODSE: MWh
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,"coal") ne 0)  = ( c_i("lig") + cdata("c_fix_con","lig") ) *  RM_postInv_cap_con(yr,reg,"coal") / RM_postInv_prodSe_con(yr,reg,"coal")
-                                                                                + con_fuelprice_reg("lig",reg)/cdata("eta_con","lig") + cdata("carbon_content","lig")/cdata("eta_con","lig") * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed("lig",reg)/cdata("eta_con","lig") + cdata("carbon_content","lig")/cdata("eta_con","lig") * con_CO2price ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','CCGT')$(RM_postInv_prodSe_con(yr,reg,"CCGT") ne 0) = ( c_i("CCGT") + cdata("c_fix_con","CCGT")) *  RM_postInv_cap_con(yr,reg,"CCGT") / RM_postInv_prodSe_con(yr,reg,"CCGT")
-                                                                                + con_fuelprice_reg("CCGT",reg)/cdata("eta_con","CCGT") + cdata("carbon_content","CCGT")/cdata("eta_con","CCGT") * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed("CCGT",reg)/cdata("eta_con","CCGT") + cdata("carbon_content","CCGT")/cdata("eta_con","CCGT") * con_CO2price ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','OCGT_eff')$(RM_postInv_prodSe_con(yr,reg,"OCGT_eff") ne 0) = ( c_i("OCGT_eff") + cdata("c_fix_con","OCGT_eff") ) * RM_postInv_cap_con(yr,reg,"OCGT_eff") / RM_postInv_prodSe_con(yr,reg,"OCGT_eff")
-                                                                                + con_fuelprice_reg("OCGT_eff",reg)/cdata("eta_con","OCGT_eff") + cdata("carbon_content","OCGT_eff")/cdata("eta_con","OCGT_eff") * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed("OCGT_eff",reg)/cdata("eta_con","OCGT_eff") + cdata("carbon_content","OCGT_eff")/cdata("eta_con","OCGT_eff") * con_CO2price ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','bio')$(RM_postInv_prodSe_con(yr,reg,"bio") ne 0) = ( c_i("bio") + cdata("c_fix_con","bio") )  *  RM_postInv_cap_con(yr,reg,"bio") / RM_postInv_prodSe_con(yr,reg,"bio")
-                                                                                + con_fuelprice_reg("bio",reg) /cdata("eta_con","bio");
+                                                                                + con_fuelprice_reg_smoothed("bio",reg) /cdata("eta_con","bio");
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','nuc')$(RM_postInv_prodSe_con(yr,reg,"nuc") ne 0) = ( c_i("nuc") + cdata("c_fix_con","nuc") )  *  RM_postInv_cap_con(yr,reg,"nuc") / RM_postInv_prodSe_con(yr,reg,"nuc")
-                                                                                + con_fuelprice_reg("nuc",reg) /cdata("eta_con","nuc");
+                                                                                + con_fuelprice_reg_smoothed("nuc",reg) /cdata("eta_con","nuc");
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','ror')$(RM_postInv_prodSe_con(yr,reg,"ror") ne 0) = ( c_i("ror") + cdata("c_fix_con","ror") )  *  RM_postInv_cap_con(yr,reg,"ror") / RM_postInv_prodSe_con(yr,reg,"ror") ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',res)$(RM_postInv_prodSe_res(yr,reg,res) ne 0) = ( c_i_res(res) + rdata("c_fix_res",res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res(yr,reg,res) ;
 
@@ -160,13 +160,13 @@
         report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = ( c_i(ct) + cdata("c_fix_con",ct) ) *  N_CON.l(ct) / sum( h , G_L.l(ct,h))
-                                                                                + con_fuelprice_reg(ct,reg) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed(ct,reg) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price ;
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = ( c_i_res(res) + rdata("c_fix_res",res) ) * P_RES.l(res) / sum( h , G_RES.l(res,h)) ;
 
 *       LCOE_marg $/MWh
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h)) ne 0) = ( c_i(ct) + cdata("c_fix_con",ct) ) *  N_CON.l(ct) / sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h) )
-                                                                                + con_fuelprice_reg(ct,reg) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed(ct,reg) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price ;
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h)) ne 0) = ( c_i_res(res) + rdata("c_fix_res",res) ) * P_RES.l(res) / sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h));
 
