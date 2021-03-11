@@ -30,7 +30,10 @@ remind_totdemand(yr, reg, se_remind)
 *-------------------------
 q_balPe(all_yr,reg,pe_remind)
 remind_fuelcost(all_yr,reg,pe_remind)
-
+remind_fuelcost_currentiter(all_yr,reg,pe_remind)
+*for smoothing costs over 2 iterations
+p32_fuelcost_lastiter(all_yr,reg,pe_remind)
+remind_fuelcost_lastiter(all_yr,reg,pe_remind)
 *-------------------------
 qm_budget(yr,reg)
 remind_budget(all_yr,reg)
@@ -72,9 +75,8 @@ earlyRetiCap_reporting(yr, reg, te_remind)
 *for passing the capacity factor of REMIND for VRE techs
 remind_pm_dataren(reg, char_remind_dataren, grade,te_remind)
 remind_vm_capDistr(yr, reg, te_remind, grade)
-*-------------------------------------
-*for reporting REMIND
-remind_CF(yr,reg,te_remind)
+*remind_CF contain scaling that accounts for smaller turbines or panels/lower CFs in earlier years (only for wind and solar in remind)
+remind_CF(yr,reg,te_remind) 
 pm_cf(yr,reg,te_remind)
 *-------------------------------------
 remind_totdemand_inMWh
@@ -99,7 +101,8 @@ $gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 $load  remind_totdemand = p32_seelDem
-*$load  remind_fuelcost = q_balPe.m
+$load  remind_fuelcost_currentiter = q_balPe.m
+$load  remind_fuelcost_lastiter = p32_fuelcost_lastiter
 $load  remind_budget = qm_budget.m
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
@@ -115,10 +118,6 @@ $load  remind_carboncontent = fm_dataemiglob
 $load  remind_CF = pm_cf
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
-$gdxin
-
-$gdxin fulldata_2.gdx
-$load  remind_fuelcost = q_balPe.m
 $gdxin
 
 

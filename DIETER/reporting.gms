@@ -102,7 +102,7 @@
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)',"Solar") = earlyRetiCap_reporting(yr, reg, "spv") * 1e3;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)',"Wind_on") = earlyRetiCap_reporting(yr, reg, "wind") * 1e3;
         
-***     TW -> GW
+***     TW -> GW; coal is split for easy comparison
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',"coal") = sum(te_remind, added_remind_cap(yr, reg, te_remind, "1")$(COALte(te_remind))) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',"lig") = sum(te_remind, added_remind_cap(yr, reg, te_remind, "1")$(COALte(te_remind))) * 1e3 /2;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',"hc") = sum(te_remind, added_remind_cap(yr, reg, te_remind, "1")$(COALte(te_remind))) * 1e3 /2;
@@ -121,8 +121,8 @@
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"bio") = remind_CF(yr,reg,"biochp")*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"nuc") = remind_CF(yr,reg,"tnrs")*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"ror") = remind_CF(yr,reg,"hydro")*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"Solar") = remind_CF(yr,reg,"spv")*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"Wind_on") = remind_CF(yr,reg,"wind")*1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"Solar") = sum( h, phi_res("Solar", h) ) / card(h) * 1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)',"Wind_on") = sum( h, phi_res("Wind_on", h) ) / card(h) * 1e2;
         
 ***     ^^^ reporting on remind stuff
  

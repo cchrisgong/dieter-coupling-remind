@@ -210,8 +210,8 @@ share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wi
 ;
 
 *AO* Calculate REMIND VRE CFs from grades
-remind_VRECapFac("wind_on") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "wind") * remind_vm_CapDistr("2010", "DEU", "wind", grade) / remind_cap("2010", "DEU", "wind", "1"));
-remind_VRECapFac("Solar") = sum(grade, remind_pm_dataren("DEU", "nur", grade, "spv") * remind_vm_CapDistr("2010", "DEU", "spv", grade) / remind_cap("2010", "DEU", "spv", "1"));
+remind_VRECapFac("wind_on") = remind_CF("2010","DEU","wind") * sum(grade, remind_pm_dataren("DEU", "nur", grade, "wind") * remind_vm_CapDistr("2010", "DEU", "wind", grade) / remind_cap("2010", "DEU", "wind", "1"));
+remind_VRECapFac("Solar") = remind_CF("2010","DEU","spv") * sum(grade, remind_pm_dataren("DEU", "nur", grade, "spv") * remind_vm_CapDistr("2010", "DEU", "spv", grade) / remind_cap("2010", "DEU", "spv", "1"));
 remind_HydroCapFac = sum(grade, remind_pm_dataren("DEU", "nur", grade, "hydro") * remind_vm_CapDistr("2010", "DEU", "hydro", grade) / remind_cap("2010", "DEU", "hydro", "1"));
 
 *AO* Calculate DIETER VRE CFs as given by the input data
@@ -290,26 +290,26 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 
 N_CON.lo("lig") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2010", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2, 0.2* SMax(h, d(h)));
+                    ) * 1e6 /2,.2*SMax(h, d(h)));
 
 N_CON.lo("hc") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2010", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2, 0.2* SMax(h, d(h)));
+                    ) * 1e6 /2,.2*SMax(h, d(h)));
                     
 N_CON.lo("nuc") = min(sum(te_remind,
                    sum(   grade, preInv_remind_cap("2010", "DEU", te_remind, grade)$(NUCte(te_remind))   )
-                    ) * 1e6, 0.2* SMax(h, d(h)));
+                    ) * 1e6,.2*SMax(h, d(h)));
 
 N_CON.lo("CCGT") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2010", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
-                    ) * 1e6, 0.2* SMax(h, d(h)));
+                    ) * 1e6,.2*SMax(h, d(h)));
 
-N_CON.lo("OCGT_eff") = min(sum(grade, preInv_remind_cap("2010", "DEU", "ngt", grade)) * 1e6, 0.2* SMax(h, d(h)));
+N_CON.lo("OCGT_eff") = min(sum(grade, preInv_remind_cap("2010", "DEU", "ngt", grade)) * 1e6,.2*SMax(h, d(h)));
 
       
-N_CON.lo("bio") =  min(sum(te_remind,
+N_CON.lo("bio") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2010", "DEU", te_remind, grade)$(BIOte(te_remind))   )
-                    ) * 1e6, 0.2* SMax(h, d(h)));
+                    ) * 1e6,.2*SMax(h, d(h)));
 
 ***CG: implementation for DIETER lower bound to only kick in in the absence of early retirement in last iteration REMIND (turned off since it lead to non_optimal)
 *** in the oscillation situation
@@ -393,6 +393,9 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *================================================================
 *================ read in fuel price from remind ================
+*smoothing fuel cost over iterations
+remind_fuelcost(all_yr,reg,pe_remind) = (remind_fuelcost_currentiter(all_yr,reg,pe_remind) + remind_fuelcost_lastiter(all_yr,reg,pe_remind))/2;
+
 *1.2 is the conversion btw 2005$ and 2015$
 *1e12 is the conversion btw Trillion$ to $
 *remind_budget is kind of like inflation rate
@@ -498,6 +501,7 @@ con2b_loadlevelstart     Load change costs: Level for first period
 *full-load hours
 con2c_maxprodannual_conv Full load hour constraint (for non-nuclear conventional)
 con2c_maxprodannual_conv_nuc Full load hour constraint (for coal)
+
 * Capacity contraints and flexibility constraints
 con3a_maxprod_conv       Capacity Constraint conventionals
 

@@ -24,6 +24,10 @@ def rewriteGAMS(i, filename_i):
 			line = line.replace("2130,2150,2150", "2130,2150")
 		line = line.replace(str(year_list[1]), str(year_list[i]))
 		line = line.replace(str(year_list[0]), str(year_list[i-1]))
+
+		if year_list[i] == 2150:
+			line = line.replace("2130,2150,2150", "2130,2150")
+
 		line = line.replace("results_DIETER_y1", "results_DIETER_y"+ str(i) )
 		line = line.replace("full_DIETER_y1", "full_DIETER_y"+ str(i) )
 		line = line.replace("report_DIETER_y1", "report_DIETER_y"+ str(i) )
