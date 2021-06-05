@@ -51,7 +51,7 @@ $setglobal second_hour ""
 ****fuel cost option:
 *smooth will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-$setglobal fuel_cost fixed
+$setglobal fuel_cost unfixed
 *==========
 
 * Definition of strings for report parameters and sanity checks
