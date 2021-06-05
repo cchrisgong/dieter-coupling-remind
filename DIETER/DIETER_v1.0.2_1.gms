@@ -428,7 +428,7 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 *================================================================
 *================ read in fuel price from remind ================
 
-*1.2 is the conversion btw 2015$ and 2025$
+*1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
 *remind_budget is kind of like inflation rate
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
