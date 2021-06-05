@@ -19,21 +19,21 @@ $offtext
 
 Parameters
 *=========== for loading remind output ===========
-vm_cap(reg, te_remind, grade) 
+vm_cap(yr, reg, te_remind, grade) 
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
-p32_seelDem(reg, se_remind) 
+p32_seelDem(yr, reg, se_remind)
+*vm_usableSe(yr, reg, se_remind)
 remind_totdemand(yr, reg, se_remind)
 *-------------------------
 *vm_capFac(yr, reg, te_remind)
 *remind_capFac(yr, reg, te_remind)
 *-------------------------
-q_balPe(all_yr,reg,pe_remind)
-remind_fuelcost(all_yr,reg,pe_remind)
-remind_fuelcost_currentiter(all_yr,reg,pe_remind)
+remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
-p32_fuelcost_lastiter(all_yr,reg,pe_remind)
-remind_fuelcost_lastiter(all_yr,reg,pe_remind)
+p32_fuelprice_avgiter(all_yr,reg,pe_remind)
+*for loading fixed REMIND fuel costs from 2nd iter
+remind_fuelprice_fixed(all_yr,reg,pe_remind)
 *-------------------------
 qm_budget(yr,reg)
 remind_budget(all_yr,reg)
@@ -41,8 +41,13 @@ remind_budget(all_yr,reg)
 *vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
 *remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
 *------------------------------------
+* REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
 remind_prodSe(yr, reg, pe_remind, se_remind, te_remind)
+*------------------------------------
+* REMIND usable energy generated from VRE (excluding curtailment)
+vm_usableSeTe(yr, reg, se_remind, te_remind)
+remind_prodSe_Resxcurt(yr, reg, se_remind, te_remind)
 *------------------------------------
 *fraction of OM cost over investment cost
 pm_data(reg,char_remind,te_remind)
@@ -86,9 +91,10 @@ remind_carboncontent(pe_remind, se_remind, te_remind, gas_remind)
 fm_dataemiglob(pe_remind, se_remind, te_remind, gas_remind)
 sm_c_2_co2 Conversion factor between weight of carbon to weight of CO2 /3.6667/
 sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
-*----------------------------- capacity is exogenous from remind
-*P_RES(res)     Renewable technology built in MW
-*N_CON(ct)        Conventional technology ct built in MW
+*-------------------------------------
+*iteration from REMIND
+remind_iter
+o_iterationNumber
 
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
@@ -100,13 +106,15 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 $gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
-$load  remind_totdemand = p32_seelDem
-$load  remind_fuelcost_currentiter = q_balPe.m
-$load  remind_fuelcost_lastiter = p32_fuelcost_lastiter
+$load  remind_iter = o_iterationNumber
+*$load  remind_totdemand = vm_usableSe.l
 $load  remind_budget = qm_budget.m
+$load  remind_totdemand = p32_seelDem
+*$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
+$load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = fm_dataglob
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
@@ -120,6 +128,15 @@ $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 
+display remind_iter;
+
+$IFTHEN.FC %fuel_cost% == "fixed"
+
+$gdxin fulldata_1.gdx
+$load  remind_fuelprice = q_balPe.m
+$gdxin
+
+$ENDIF.FC
 
 
 Parameters
@@ -147,9 +164,9 @@ Parameters
 
 
 *====== Fuel and CO2 costs ======
-
+*""fuel price" means without dividing by efficiency eta
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-con_fuelprice_reg(all_yr,ct,reg) Fuel price conventionals in Euro per MWth for different regions
+con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
 con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
 con_CO2price              CO2 price in $ per tCO2 /25/
 
