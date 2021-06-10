@@ -103,7 +103,7 @@ ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OC
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 res       Renewable technologies                 /Wind_on, Wind_off, Solar/
 *flexTe    flexible sector coupling techno        /Electrolysis/
-sto       Storage technolgies                    /Sto1*Sto7/
+sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
 all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max/
@@ -120,7 +120,6 @@ alias (reserves,reservesreserves) ;
 
 *==========
 
-$include dataload.gms
 *$stop
 
 Parameter P ratio of fixed power load and flexible power load /1/ ;
@@ -140,6 +139,7 @@ Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generat
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
 Parameter fuelprice_remind_4rep(yr,reg,ct_remind) fuel price from REMIND for reporting
 
+$include dataload.gms
 *==========
 
 Variables
@@ -298,28 +298,28 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 * half-half split between lig and hc for DEU
 * TW-> MW
 *
-N_CON.lo("lig") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2;
-
-N_CON.lo("hc") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
-                    ) * 1e6 /2;
-                    
-N_CON.lo("nuc") = sum(te_remind,
-                   sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
-                    ) * 1e6;
-
-N_CON.lo("CCGT") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
-                    ) * 1e6;
-
-N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2020", "DEU", "ngt", grade)) * 1e6 ;
-
-      
-N_CON.lo("bio") = sum(te_remind,
-                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
-                    ) * 1e6;
+*N_CON.lo("lig") = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*                    ) * 1e6 /2;
+*
+*N_CON.lo("hc") = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+*                    ) * 1e6 /2;
+*                    
+*N_CON.lo("nuc") = sum(te_remind,
+*                   sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+*                    ) * 1e6;
+*
+*N_CON.lo("CCGT") = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+*                    ) * 1e6;
+*
+*N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2020", "DEU", "ngt", grade)) * 1e6 ;
+*
+*      
+*N_CON.lo("bio") = sum(te_remind,
+*                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+*                    ) * 1e6;
 *
 
 *N_CON.lo("lig") = min(sum(te_remind,
@@ -404,27 +404,26 @@ N_CON.lo("bio") = sum(te_remind,
 *N_CON.fx("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 *N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
 *N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
-*N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
-*N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
-*N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
-*N_CON.fx("hc") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
+*N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio"_STO_IN.fx(reserves,sto,h) = 0 ;
+*RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
 **********************************************************************
 
 
-*N_STO_P.fx('Sto1') = remind_cap("2020", "DEU", "storspv", "1") * 3 * 1e6 + remind_cap("2020", "DEU", "storwind", "1") * 0.3* 1e6;
+  
+*N_STO_P.fx('Sto1') = remind_cap("2010", "DEU", "storspv", "1") * 3 * 1e6+ remind_cap("2010", "DEU", "storwind", "1") * 0.3* 1e6;
 
-N_STO_P.fx(sto) = 0 ;
-N_STO_P.fx(sto) = 0 ;
-N_STO_E.fx(sto) = 0 ;
-STO_IN.fx(sto,h) = 0 ;
-STO_OUT.fx(sto,h) = 0 ;
-STO_L.fx(sto,h) = 0 ;
-RP_STO_IN.fx(reserves,sto,h) = 0 ;
-RP_STO_OUT.fx(reserves,sto,h) = 0 ;
-
+*N_STO_P.fx(sto) = 0 ;
+*N_STO_E.fx(sto) = 0 ;
+*STO_IN.fx(sto,h) = 0 ;
+*STO_OUT.fx(sto,h) = 0 ;
+*STO_L.fx(sto,h) = 0 ;
+*RP_STO_IN.fx(reserves,sto,h) = 0 ;
+*RP_STO_OUT.fx(reserves,sto,h) = 0 ;
+*
+*
 *================================================================
 *================ read in fuel price from remind ================
 
@@ -472,6 +471,7 @@ c_m(ct) = c_m_reg(ct,"DEU");
 *================================================================
 *=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
+
 disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
 disc_fac_con("hc") = disc_fac_con("lig");
 disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
@@ -497,6 +497,8 @@ c_i_ovnt("nuc") = remind_CapCost("2020", "DEU", "tnrs") * 1e6 * 1.2;
  
 c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") * 1e6 * 1.2 ;
 c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * 1e6 * 1.2;
+
+c_i_ovnt("lig") = remind_CapCost("2020", "DEU", "pc") * 1e6 * 1.2 ;
 
 *annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
@@ -788,8 +790,8 @@ con4j_ending(sto,h)$( ord(h) = card(h) )..
          STO_L(sto,h) =E= stodata("phi_sto_ini",sto) * N_STO_E(sto)
 ;
 
-con4k_PHS_EtoP('Sto5')..
-        N_STO_E('Sto5') =L= stodata("etop_max",'Sto5') * N_STO_P('Sto5')
+con4k_PHS_EtoP('PSH')..
+        N_STO_E('PSH') =L= stodata("etop_max",'PSH') * N_STO_P('PSH')
 ;
 
 
@@ -984,10 +986,10 @@ con4k_PHS_EtoP
 
 *con5d_maxBIO
 
-con8a_max_I_con
-con8b_max_I_res
-con8c_max_I_sto_e
-con8d_max_I_sto_p
+*con8a_max_I_con
+*con8b_max_I_res
+*con8c_max_I_sto_e
+*con8d_max_I_sto_p
 
 %DSM%$ontext
 *con6a_DSMcurt_duration_max

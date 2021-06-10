@@ -141,27 +141,6 @@ $ENDIF.FC
 
 Parameters
 
-*====== Conventionals ======
-
-*--- Generation and fixed ---*
-*eta_con(ct)              Efficiency of conventional technologies
-*carbon_content(ct)       CO2 emissions per fuel unit used
-*c_up(ct)                 Load change costs UP in EUR per MW
-*c_do(ct)                 Load change costs DOWN in EUR per MW
-*c_fix_con(ct)            Annual fixed costs per MW
-*c_var_con(ct)            Variable O&M costs per MWh
-
-*--- Investment ---*
-*c_inv_overnight_con(ct)  Investment costs: Overnight
-*inv_lifetime_con(ct)     Investment costs: technical lifetime
-*inv_recovery_con(ct)     Investment costs: Recovery period according to depreciation tables
-*inv_interest_con(ct)     Investment costs: Interest rate
-*m_con(ct)                Investment: maximum installable capacity per technology
-*m_con_e(ct)              Investment: maximum installable energy in TWh per a
-
-*--- Flexibility ---*
-*grad_per_min(ct)         Maximum load change per minute relative to installed capacity
-
 
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
@@ -180,13 +159,6 @@ phi_min_res              Upload parameter: Minimum required renewables generatio
 *--- Investment ---*
 c_i_ovnt(ct)             Investment costs: Overnight
 c_i_ovnt_res(res)        Investment costs: Overnight
-
-c_inv_overnight_res(res) Investment costs: Overnight
-inv_lifetime_res(res)    Investment costs: technical lifetime
-inv_recovery_res(res)    Investment costs: Recovery period
-inv_interest_res(res)    Investment costs: Interest rate
-m_res(res)               Investment: maximum installable capacity
-m_res_e(res)             Investment: maximum installable energy in TWh per a
 
 
 *====== Time Data ======
@@ -344,7 +316,8 @@ $offdelim
 parameter stodata(all_storage,sto)      "Various Data for storage"
 /
 $ondelim
-$include "Storage.csv"
+$include "Storage_new.csv"
+*$include "Storage.csv"
 $offdelim
 /;
 
@@ -407,17 +380,12 @@ c_i_dsm_cu(dsm_curt)     DSM: Investment costs load curtailment
 c_i_dsm_shift(dsm_shift) DSM: Investment costs load shifting
 ;
 
-*c_i(ct) = cdata("c_inv_overnight_con",ct)*( cdata("inv_interest_con",ct) * (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct)) )
-*                 / ( (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct))-1 )       ;
-*                 
-*c_i_res(res) = rdata("c_inv_overnight_res",res)*(rdata("inv_interest_res",res) * (1+rdata("inv_interest_res",res))**(rdata("inv_lifetime_res",res)) )
-*                 / ( (1+rdata("inv_interest_res",res))**(rdata("inv_lifetime_res",res))-1 )       ;
-*
-c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( stodata("inv_interest_sto",sto) * (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto)) )
-                 / ( (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto))-1 )       ;
-c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( stodata("inv_interest_sto",sto) * (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto)) )
-                 / ( (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto))-1 )       ;
 
+c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+*
 c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
                  / ( (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt))-1 )       ;
 c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
