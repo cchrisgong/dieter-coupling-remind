@@ -34,6 +34,8 @@ remind_fuelprice(all_yr,reg,pe_remind)
 p32_fuelprice_avgiter(all_yr,reg,pe_remind)
 *for loading fixed REMIND fuel costs from 2nd iter
 remind_fuelprice_fixed(all_yr,reg,pe_remind)
+*REMIND variable for fuel cost
+q_balPe(all_yr,reg,pe_remind)
 *-------------------------
 qm_budget(yr,reg)
 remind_budget(all_yr,reg)
@@ -110,7 +112,7 @@ $load  remind_iter = o_iterationNumber
 *$load  remind_totdemand = vm_usableSe.l
 $load  remind_budget = qm_budget.m
 $load  remind_totdemand = p32_seelDem
-$load  remind_fuelprice = p32_fuelprice_avgiter
+*$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
@@ -397,7 +399,6 @@ Parameters
 c_m_reg(ct,reg)          Marginal production costs for conventional plants including variable O&M costs
 c_m(ct)                  Marginal production costs for current region
 c_i(ct)          Annualized investment costs by conventioanl plant per MW
-
 c_i_res(res)     Annualized investment costs by renewable plant per MW
 
 c_i_sto_e(sto)   Annualized investment costs storage energy per MWh
