@@ -37,8 +37,11 @@ remind_fuelprice_fixed(all_yr,reg,pe_remind)
 *REMIND variable for fuel cost
 q_balPe(all_yr,reg,pe_remind)
 *-------------------------
+* REMIND budget and last iteration budget (some averaging is needed as sometimes for some iterations budget goes to zero)
 qm_budget(yr,reg)
 remind_budget(all_yr,reg)
+p32_budget(yr,reg)
+remind_budget_lastiter(all_yr,reg)
 *------------------------------------
 *vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
 *remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
@@ -86,6 +89,10 @@ remind_vm_capDistr(yr, reg, te_remind, grade)
 remind_CF(yr,reg,te_remind) 
 pm_cf(yr,reg,te_remind)
 *-------------------------------------
+* passing REMIND CO2 price to DIETER, CO2 price in $ per tCO2 
+remind_flatco2(yr,reg)
+f21_taxCO2eqHist(yr,reg)
+*-------------------------------------
 remind_totdemand_inMWh
 sm_TWa_2_MWh Conversion factor between TWa and MWh /8760000000/
 *-------------------------------------
@@ -109,10 +116,11 @@ $gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 $load  remind_iter = o_iterationNumber
-*$load  remind_totdemand = vm_usableSe.l
 $load  remind_budget = qm_budget.m
+$load  remind_budget_lastiter = p32_budget
 $load  remind_totdemand = p32_seelDem
 *$load  remind_fuelprice = p32_fuelprice_avgiter
+$load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
@@ -164,13 +172,16 @@ Parameters
 *--- Flexibility ---*
 *grad_per_min(ct)         Maximum load change per minute relative to installed capacity
 
+*====== Fuel and CO2 costs ======
+*""fuel price" means without dividing by efficiency eta
+*con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
+budget_smoothed(all_yr,reg) average budget over 2 iter calculated from REMIND
 
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
 con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
 con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
-con_CO2price              CO2 price in $ per tCO2 /25/
 
 *====== Renewables ======
 
@@ -273,6 +284,7 @@ parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for diff
 /
 $ondelim
 $include "Load_DEU_2019.csv"
+*$include "Load_USA_2019.csv"
 $offdelim
 /;
 
@@ -300,6 +312,7 @@ $offdelim
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
 $include "VRE_potential_DEU_2019.csv"
+*$include "VRE_potential_USA_renewNinja.csv"
 $offdelim
 ;
 

@@ -121,8 +121,7 @@ alias (reserves,reservesreserves) ;
 *==========
 
 $include dataload.gms
-*$stop
-
+Parameter sm_eps small number: 1e-9 /1e-9/;
 Parameter P ratio of fixed power load and flexible power load /1/ ;
 Parameter totFixedLoad total fixed load;
 Parameter totFlexLoad total flexible load;
@@ -138,7 +137,7 @@ Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity f
 Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable
 Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
-Parameter fuelprice_remind_4rep(yr,reg,ct_remind) fuel price from REMIND for reporting
+
 
 *==========
 
@@ -277,7 +276,7 @@ RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, 
 
 **********************************************************************
 
-P_RES.fx("Wind_off") = 0; 
+P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
 N_CON.fx("OCGT_ineff") = 0; 
 
 **********************************************************************
@@ -297,7 +296,7 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 
 * half-half split between lig and hc for DEU
 * TW-> MW
-*
+
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
@@ -399,16 +398,16 @@ N_CON.lo("bio") = sum(te_remind,
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS FIXED BOUNDS ********
 **********************************************************************
 
-*P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / capfac_const("Solar") ;
-*P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / capfac_const("Wind_on") ;
-*N_CON.fx("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+*P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
+*P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
+*N_CON.fx("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (remind_HydroCapFac * 8760) ;
 *N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
 *N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
 *N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
 *N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
 *N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
 *N_CON.fx("hc") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
-
+*
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
 **********************************************************************
@@ -430,13 +429,16 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
-*remind_budget is kind of like inflation rate
+*remind_budget is kind of like inflation rate, "smooth" it over 2 iterations to avoid budget being eps in some iterations
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
-con_fuelprice_reg_remind(all_yr,"lig",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-remind_budget(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
-con_fuelprice_reg_remind(all_yr,"hc",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-remind_budget(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
-con_fuelprice_reg_remind(all_yr,"CCGT",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-remind_budget(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"bio",reg) = -remind_fuelprice(all_yr,reg,"pebiolc") / (-remind_budget(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"nuc",reg) = -remind_fuelprice(all_yr,reg,"peur") / (-remind_budget(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+budget_smoothed(all_yr,reg)$(abs(remind_budget(all_yr,reg)) le sm_eps) = remind_budget_lastiter(all_yr,reg);
+budget_smoothed(all_yr,reg)$(abs(remind_budget(all_yr,reg)) gt sm_eps) = remind_budget(all_yr,reg);
+
+con_fuelprice_reg_remind(all_yr,"lig",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg_remind(all_yr,"hc",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg_remind(all_yr,"CCGT",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"bio",reg) = -remind_fuelprice(all_yr,reg,"pebiolc") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"nuc",reg) = -remind_fuelprice(all_yr,reg,"peur") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 
 *smooth over 3 years
 con_fuelprice_reg_smoothed("lig",reg) = (con_fuelprice_reg_remind("2015","lig",reg) + 2 * con_fuelprice_reg_remind("2020","lig",reg) + con_fuelprice_reg_remind("2025","lig",reg)) / 4;
@@ -466,7 +468,7 @@ cdata("carbon_content","hc") = remind_carboncontent("pecoal","seel","pc","co2") 
 cdata("carbon_content","CCGT") = remind_carboncontent("pegas","seel","ngcc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 *
-c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * con_CO2price + cdata("c_var_con",ct)   ;
+c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct)   ;
 c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
@@ -984,10 +986,10 @@ con4k_PHS_EtoP
 
 *con5d_maxBIO
 
-con8a_max_I_con
-con8b_max_I_res
-con8c_max_I_sto_e
-con8d_max_I_sto_p
+*con8a_max_I_con
+*con8b_max_I_res
+*con8c_max_I_sto_e
+*con8d_max_I_sto_p
 
 %DSM%$ontext
 *con6a_DSMcurt_duration_max
@@ -1103,6 +1105,9 @@ p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) 
 p32_report4RM(yr,reg,'coal','gen_share')$(not p32_report4RM(yr,reg,'coal','gen_share')) = eps;
 p32_report4RM(yr,reg,res,'gen_share')$(not p32_report4RM(yr,reg,res,'gen_share')) = eps;
 
+*share of curtailed renewable to total usable renewable generation
+p32_report4RM(yr,reg,res,'curt_share')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,(G_RES.l(res,h)+CU.l(res,h)));
+p32_report4RM(yr,reg,res,'curt_share')$(not sum(h,G_RES.l(res,h))) = eps;
 
 *** calculate multiplicative factor - markup
 

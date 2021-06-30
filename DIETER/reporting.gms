@@ -21,7 +21,7 @@
         report('DIETER',yr,reg,'solve time') = DIETER.resUsd ;
 *       transform into BillionUSD
         report('DIETER',yr,reg,'obj value (BillionUSD)') = Z.l /1e9;
-        report('DIETER',yr,reg,'CO2 price ($/tCO2)') = con_CO2price; 
+        report('DIETER',yr,reg,'CO2 price ($/tCO2)') = remind_flatco2(yr,reg); 
         report('DIETER',yr,reg,'load-weighted price for fixed demand ($/MWh)') = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h)) ;
         report('DIETER',yr,reg,'price w/ scarcity price shaved ($/MWh)') = annual_load_weighted_price_shaved;
         
@@ -76,7 +76,7 @@
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg);
         report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct);
 *       CO2 cost
-        report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct) = cdata('carbon_content',ct)/cdata('eta_con',ct) * con_CO2price;
+        report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg);
 
 *       ========== report cost ============REMIND============
 
@@ -85,11 +85,11 @@
 *       IC cost: $/MW, CAP: MW, PRODSE: MWh
 ***     This is LCOE for REMIND iteration before (so if this outputs to report_DIETER_i5.gdx, it reports REMIND_LCOE of fulldata_5.gdx run, even though fulldata_5 is produced after DIETER gdxes)
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0)  = ( c_i('lig') + cdata('c_fix_con','lig') ) *  RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal')
-                                                                                + con_fuelprice_reg_smoothed('lig',reg)/cdata('eta_con','lig') + cdata('carbon_content','lig')/cdata('eta_con','lig') * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed('lig',reg)/cdata('eta_con','lig') + cdata('carbon_content','lig')/cdata('eta_con','lig') * remind_flatco2(yr,reg) ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','CCGT')$(RM_postInv_prodSe_con(yr,reg,'CCGT') ne 0) = ( c_i('CCGT') + cdata('c_fix_con','CCGT')) *  RM_postInv_cap_con(yr,reg,'CCGT') / RM_postInv_prodSe_con(yr,reg,'CCGT')
-                                                                                + con_fuelprice_reg_smoothed('CCGT',reg)/cdata('eta_con','CCGT') + cdata('carbon_content','CCGT')/cdata('eta_con','CCGT') * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed('CCGT',reg)/cdata('eta_con','CCGT') + cdata('carbon_content','CCGT')/cdata('eta_con','CCGT') * remind_flatco2(yr,reg) ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','OCGT_eff')$(RM_postInv_prodSe_con(yr,reg,'OCGT_eff') ne 0) = ( c_i('OCGT_eff') + cdata('c_fix_con','OCGT_eff') ) * RM_postInv_cap_con(yr,reg,'OCGT_eff') / RM_postInv_prodSe_con(yr,reg,'OCGT_eff')
-                                                                                + con_fuelprice_reg_smoothed('OCGT_eff',reg)/cdata('eta_con','OCGT_eff') + cdata('carbon_content','OCGT_eff')/cdata('eta_con','OCGT_eff') * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed('OCGT_eff',reg)/cdata('eta_con','OCGT_eff') + cdata('carbon_content','OCGT_eff')/cdata('eta_con','OCGT_eff') * remind_flatco2(yr,reg) ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','bio')$(RM_postInv_prodSe_con(yr,reg,'bio') ne 0) = ( c_i('bio') + cdata('c_fix_con','bio') )  *  RM_postInv_cap_con(yr,reg,'bio') / RM_postInv_prodSe_con(yr,reg,'bio')
                                                                                 + con_fuelprice_reg_smoothed('bio',reg) /cdata('eta_con','bio');
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','nuc')$(RM_postInv_prodSe_con(yr,reg,'nuc') ne 0) = ( c_i('nuc') + cdata('c_fix_con','nuc') )  *  RM_postInv_cap_con(yr,reg,'nuc') / RM_postInv_prodSe_con(yr,reg,'nuc')
@@ -168,13 +168,13 @@
 
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h , G_L.l(ct,h))
-                                                                                + con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg) ;
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = ( c_i_res(res) + rdata('c_fix_res',res) ) * P_RES.l(res) / sum( h , G_RES.l(res,h)) ;
 
                                                                                 
 *       LCOE_marg $/MWh
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h)) ne 0) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h) )
-                                                                                + con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * con_CO2price ;
+                                                                                + con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg) ;
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h)) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) * P_RES.l(res) / sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h));
 
