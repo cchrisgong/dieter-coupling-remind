@@ -16,3 +16,6 @@ inv_interest_res,solar,0.06
 m_res,wind_on,10000000
 m_res,wind_off,32000
 m_res,solar,5000000
+c_cu,solar,5
+c_cu,wind_on,5
+c_cu,wind_off,5

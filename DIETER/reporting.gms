@@ -193,7 +193,7 @@
 
 
         report_tech('DIETER',yr,reg,'Total Generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
-        report_tech('DIETER',yr,reg,'Total Renewable Generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
+        report_tech('DIETER',yr,reg,'Total Generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total Renewable Curtailment (TWh)',res) = sum( h , CU.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'generation storage (MWh)',sto,h) )   /1e6 ;
         report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) )   /1e6;

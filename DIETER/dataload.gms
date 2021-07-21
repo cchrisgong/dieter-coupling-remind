@@ -22,12 +22,8 @@ Parameters
 vm_cap(yr, reg, te_remind, grade) 
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
-p32_seelDem(yr, reg, se_remind)
-*vm_usableSe(yr, reg, se_remind)
+p32_seelUsableDem(yr, reg, se_remind)
 remind_totdemand(yr, reg, se_remind)
-*-------------------------
-*vm_capFac(yr, reg, te_remind)
-*remind_capFac(yr, reg, te_remind)
 *-------------------------
 remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
@@ -42,9 +38,6 @@ qm_budget(yr,reg)
 remind_budget(all_yr,reg)
 p32_budget(yr,reg)
 remind_budget_lastiter(all_yr,reg)
-*------------------------------------
-*vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
-*remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
 *------------------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -104,7 +97,6 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *iteration from REMIND
 remind_iter
 o_iterationNumber
-
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
@@ -118,7 +110,7 @@ $load  remind_cap = vm_cap.l
 $load  remind_iter = o_iterationNumber
 $load  remind_budget = qm_budget.m
 $load  remind_budget_lastiter = p32_budget
-$load  remind_totdemand = p32_seelDem
+$load  remind_totdemand = p32_seelUsableDem
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
@@ -420,6 +412,8 @@ c_i_sto_p(sto)   Annualized investment costs storage capacity per MW
 c_i_dsm_cu(dsm_curt)     DSM: Investment costs load curtailment
 c_i_dsm_shift(dsm_shift) DSM: Investment costs load shifting
 ;
+
+rdata("c_cu",res)= 0;
 
 *c_i(ct) = cdata("c_inv_overnight_con",ct)*( cdata("inv_interest_con",ct) * (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct)) )
 *                 / ( (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct))-1 )       ;
