@@ -10,7 +10,7 @@
 *.png
 test*
 *.lxi
-dataprocessing
+!input_DIETER.gdx
 DIETER/DIETER_v1.0.2_2.gms
 DIETER/DIETER_v1.0.2_3.gms
 DIETER/DIETER_v1.0.2_4.gms
