@@ -1,5 +1,5 @@
 # dieter-coupling-remind
-This is a github repository for [DIETER model](https://gitlab.com/diw-evu/dieter_public/dietergms), as part of model coupling between [IAM REMIND] (https://github.com/remindmodel/remind) and energy system model DIETER.
+This is a github repository for [DIETER model](https://gitlab.com/diw-evu/dieter_public/dietergms), as part of model coupling between [IAM REMIND](https://github.com/remindmodel/remind) and energy system model DIETER.
 
 This DIETER corresponds to [coupled version of REMIND](https://github.com/cchrisgong/remind-coupling-dieter/). This github repository should be cloned under 
 remind-coupling-dieter/scripts/iterative/ as a submodule.
