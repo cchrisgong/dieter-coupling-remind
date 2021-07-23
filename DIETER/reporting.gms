@@ -5,18 +5,22 @@
         report_tech_hours('DIETER',yr,reg,'generation (GWh)',res,h) = G_RES.l(res,h) /1e3;
         report_tech_hours('DIETER',yr,reg,'curtailment renewable (GWh)',res,h) =  CU.l(res,h)/1e3 ;
 *     generation MWh -> TWh
-        report_tech_hours('DIETER',yr,reg,'generation storage (MWh)',sto,h) =  STO_OUT.l(sto,h) ;
+        report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) =  STO_OUT.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) =  STO_IN.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'storage level (MWh)',sto,h) =  STO_L.l(sto,h) ;
-        report_hours('DIETER',yr,reg,'fixed demand (MWh)',h) = d(h) ;
-*       report_hours('DIETER',yr,reg,'flexible demand',h) = d2.l(h) ;
+        report_tech_hours('DIETER',yr,reg,'consumption (GWh)','el',h) = d(h) /1e3;
+        report_tech_hours('DIETER',yr,reg,'consumption (GWh)','elh2',h) = d2.l(h) /1e3;
+        
+*        report_hours('DIETER',yr,reg,'fixed demand (MWh)',h) = d(h) ;
+        
 
         report_hours('DIETER',yr,reg,'hourly wholesale price ($/MWh)',h) = -con1a_bal.m(h);
 
 *       Report files: cap. transformed into GW (divide by 1e3), generation transformed into TWh (divide by 1e6), costs to $/kW, share to *100%
 
 ***     generation MWh -> TWh
-        report('DIETER',yr,reg,'net_energy_demand (TWh)') = sum( h , d(h)) /1e6;
+        report('DIETER',yr,reg,'energy demand (TWh)') = sum( h , d(h)) /1e6;
+        report('DIETER',yr,reg,'sector coupling green H2 demand (TWh)') = sum( h , d2.l(h)) /1e6;
         report('DIETER',yr,reg,'model status') = DIETER.modelstat ;
         report('DIETER',yr,reg,'solve time') = DIETER.resUsd ;
 *       transform into BillionUSD
@@ -30,7 +34,7 @@
         report('DIETER',yr,reg,'gross_energy_demand (TWh)') = gross_energy_demand /1e6;
 
 *       report('DIETER',yr,reg,'curtailment of fluct res absolute') = sum((res,h),CU.l(res,h))  /1e6 ;
-*       report('DIETER',yr,reg,'curtailment of fluct res relative')$report('DIETER',yr,reg,'curtailment of fluct res absolute') = sum((res,h),CU.l(res,h))/( sum((res,h),G_RES.l(res,h) - corr_fac_res(res,h) ) + sum((res,h),CU.l(res,h)) ) ;
+*       report('DIETER',yr,reg,'curtailment of fluct res relative')$report('DIETER',yr,reg,'curtailment of fluct res absolute') = sum((res,h),CU.l(res,h))/sum((res,h),G_RES.l(res,h)) ;
 
 ***     capacity MW -> GW
 
@@ -195,5 +199,5 @@
         report_tech('DIETER',yr,reg,'Total Generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total Generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total Renewable Curtailment (TWh)',res) = sum( h , CU.l(res,h)) /1e6 ;
-        report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'generation storage (MWh)',sto,h) )   /1e6 ;
+        report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) )   /1e6 ;
         report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) )   /1e6;

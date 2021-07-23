@@ -23,7 +23,9 @@ vm_cap(yr, reg, te_remind, grade)
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
 p32_seelUsableDem(yr, reg, se_remind)
-remind_totdemand(yr, reg, se_remind)
+remind_totseelDem(yr, reg, se_remind)
+p32_seh2elh2Dem(yr, reg, se_remind)
+remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
@@ -110,7 +112,8 @@ $load  remind_cap = vm_cap.l
 $load  remind_iter = o_iterationNumber
 $load  remind_budget = qm_budget.m
 $load  remind_budget_lastiter = p32_budget
-$load  remind_totdemand = p32_seelUsableDem
+$load  remind_totseelDem = p32_seelUsableDem
+$load  remind_totseh2Dem = p32_seh2elh2Dem
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
