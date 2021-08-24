@@ -290,6 +290,14 @@ $include "Conventionals.csv"
 $offdelim
 /;
 
+parameter p2gdata(all_p2gdata,p2g)      "Various Data for P2G Technologies"
+/
+$ondelim
+$include "P2G.csv"
+$offdelim
+/;
+
+
 parameter rdata(all_rdata,res)      "Various Data for Renewable Technologies"
 /
 $ondelim

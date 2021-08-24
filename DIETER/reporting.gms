@@ -9,7 +9,7 @@
         report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) =  STO_IN.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'storage level (MWh)',sto,h) =  STO_L.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'consumption (GWh)','el',h) = d(h) /1e3;
-        report_tech_hours('DIETER',yr,reg,'consumption (GWh)','elh2',h) = d2.l(h) /1e3;
+        report_tech_hours('DIETER',yr,reg,'consumption (GWh)','elh2',h) = C_P2G.l("elh2",h) /1e3;
         
 *        report_hours('DIETER',yr,reg,'fixed demand (MWh)',h) = d(h) ;
         
@@ -20,7 +20,7 @@
 
 ***     generation MWh -> TWh
         report('DIETER',yr,reg,'energy demand (TWh)') = sum( h , d(h)) /1e6;
-        report('DIETER',yr,reg,'sector coupling green H2 demand (TWh)') = sum( h , d2.l(h)) /1e6;
+        report('DIETER',yr,reg,'sector coupling green H2 demand (TWh)') = sum( h , C_P2G.l("elh2",h)) /1e6;
         report('DIETER',yr,reg,'model status') = DIETER.modelstat ;
         report('DIETER',yr,reg,'solve time') = DIETER.resUsd ;
 *       transform into BillionUSD
@@ -146,7 +146,7 @@
         report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / gross_energy_demand  * 1e2;
 *        report_tech('DIETER',yr,reg,'curtailment of fluct res relative',res) =  sum(h,CU.l(res,h))/ (sum(h,G_RES.l(res,h) - corr_fac_res(res,h) ) + sum(h,CU.l(res,h)) )  * 1e2;
         
-*       report_tech('DIETER',yr,reg,'load-weighted price for flex demand', flexTe) = -sum(h,con1a_bal.m(h)*d2.l(h))/sum(h,d2.l(h)) ;
+*       report_tech('DIETER',yr,reg,'load-weighted price for flex demand', flexTe) = -sum(h,con1a_bal.m(h)*C_P2G.l("elh2",h))/sum(h,C_P2G.l("elh2",h)) ;
         
 *       ===================================
 
@@ -190,6 +190,23 @@
             = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)*(-con1a_bal.m(h))) / sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h));
         report_tech('DIETER',yr,reg,'DIETER Marginal market value ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)) ne 0 )
             = sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)*(-con1a_bal.m(h)) )/ sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h));
+
+*       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
+        p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
+            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) / annual_load_weighted_price_shaved;
+            
+        p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') ne 0) =
+            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') / annual_load_weighted_price_shaved;
+            
+        p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) ne 0) = 
+            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) / annual_load_weighted_price_shaved;
+        
+*       if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
+        p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) = 0) = 1;
+        p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') = 0)  = 1;    
+        p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) = 0) = 1;
+
+
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'valuefactor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'valuefactor') * 1e2;

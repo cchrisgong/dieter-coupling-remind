@@ -79,7 +79,7 @@ yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                     /2015,2020,2025/
 *t           year from remind to be loaded                
-te_remind   remind technonlogy					     /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs/
+te_remind   remind technonlogy					   /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs/
 gas_remind  remind emission gases                    /co2/
 COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
 NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
@@ -91,13 +91,14 @@ se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, lifetime/
 char_remind_dataren "remind character for renewable" /nur/
-grade 	    remind grade level for technology	     /1*12/
+grade 	    remind grade level for technology	       /1*12/
 reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
+all_p2gdata                                      /p2g_up,p2g_do/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
@@ -124,6 +125,7 @@ $include dataload.gms
 *$stop
 
 Parameter sm_eps small number: 1e-9 /1e-9/;
+Parameter totLoad total secondary electricity load;
 Parameter totFixedLoad total fixed load;
 Parameter totFlexLoad total flexible load;
 Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
@@ -147,11 +149,13 @@ Z                Value objective function
 ;
 
 Positive Variables
-d2(h)            Flexible load in hour h in MWh
-
 G_L(ct,h)        Generation level in hour h in MWh
 G_UP(ct,h)       Generation upshift in hour h in MWh
 G_DO(ct,h)       Generation downshift in hour h in MWh
+
+C_P2G(p2g,h)     Flexible load in hour h in MWh
+C_P2GUP(p2g,h)   Generation upshift in hour h in MWh
+C_P2GDO(p2g,h)   Generation downshift in hour h in MWh
 
 G_RES(res,h)     Generation renewables type res in hour h in MWh
 CU(res,h)        Renewables curtailment technology res in hour h in MWh
@@ -189,8 +193,14 @@ demand
 *================================================================
 *================ scale up demand ===============================
 DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
+* only after a few iter, switch on h2 flexible demand
+*totFlexLoad = 0;
+*if (remind_iter > 3,
+totLoad = remind_totseelDem("2020", "DEU", "seel") * sm_TWa_2_MWh;
 totFlexLoad = remind_totseh2Dem("2020", "DEU", "seh2") * sm_TWa_2_MWh;
-totFixedLoad = (remind_totseelDem("2020", "DEU", "seel") - remind_totseh2Dem("2020", "DEU", "seh2")) * sm_TWa_2_MWh;
+*);
+
+totFixedLoad = totLoad - totFlexLoad;
 d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 
@@ -291,20 +301,20 @@ N_CON.fx("OCGT_ineff") = 0;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 
-if (remind_iter < 7,
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.9;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.9;
-);
-
-if (remind_iter < 4,
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
-);
-
-if (remind_iter > 6,
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.9;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.9;
-);
+*if (remind_iter < 7,
+*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+*);
+*
+*if (remind_iter < 4,
+*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+*);
+*
+*if (remind_iter > 6,
+P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+*);
 
 
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
@@ -340,6 +350,7 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
+
 *N_CON.lo("lig") = min(sum(te_remind,
 *                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
 *                    ) * 1e6 /2,.2*SMax(h, d(h)));
@@ -362,6 +373,8 @@ N_CON.lo("bio") = sum(te_remind,
 *N_CON.lo("bio") = min(sum(te_remind,
 *                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
 *                    ) * 1e6,.2*SMax(h, d(h)));
+
+
 
 ***CG: implementation for DIETER lower bound to only kick in in the absence of early retirement in last iteration REMIND (turned off since it lead to non_optimal)
 *** in the oscillation situation
@@ -553,6 +566,8 @@ eq1_flexload
 * Load change costs
 con2a_loadlevel          Load change costs: Level
 con2b_loadlevelstart     Load change costs: Level for first period
+con2c_flexloadlevel      Load change costs: Level
+con2d_flexloadlevelstart     Load change costs: Level for first period
 
 *full-load hours
 con2c_maxprodannual_conv Full load hour constraint (for non-nuclear conventional)
@@ -626,8 +641,8 @@ obj..
 *  turning off ramping cost for the coupled version for consistency reasons
 *                 + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
 *                 + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
-*                 + sum( (p2g,h)$(ord(h)>1) , cdata("c_up",p2g)*G_P2GUP(p2g,h) )
-*                 + sum( (p2g,h) , cdata("c_do",p2g)*G_P2GDO(p2g,h) )
+                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g)*C_P2GUP(p2g,h) )
+                 + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
                  + sum( (res,h) , rdata("c_cu",res) * CU(res,h) )
                  + sum( (sto,h) , stodata("c_m_sto",sto) * ( STO_OUT(sto,h) + STO_IN(sto,h) ) )
 %DSM%$ontext
@@ -661,7 +676,7 @@ $offtext
 
 * Energy balance
 con1a_bal(hh)..
-         d(hh) + d2(hh) + sum( sto , STO_IN(sto,hh) )
+         d(hh) + C_P2G("elh2",hh) + sum( sto , STO_IN(sto,hh) )
 %DSM%$ontext
          + sum( dsm_shift , DSM_UP_DEMAND(dsm_shift,hh) )
 
@@ -689,7 +704,7 @@ $offtext
 ;
 
 eq1_flexload..
-         sum( h , d2(h))  =E=  totFlexLoad
+         sum( h , C_P2G("elh2",h))  =E=  totFlexLoad
 ;
 
 con2a_loadlevel(ct,h)$(ord(h) > 1)..
@@ -700,12 +715,12 @@ con2b_loadlevelstart(ct,'h1')..
          G_L(ct,'h1') =E= G_UP(ct,'h1')
 ;
 
-*con2c_flexloadlevel(p2g,h)$(ord(h) > 1)..
-*        G_P2G(p2g,h) =E= G_P2G(p2g,h-1) + G_P2GUP(p2g,h) - G_P2GDO(p2g,h)
-*;
-*con2d_flexloadlevelstart(p2g,'h1')..
-*         G_P2G(p2g,'h1') =E= G_P2GUP(p2g,'h1')
-*;
+con2c_flexloadlevel(p2g,h)$(ord(h) > 1)..
+        C_P2G(p2g,h) =E= C_P2G(p2g,h-1) + C_P2GUP(p2g,h) - C_P2GDO(p2g,h)
+;
+con2d_flexloadlevelstart(p2g,'h1')..
+         C_P2G(p2g,'h1') =E= C_P2GUP(p2g,'h1')
+;
 *
 * ---------------------------------------------------------------------------- *
 *==========           CONSTRAINING ANNUAL FULL/LOAD HOURS FOR CONVENTIONAL TECHNOLOGIES   *==========
@@ -717,6 +732,12 @@ con2c_maxprodannual_conv(ct)$(non_nuc_ct(ct))..
 con2c_maxprodannual_conv_nuc("nuc")..
        sum(h, G_L("nuc",h) ) =L= 0.85*8760*N_CON("nuc")
 ;
+
+
+* Constraints for capfac of electrolyzers (at least 30%, in line with current data)
+*eq2_maxprod_elh2(h)..
+*        sum(h, C_P2G('elh2',h)) =L= 0.3 * SMax(h, C_P2G("elh2",h))
+*;
 
 * ---------------------------------------------------------------------------- *
 *==========           Hourly maximum generation caps and constraints related to reserves   *==========
@@ -732,6 +753,7 @@ con3i_maxprod_ror(h)..
         G_L('ror',h)
         =L= capfac_ror *N_CON('ror')
 ;
+
 
 * Constraints on renewables
 con3k_maxprod_res(res,h)..
@@ -994,6 +1016,8 @@ con1a_bal
 eq1_flexload
 con2a_loadlevel
 con2b_loadlevelstart
+con2c_flexloadlevel
+con2d_flexloadlevelstart 
 
 con2c_maxprodannual_conv
 con2c_maxprodannual_conv_nuc
@@ -1094,8 +1118,9 @@ solve DIETER using lp minimizing Z ;
 
 p32_report4RM(yr,reg,ct,'capacity') = N_CON.l(ct);
 p32_report4RM(yr,reg,res,'capacity') = P_RES.l(res);
-p32_report4RM(yr,reg,'elh2','capacity') = SMax(h, d2.l(h));
+p32_report4RM(yr,reg,'elh2','capacity') = SMax(h, C_P2G.l("elh2",h));
 
+*** inflexible residual demand
 residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_On",h) - G_L.l("ror",h); 
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
 
@@ -1105,19 +1130,22 @@ p32_report4RM(yr,reg,ct,'capfac')$( N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) /
 *combine hc and lig together into one CF to pass onto REMIND
 p32_report4RM(yr,reg,'coal','capfac')$( N_CON.l("hc") + N_CON.l("lig") ne 0 ) = sum( h , (G_L.l("hc",h) + G_L.l("lig",h))) / ((N_CON.l("hc") + N_CON.l("lig")) * card(h));
 p32_report4RM(yr,reg,res,'capfac')$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h));
-p32_report4RM(yr,reg,'elh2','capfac')$(totFlexLoad ne 0 ) = sum( h , d2.l(h)) / (SMax(h, d2.l(h)) * card(h));
+p32_report4RM(yr,reg,'elh2','capfac')$(totFlexLoad ne 0 ) = sum( h , C_P2G.l("elh2",h)) / (SMax(h, C_P2G.l("elh2",h)) * card(h));
 
 p32_report4RM(yr,reg,res,'usable generation') = sum( h , G_RES.l(res,h) );
 p32_report4RM(yr,reg,ct,'usable generation') = sum( h , G_L.l(ct,h) );
 
 p32_report4RM(yr,reg,res,'total generation') = sum( h , G_RES.l(res,h) +CU.l(res,h));
 p32_report4RM(yr,reg,ct,'total generation') = sum( h , G_L.l(ct,h) );
-p32_report4RM(yr,reg,'elh2','total consumption') = sum( h , d2.l(h) );
+p32_report4RM(yr,reg,'elh2','total consumption') = sum( h , C_P2G.l("elh2",h) );
 p32_report4RM(yr,reg,'seel','total consumption') = sum( h , d(h) );
 
-p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/sum(h,d(h)) *1e2;
-p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/sum(h,d(h)) *1e2;
-p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/sum(h,d(h)) *1e2;
+p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
+p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
+p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/sum(h,d(h)) * 1e2;
+
+p32_report4RM(yr,reg,p2g,'dem_share') = sum( h, C_P2G.l(p2g,h) ) / totLoad * 1e2;
+p32_report4RM(yr,reg,'el','dem_share') = sum( h, d(h) ) / totLoad * 1e2;
 
 *also export zero values (prevent compression)
 p32_report4RM(yr,reg,ct,'capacity')$(not p32_report4RM(yr,reg,ct,'capacity')) = eps;
@@ -1138,9 +1166,12 @@ p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) 
 p32_report4RM(yr,reg,'coal','gen_share')$(not p32_report4RM(yr,reg,'coal','gen_share')) = eps;
 p32_report4RM(yr,reg,res,'gen_share')$(not p32_report4RM(yr,reg,res,'gen_share')) = eps;
 
+p32_report4RM(yr,reg,p2g,'dem_share')$(not p32_report4RM(yr,reg,p2g,'dem_share')) = eps;
+
 *ratio of curtailed renewable to usable renewable generation
 p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,G_RES.l(res,h));
-p32_report4RM(yr,reg,res,'curt_ratio')$(not sum(h,G_RES.l(res,h))) = eps;
+*make sure all values are there, even 0 ones, otherwise REMIND will take input values
+p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
 
 *** calculate multiplicative factor - markup
 
@@ -1162,75 +1193,65 @@ report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*hourly_price(h)) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 
-annual_load_weighted_price_shaved = sum(h,hourly_price(h)*d(h))/sum(h,d(h));
-
-*if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
-p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) / annual_load_weighted_price_shaved;
-    
-p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') ne 0) =
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') / annual_load_weighted_price_shaved;
-    
-p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) ne 0) = 
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) / annual_load_weighted_price_shaved;
-
-*if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
-p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) = 0) = 1;
-p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') = 0)  = 1;    
-p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) = 0) = 1;
+* average price for both flexible and inflexible techs, with scarcity price shaved
+annual_load_weighted_price_shaved = sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)))) / totLoad;
 
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct);
+
+p32_reportmk_4RM(yr,reg,ct,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) eq 0 ) = EPS;
     
 p32_reportmk_4RM(yr,reg,'coal','market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') ne 0) =
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal');
+
+p32_reportmk_4RM(yr,reg,'coal','market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') eq 0 ) = EPS;
     
 p32_reportmk_4RM(yr,reg,res,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) ne 0) = 
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res);
+    
+p32_reportmk_4RM(yr,reg,res,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) eq 0 ) = EPS;
 
 ******************* without scarcity price shaving ****************************
-annual_load_weighted_price = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h)) ;
+annual_load_weighted_price = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/totLoad ;
 
 report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
 report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*(-con1a_bal.m(h))) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 
-*p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) ne 0) =
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) / annual_load_weighted_price;
-*    
-*p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') ne 0) =
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') / annual_load_weighted_price;
-*    
-*p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) ne 0) = 
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) / annual_load_weighted_price;
-*
-**if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
-*p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) = 0) = 1;
-*p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') = 0)  = 1;    
-*p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) = 0) = 1;
-
-*p32_reportmk_4RM(yr,reg,ct,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) ne 0) =
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct);
-*    
-*p32_reportmk_4RM(yr,reg,'coal','market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') ne 0) =
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal');
-*    
-*p32_reportmk_4RM(yr,reg,res,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) ne 0) = 
-*    report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res);
-
-*p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price_shaved;
 
-******************* H2 markup *****************************************
-**** market value for electrolyzer using shaved off hourly price
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')$(sum( h , d2.l(h)) ne 0)
-                      = sum( h, d2.l(h) * hourly_price(h))/sum( h , d2.l(h));
+******************* green H2 markup *****************************************
+**** annual average electricity price that electrolyzer "sees", calculated using shaved off hourly price
+report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
+                      = sum( h, C_P2G.l("elh2",h) * hourly_price(h))/sum( h , C_P2G.l("elh2",h));
+             
+* if no generation at all, take annual electricity price as the market value         
+report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')$(sum( h , C_P2G.l("elh2",h)) eq 0)
+                      = annual_load_weighted_price_shaved;
+* if there is generation but average price seen is 0 because prices in producing hours are 0, take EPS as the market value
+                      
+p32_reportmk_4RM(yr,reg,"elh2",'market_price') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2');
+p32_reportmk_4RM(yr,reg,"elh2",'market_price')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2') eq 0 ) = EPS;
 
-p32_reportmk_4RM(yr,reg,"elh2",'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2') ne 0)
-                   = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2');
+*in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
+if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 1),
+    p32_reportmk_4RM(yr,reg,"elh2",'market_price') = 0.2 * annual_load_weighted_price_shaved;
+);
+******************* inflexible electricity demand markdown *****************************************
+**** annual average electricity price that inflexible demand "sees", calculated using shaved off hourly price
+report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el')$(totFixedLoad ne 0)
+                      = sum( h, d(h) * hourly_price(h))/sum( h , d(h));
+             
+* if no generation at all, take annual electricity price as the market value         
+report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el')$(totFixedLoad eq 0)
+                      = annual_load_weighted_price_shaved;
+                      
+* if there is generation but market value is 0 because prices in producing hours are 0, take EPS as the market value
+p32_reportmk_4RM(yr,reg,"el",'market_price') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el');
+p32_reportmk_4RM(yr,reg,"el",'market_price')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el') eq 0 ) = EPS;
 
-
+                
 $include reporting.gms
 
 execute_unload "results_DIETER_y1", p32_report4RM, p32_reportmk_4RM;
