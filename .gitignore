@@ -11,6 +11,7 @@
 test*
 *.lxi
 !input_DIETER.gdx
+~$DIETER_v1.0.2_*.gms
 DIETER/DIETER_v1.0.2_2.gms
 DIETER/DIETER_v1.0.2_3.gms
 DIETER/DIETER_v1.0.2_4.gms

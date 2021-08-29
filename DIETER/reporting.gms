@@ -9,7 +9,11 @@
         report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) =  STO_IN.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'storage level (MWh)',sto,h) =  STO_L.l(sto,h) ;
         report_tech_hours('DIETER',yr,reg,'consumption (GWh)','el',h) = d(h) /1e3;
+
+%P2G%$ontext
         report_tech_hours('DIETER',yr,reg,'consumption (GWh)','elh2',h) = C_P2G.l("elh2",h) /1e3;
+$ontext
+$offtext
         
 *        report_hours('DIETER',yr,reg,'fixed demand (MWh)',h) = d(h) ;
         
@@ -20,7 +24,11 @@
 
 ***     generation MWh -> TWh
         report('DIETER',yr,reg,'energy demand (TWh)') = sum( h , d(h)) /1e6;
+%P2G%$ontext
         report('DIETER',yr,reg,'sector coupling green H2 demand (TWh)') = sum( h , C_P2G.l("elh2",h)) /1e6;
+$ontext
+$offtext
+        
         report('DIETER',yr,reg,'model status') = DIETER.modelstat ;
         report('DIETER',yr,reg,'solve time') = DIETER.resUsd ;
 *       transform into BillionUSD
@@ -205,8 +213,6 @@
         p32_reportmk_4RM(yr,reg,ct,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) = 0) = 1;
         p32_reportmk_4RM(yr,reg,'coal','valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') = 0)  = 1;    
         p32_reportmk_4RM(yr,reg,res,'valuefactor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) = 0) = 1;
-
-
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'valuefactor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'valuefactor') * 1e2;

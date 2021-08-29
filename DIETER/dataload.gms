@@ -188,6 +188,7 @@ phi_min_res              Upload parameter: Minimum required renewables generatio
 *--- Investment ---*
 c_i_ovnt(ct)             Investment costs: Overnight
 c_i_ovnt_res(res)        Investment costs: Overnight
+c_i_ovnt_p2g(p2g)        Investment costs: Overnight
 
 c_inv_overnight_res(res) Investment costs: Overnight
 inv_lifetime_res(res)    Investment costs: technical lifetime
@@ -416,6 +417,7 @@ c_m_reg(ct,reg)          Marginal production costs for conventional plants inclu
 c_m(ct)                  Marginal production costs for current region
 c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
+c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
 
 c_i_sto_e(sto)   Annualized investment costs storage energy per MWh
 c_i_sto_p(sto)   Annualized investment costs storage capacity per MW
@@ -425,6 +427,8 @@ c_i_dsm_shift(dsm_shift) DSM: Investment costs load shifting
 ;
 
 rdata("c_cu",res)= 0;
+p2gdata("p2g_do","elh2") = 10;
+p2gdata("p2g_up","elh2") = 10;
 
 *c_i(ct) = cdata("c_inv_overnight_con",ct)*( cdata("inv_interest_con",ct) * (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct)) )
 *                 / ( (1+cdata("inv_interest_con",ct))**(cdata("inv_lifetime_con",ct))-1 )       ;
