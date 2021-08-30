@@ -81,9 +81,11 @@ $offtext
 *       investment cost ($/MW -> $/kW)
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',ct) = c_i(ct) /1e3;
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',res) = c_i_res(res) / 1e3;
+        report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',p2g) = c_i_p2g(p2g) / 1e3;
 *       OM cost
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',ct) = cdata('c_fix_con',ct) / 1e3;
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',res) = rdata('c_fix_res',res) / 1e3;
+        report_tech('DIETER',yr,reg,'O&M cost ($/kW)',p2g) = p2gdata('c_fix_p2g',p2g) / 1e3;
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg);
         report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct);
@@ -108,6 +110,7 @@ $offtext
                                                                                 + con_fuelprice_reg_smoothed('nuc',reg) /cdata('eta_con','nuc');
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)','ror')$(RM_postInv_prodSe_con(yr,reg,'ror') ne 0) = ( c_i('ror') + cdata('c_fix_con','ror') )  *  RM_postInv_cap_con(yr,reg,'ror') / RM_postInv_prodSe_con(yr,reg,'ror') ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
+        report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',p2g)$(totFlexLoad ne 0) = ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * RM_postInv_cap_p2g(yr,reg,p2g) / RM_postInv_demSe(yr,reg,p2g) ;
 
 ***     TW -> GW
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','lig') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 /2 ;
@@ -141,6 +144,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','ror') = sum(grade, remind_pm_dataren(reg, 'nur', grade, 'hydro') * remind_vm_CapDistr(yr, reg, 'hydro', grade) / remind_cap(yr, reg, 'hydro', '1'))*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Solar') = sum( h, phi_res('Solar', h) ) / card(h) * 1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Wind_on') = sum( h, phi_res('Wind_on', h) ) / card(h) * 1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','elh2') = remind_CF(yr,reg,'elh2')*1e2;
         
 ***     ^^^ reporting on remind stuff
  
@@ -160,6 +164,7 @@ $offtext
 
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
+        report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)','elh2')$(totFlexLoad ne 0 ) = sum( h , C_P2G.l("elh2",h)) / ( N_P2G.l("elh2") * card(h)) * 1e2;
 
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)$(N_CON.l(ct) ne 0)
           = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
@@ -182,7 +187,7 @@ $offtext
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h , G_L.l(ct,h))
                                                                                 + con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg) ;
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = ( c_i_res(res) + rdata('c_fix_res',res) ) * P_RES.l(res) / sum( h , G_RES.l(res,h)) ;
-
+        report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',p2g)$(totFlexLoad ne 0 ) =  ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * N_P2G.l(p2g) / sum( h , C_P2G.l(p2g,h)) ;
                                                                                 
 *       LCOE_marg $/MWh
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h)) ne 0) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h) )

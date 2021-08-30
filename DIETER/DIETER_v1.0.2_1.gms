@@ -140,8 +140,10 @@ Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for re
 Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
 Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional
 Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable
+Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable
 Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
+Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G
 
 
 *==========
@@ -283,6 +285,7 @@ RM_postInv_cap_con(yr,reg,"nuc") = sum(te_remind,sum( grade, remind_cap(yr, reg,
 RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grade)) * 1e6;
 RM_postInv_cap_res(yr,reg,"Wind_on") = sum( grade, remind_cap(yr, reg, "wind", grade))* 1e6;
 RM_postInv_cap_con(yr,reg,"ror") = sum( grade, remind_cap(yr, reg, "hydro", grade)) * 1e6;
+RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grade)) * 1e6;
 
 * Remind post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
 RM_postInv_prodSe_con(yr,reg,"coal") = sum(te_remind, remind_prodSe(yr,reg, "pecoal", "seel", te_remind)$(COALte(te_remind)) )* sm_TWa_2_MWh;
@@ -293,7 +296,7 @@ RM_postInv_prodSe_con(yr,reg,"nuc") = sum(te_remind, remind_prodSe(yr,reg, "peur
 RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Solar") = remind_prodSe_Resxcurt(yr, reg, "seel", "spv")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, "seel", "wind")* sm_TWa_2_MWh ;
-
+RM_postInv_demSe(yr,reg,"elh2") = totFlexLoad;
 **********************************************************************
 
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
@@ -304,21 +307,21 @@ N_CON.fx("OCGT_ineff") = 0;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 
+
+P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+
+
 *if (remind_iter < 7,
-*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
-*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
+*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
 *);
 *
-if (remind_iter < 7,
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
-);
-
-if (remind_iter > 6,
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.9;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.9;
-);
-
+*if (remind_iter > 6,
+*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.9;
+*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.9;
+*);
+*
 
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 
@@ -1169,6 +1172,7 @@ solve DIETER using lp minimizing Z ;
 
 p32_report4RM(yr,reg,ct,'capacity') = N_CON.l(ct);
 p32_report4RM(yr,reg,res,'capacity') = P_RES.l(res);
+p32_report4RM(yr,reg,p2g,'capacity') = N_P2G.l(p2g);
 
 %P2G%$ontext
 p32_report4RM(yr,reg,'elh2','capacity') = N_P2G.l('elh2');
@@ -1322,8 +1326,8 @@ if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 1),
 
 
 ******************* green H2 multiplicative markup *****************************************
-p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')/annual_load_weighted_price_shaved;
-p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2') eq 0 ) = 1;
+p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = p32_reportmk_4RM(yr,reg,"elh2",'market_price')/annual_load_weighted_price_shaved;
+p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(sum( h , C_P2G.l("elh2",h)) eq 0) = 1;
 
 *in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
 *if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price_shaved),
@@ -1356,7 +1360,6 @@ p32_reportmk_4RM(yr,reg,"el",'value_factor') = report_tech('DIETER',yr,reg,'DIET
 p32_reportmk_4RM(yr,reg,"el",'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el') eq 0 ) = 1;
 
 
-  
 $include reporting.gms
 
 execute_unload "results_DIETER_y1", p32_report4RM, p32_reportmk_4RM;
