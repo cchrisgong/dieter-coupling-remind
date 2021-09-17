@@ -52,6 +52,7 @@ $setglobal second_hour ""
 ****fuel cost option:
 *smooth will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
+*$setglobal fuel_cost smooth
 $setglobal fuel_cost fixed
 *==========
 
@@ -80,7 +81,7 @@ yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                     /2015,2020,2025/
 *t           year from remind to be loaded                
-te_remind   remind technonlogy					   /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs/
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
 NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
@@ -90,22 +91,24 @@ NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
-char_remind remind character                         /omf, lifetime/
+char_remind remind character                         /omf, omv, lifetime/
 char_remind_dataren "remind character for renewable" /nur/
-grade 	    remind grade level for technology	       /1*12/
+grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
-all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
-all_p2gdata                                      /c_fix_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
+all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
+all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
+all_griddata                                     /c_fix_grid, inv_lifetime_grid/
 ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 res       Renewable technologies                 /Wind_on, Wind_off, Solar/
 sto       Storage technolgies                    /Sto1*Sto7/
 p2g       Sector Coupling P2G Technologies       /elh2/
+grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
 all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max/
@@ -114,6 +117,18 @@ dsm_shift DSM shifting technologies              /DSM_shift1*DSM_shift5/
 dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR_up, MR_do/
 h         hour                                   /h1*h8760/
+
+DT_RM(ct,ct_remind)   "mapping to know which technology uses which storage technology"
+/
+lig.coal
+ror.ror
+nuc.nuc
+CCGT.CCGT
+OCGT_eff.OCGT_eff
+bio.bio
+/
+
+
 
 Alias (h,hh) ;
 alias (res,resres) ;
@@ -130,17 +145,20 @@ Parameter totLoad total secondary electricity load;
 Parameter totFixedLoad total fixed load;
 Parameter totFlexLoad total flexible load;
 Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
-Parameter capfac_ror constant cap. factor of hydro power /0.35/;
+Parameter capfac_ror constant cap. factor of hydro power;
+Parameter remind_gridfac_reg  grid factor per region;
 Parameter r Investment interest rate /0.06/;
 Parameter disc_fac_con(ct) Discount factor for overnight investment;
 Parameter disc_fac_res(res) Discount factor for overnight investment;
 Parameter disc_fac_p2g(p2g) Discount factor for overnight investment;
+Parameter disc_fac_grid(grid) Discount factor for overnight investment;
 Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
 Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
 Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
 Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional
 Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable
 Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable
+Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable
 Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G
@@ -171,6 +189,7 @@ STO_L(sto,h)     Storage level technology sto hour h in MWh
 P_RES(res)       Renewable technology built in MW
 N_CON(ct)        Conventional technology ct built in MW
 N_P2G(p2g)       P2G technology built in MW
+N_GRID(grid)     Grid capacity in MW
 
 N_STO_E(sto)     Storage technology built - Energy in MWh
 N_STO_P(sto)     Storage loading and discharging capacity built - Capacity in MW
@@ -286,6 +305,7 @@ RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grad
 RM_postInv_cap_res(yr,reg,"Wind_on") = sum( grade, remind_cap(yr, reg, "wind", grade))* 1e6;
 RM_postInv_cap_con(yr,reg,"ror") = sum( grade, remind_cap(yr, reg, "hydro", grade)) * 1e6;
 RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grade)) * 1e6;
+RM_postInv_cap_grid(yr,reg,"vregrid") = sum( grade, remind_cap(yr, reg, "gridwind", grade)) * 1e6;
 
 * Remind post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
 RM_postInv_prodSe_con(yr,reg,"coal") = sum(te_remind, remind_prodSe(yr,reg, "pecoal", "seel", te_remind)$(COALte(te_remind)) )* sm_TWa_2_MWh;
@@ -355,6 +375,10 @@ N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2020", "DEU", "ngt", grade)
 N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
+
+N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
+
+N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
 
 *N_CON.lo("lig") = min(sum(te_remind,
@@ -505,7 +529,24 @@ cdata("carbon_content","lig") = remind_carboncontent("pecoal","seel","pc","co2")
 cdata("carbon_content","hc") = remind_carboncontent("pecoal","seel","pc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","CCGT") = remind_carboncontent("pegas","seel","ngcc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
-*
+
+*omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1.2 to T$(2015)/TWa then multiply * 1e12 to get $(2015)/TWa, divides sm_TWa_2_MWh to get $(2015)/MWh
+
+* variable O&M from remind
+cdata("c_var_con","lig") = remind_OMcost("DEU","omv","pc")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","hc") = remind_OMcost("DEU","omv","pc")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","CCGT") = remind_OMcost("DEU","omv","ngcc")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","OCGT_eff") = remind_OMcost("DEU","omv","ngt")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","bio") = remind_OMcost("DEU","omv","biochp")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","ror") = remind_OMcost("DEU","omv","hydro")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","nuc") = remind_OMcost("DEU","omv","tnrs")  *1.2 *1e12/sm_TWa_2_MWh;
+
+** there is no var OM cost for VRE in remind
+*rdata("c_var_res","Solar") = remind_OMcost("DEU","omv","spv") *1.2 *1e12/sm_TWa_2_MWh;
+*rdata("c_var_res","Wind_on") = remind_OMcost("DEU","omv","wind")  *1.2 *1e12/sm_TWa_2_MWh;
+
+p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  *1.2 *1e12/sm_TWa_2_MWh;
+
 c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct)   ;
 c_m(ct) = c_m_reg(ct,"DEU");
 
@@ -524,6 +565,7 @@ disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1
 disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
 
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
+disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
 *=======read in investment cost from remind ========
 *overnight investment cost
@@ -542,12 +584,13 @@ c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * 1e6 * 1.2;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_i_ovnt_p2g("elh2") = remind_CapCost("2020", "DEU", "elh2") * 1e6 * 1.2 * remind_eta2("2020","DEU","elh2");
+c_i_ovnt_grid("vregrid") = remind_CapCost("2020", "DEU", "gridwind") * 1e6 * 1.2;
 
 *annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
 c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
 c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
-
+c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *================================================================
 *=======read in fixed OM cost from remind ========
 *note that omf is the proportion from overnight investment cost, not annuitized
@@ -561,11 +604,13 @@ cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","biochp") * c_i_ovnt("bio")
 cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
 cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
-
 rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
 rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
 
 p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
+griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
+
+remind_gridfac_reg = remind_gridfac("DEU");
 
 Equations
 * Objective
@@ -579,6 +624,8 @@ eq1_flexload             total P2G demand
 * P2G capacity constraint
 eq2_maxprod_elh2         P2G capacity factor lower bound
 eq2_minprod_p2g          P2G capacity constraint
+
+eq3_grid                 VRE grid constraint
 
 * Load change costs
 con2a_loadlevel          Load change costs: Level
@@ -655,15 +702,22 @@ con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
 obj..
          Z =E=
                  sum( (ct,h) , c_m(ct)*G_L(ct,h) )
-*  turning off ramping cost for the coupled version for consistency reasons
+*** turning off ramping cost for the coupled version for consistency reasons
                  + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
                  + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
+*** grid cost (from REMIND), no var O&M grid cost
+                 + sum( grid , c_i_grid(grid)*N_GRID(grid) )
+                 + sum( grid , griddata("c_fix_grid",grid)*N_GRID(grid) )
 %P2G%$ontext
+*** P2G ramping cost
                  + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g)*C_P2GUP(p2g,h) )
                  + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
+*** P2G var O&M cost
+                 + sum( (p2g,h) , p2gdata("c_var_p2g",p2g) *C_P2G(p2g,h) )
 $ontext
 $offtext
-                 + sum( (res,h) , rdata("c_cu",res) * CU(res,h) )
+*** curtailment cost and variable O&M cost for non-dispatchable
+                 + sum( (res,h) , rdata("c_cu",res) * CU(res,h) + rdata("c_var_res",res) * G_RES(res,h))
                  + sum( (sto,h) , stodata("c_m_sto",sto) * ( STO_OUT(sto,h) + STO_IN(sto,h) ) )
 %DSM%$ontext
                  + sum( (dsm_curt,h) , dsmdata_cu("c_m_dsm_cu",dsm_curt)*DSM_CU(dsm_curt,h) )
@@ -671,12 +725,14 @@ $offtext
                  + sum( (dsm_shift,h) , dsmdata_shift("c_m_dsm_shift",dsm_shift) * DSM_DO_DEMAND(dsm_shift,h) )
 $ontext
 $offtext
+*** conventional and renewable capital and fixed O&M cost
                  + sum( ct , c_i(ct)*N_CON(ct) )
                  + sum( ct , cdata("c_fix_con",ct)*N_CON(ct) )
 
                  + sum( res , c_i_res(res)*P_RES(res) )
                  + sum( res , rdata("c_fix_res",res)*P_RES(res) )
 %P2G%$ontext
+*** P2G capital and fixed O&M cost
                  + sum( p2g , c_i_p2g(p2g)*N_P2G(p2g) )
                  + sum( p2g , p2gdata("c_fix_p2g",p2g)*N_P2G(p2g) )
 $ontext
@@ -776,6 +832,14 @@ eq2_maxprod_elh2('elh2')..
 
 $ontext
 $offtext
+
+*** q32_limitCapTeGrid eqn in REMIND
+eq3_grid(grid)..
+        N_GRID(grid) / remind_gridfac_reg
+        =G=
+        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
+*        P_RES("Solar") + 1.5 * P_RES("Wind_on")
+;
 * ---------------------------------------------------------------------------- *
 *==========           Hourly maximum generation caps and constraints related to reserves   *==========
 * ---------------------------------------------------------------------------- *
@@ -1063,6 +1127,7 @@ eq2_maxprod_elh2
 eq2_minprod_p2g
 $ontext
 $offtext
+eq3_grid
 
 con2a_loadlevel
 con2b_loadlevelstart

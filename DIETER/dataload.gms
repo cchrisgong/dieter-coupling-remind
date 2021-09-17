@@ -83,6 +83,9 @@ remind_vm_capDistr(yr, reg, te_remind, grade)
 *remind_CF contain scaling that accounts for smaller turbines or panels/lower CFs in earlier years (only for wind and solar in remind)
 remind_CF(yr,reg,te_remind) 
 pm_cf(yr,reg,te_remind)
+*load grid factor (for large country it is larger, otherwise 1)
+p32_grid_factor(reg)
+remind_gridfac(reg)
 *-------------------------------------
 * passing REMIND CO2 price to DIETER, CO2 price in $ per tCO2 
 remind_flatco2(yr,reg)
@@ -123,6 +126,7 @@ $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = fm_dataglob
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
+$load  remind_gridfac = p32_grid_factor
 $load  remind_pm_ts = pm_ts
 $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
@@ -143,6 +147,12 @@ $gdxin
 
 $ENDIF.FC
 
+
+$IFTHEN.FC %fuel_cost% == "smooth"
+$gdxin fulldata.gdx
+$load  remind_fuelprice = p32_fuelprice_avgiter
+$gdxin
+$ENDIF.FC
 
 Parameters
 
@@ -189,6 +199,7 @@ phi_min_res              Upload parameter: Minimum required renewables generatio
 c_i_ovnt(ct)             Investment costs: Overnight
 c_i_ovnt_res(res)        Investment costs: Overnight
 c_i_ovnt_p2g(p2g)        Investment costs: Overnight
+c_i_ovnt_grid(grid)      Investment costs: Overnight
 
 c_inv_overnight_res(res) Investment costs: Overnight
 inv_lifetime_res(res)    Investment costs: technical lifetime
@@ -306,6 +317,8 @@ $include "Renewables.csv"
 $offdelim
 /;
 
+parameter griddata(all_griddata,grid);
+
 *parameter con_fuelprice_reg(ct,reg)      "Fuel price conventionals in Euro per MWth for different regions"
 */
 *$ondelim
@@ -418,6 +431,7 @@ c_m(ct)                  Marginal production costs for current region
 c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
 c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
+c_i_grid(grid)     Annualized investment costs for grid per MW
 
 c_i_sto_e(sto)   Annualized investment costs storage energy per MWh
 c_i_sto_p(sto)   Annualized investment costs storage capacity per MW
