@@ -101,7 +101,7 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *-------------------------------------
 *iteration from REMIND
 remind_iter
-o_iterationNumber
+sm32_tmp
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
@@ -109,10 +109,10 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 
 
 *remember to load sets first
-$gdxin fulldata.gdx
+$gdxin RMdata_4DT.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
-$load  remind_iter = o_iterationNumber
+$load  remind_iter = sm32_tmp
 $load  remind_budget = qm_budget.m
 $load  remind_budget_lastiter = p32_budget
 $load  remind_totseelDem = p32_seelUsableDem
