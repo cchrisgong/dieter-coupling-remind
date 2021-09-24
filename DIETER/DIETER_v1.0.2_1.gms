@@ -52,8 +52,8 @@ $setglobal second_hour ""
 ****fuel cost option:
 *smooth will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-*$setglobal fuel_cost smooth
-$setglobal fuel_cost fixed
+$setglobal fuel_cost smooth
+*$setglobal fuel_cost fixed
 *==========
 
 * Definition of strings for report parameters and sanity checks
@@ -118,7 +118,7 @@ dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR_up, MR_do/
 h         hour                                   /h1*h8760/
 
-DT_RM(ct,ct_remind)   "mapping to know which technology uses which storage technology"
+DT_RM(ct,ct_remind)   "mapping DIETER and REMIND technologies for reporting"
 /
 lig.coal
 ror.ror
@@ -352,7 +352,7 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 
 * half-half split between lig and hc for DEU
 * TW-> MW
-
+*
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
@@ -378,7 +378,7 @@ N_CON.lo("bio") = sum(te_remind,
 
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 
-N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
+*N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
 
 *N_CON.lo("lig") = min(sum(te_remind,
@@ -499,55 +499,63 @@ budget_smoothed(all_yr,reg)$(abs(remind_budget(all_yr,reg)) gt sm_eps) = remind_
 con_fuelprice_reg_remind(all_yr,"lig",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
 con_fuelprice_reg_remind(all_yr,"hc",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
 con_fuelprice_reg_remind(all_yr,"CCGT",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"bio",reg) = -remind_fuelprice(all_yr,reg,"pebiolc") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"nuc",reg) = -remind_fuelprice(all_yr,reg,"peur") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"ror",reg) = 0;
 
 *smooth over 3 years
-con_fuelprice_reg_smoothed("lig",reg) = (con_fuelprice_reg_remind("2015","lig",reg) + 2 * con_fuelprice_reg_remind("2020","lig",reg) + con_fuelprice_reg_remind("2025","lig",reg)) / 4;
-con_fuelprice_reg_smoothed("hc",reg) = (con_fuelprice_reg_remind("2015","hc",reg) + 2 * con_fuelprice_reg_remind("2020","hc",reg) + con_fuelprice_reg_remind("2025","hc",reg)) / 4;
-con_fuelprice_reg_smoothed("CCGT",reg) = (con_fuelprice_reg_remind("2015","CCGT",reg) + 2 * con_fuelprice_reg_remind("2020","CCGT",reg) + con_fuelprice_reg_remind("2025","CCGT",reg)) / 4;
-con_fuelprice_reg_smoothed("OCGT_eff",reg) = con_fuelprice_reg_smoothed("CCGT",reg);
-con_fuelprice_reg_smoothed("bio",reg) = (con_fuelprice_reg_remind("2015","bio",reg) + 2 * con_fuelprice_reg_remind("2020","bio",reg) + con_fuelprice_reg_remind("2025","bio",reg)) / 4;
-con_fuelprice_reg_smoothed("nuc",reg) = (con_fuelprice_reg_remind("2015","nuc",reg) + 2 * con_fuelprice_reg_remind("2020","nuc",reg) + con_fuelprice_reg_remind("2025","nuc",reg)) / 4;
-con_fuelprice_reg_smoothed("ror",reg) = 0;
+con_fuelprice_reg_smoothed(ct,reg) = (con_fuelprice_reg_remind("2015",ct,reg) + 2 * con_fuelprice_reg_remind("2020",ct,reg) + con_fuelprice_reg_remind("2025",ct,reg)) / 4;
 
 *================================================================
 
 *eta from remind
-** split pecoal into lignite and hc for rough comparison (not finalized)
-cdata("eta_con","lig") = remind_eta1("2020","DEU","pc");
-cdata("eta_con","hc") = remind_eta1("2020","DEU","pc") * 0.92;
-cdata("eta_con","CCGT") = remind_eta1("2020","DEU","ngcc");
+** split pecoal into lignite and hc for rough comparison (not finalized), adding eta1 and eta2 together since sometimes eta from remind is stored in one parameter, sometimes the other
+cdata("eta_con","lig")$(sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel",COALte)) ne 0) = sum(COALte, (remind_eta1("2020","DEU", COALte)+remind_eta2("2020","DEU", COALte)) * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))/sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte));
+cdata("eta_con","hc") = cdata("eta_con","lig") * 0.92;
+cdata("eta_con","CCGT")$(sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) ne 0) = sum(NonPeakGASte, (remind_eta1("2020","DEU", NonPeakGASte)+remind_eta2("2020","DEU", NonPeakGASte) ) * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))/sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte));
 cdata("eta_con","OCGT_eff") = remind_eta1("2020","DEU","ngt");
-cdata("eta_con","bio") = remind_eta1("2020","DEU","bioigcc");
+cdata("eta_con","bio")$(sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) ne 0) = sum(BIOte, (remind_eta1("2020","DEU", BIOte) + remind_eta2("2020","DEU", BIOte))* remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte))/sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte)); 
 cdata("eta_con","ror") = remind_eta2("2020","DEU","hydro");
-cdata("eta_con","nuc") = remind_eta2("2020","DEU","tnrs");
+cdata("eta_con","nuc")$(sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) ne 0) = sum(NUCte, (remind_eta1("2020","DEU", NUCte) + remind_eta2("2020","DEU", NUCte)) * remind_prodSe("2020", "DEU", "peur", "seel", NUCte))/sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel", NUCte));
 
-*carbon content from remind
+*if there is no generation in remind, then just take the eta value of one tech
+cdata("eta_con","lig")$(sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel",COALte)) eq 0) = remind_eta1("2020","DEU", "pc");
+cdata("eta_con","CCGT")$(sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) eq 0) = remind_eta1("2020","DEU", "ngcc");
+cdata("eta_con","bio")$(sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) eq 0) = remind_eta1("2020","DEU", "bioigcc"); 
+cdata("eta_con","nuc")$(sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) eq 0) = remind_eta2("2020","DEU", "tnrs");
+
+*carbon content from remind (average over remind te since CCS plants have lower carbon content)
 *dieter value (tCO2/MWh) = remind value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = remind value * (44/12 * 1e9) / (8760000000) 
-cdata("carbon_content","lig") = remind_carboncontent("pecoal","seel","pc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
-cdata("carbon_content","hc") = remind_carboncontent("pecoal","seel","pc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
-cdata("carbon_content","CCGT") = remind_carboncontent("pegas","seel","ngcc","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+cdata("carbon_content","lig") = sum(COALte, remind_carboncontent("pecoal","seel",COALte,"co2") * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))/sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+cdata("carbon_content","hc") = cdata("carbon_content","lig");
+cdata("carbon_content","CCGT") = sum(NonPeakGASte, remind_carboncontent("pegas","seel",NonPeakGASte,"co2") * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))/sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 
 *omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1.2 to T$(2015)/TWa then multiply * 1e12 to get $(2015)/TWa, divides sm_TWa_2_MWh to get $(2015)/MWh
 
 * variable O&M from remind
-cdata("c_var_con","lig") = remind_OMcost("DEU","omv","pc")  *1.2 *1e12/sm_TWa_2_MWh;
-cdata("c_var_con","hc") = remind_OMcost("DEU","omv","pc")  *1.2 *1e12/sm_TWa_2_MWh;
-cdata("c_var_con","CCGT") = remind_OMcost("DEU","omv","ngcc")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","lig")$(sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel",COALte)) ne 0) = sum(COALte, remind_OMcost("DEU","omv",COALte)  * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))/sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte)) *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","hc") = cdata("c_var_con","lig");
+cdata("c_var_con","CCGT")$(sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) ne 0) = sum(NonPeakGASte, remind_OMcost("DEU","omv",NonPeakGASte) * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))/sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) *1.2 *1e12/sm_TWa_2_MWh;
 cdata("c_var_con","OCGT_eff") = remind_OMcost("DEU","omv","ngt")  *1.2 *1e12/sm_TWa_2_MWh;
-cdata("c_var_con","bio") = remind_OMcost("DEU","omv","biochp")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","bio")$(sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) ne 0) = sum(BIOte, remind_OMcost("DEU","omv",BIOte)  * remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte))/sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) *1.2 *1e12/sm_TWa_2_MWh;
 cdata("c_var_con","ror") = remind_OMcost("DEU","omv","hydro")  *1.2 *1e12/sm_TWa_2_MWh;
-cdata("c_var_con","nuc") = remind_OMcost("DEU","omv","tnrs")  *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","nuc")$(sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) ne 0) = sum(NUCte, remind_OMcost("DEU","omv",NUCte)  * remind_prodSe("2020", "DEU", "peur", "seel",NUCte))/sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) *1.2 *1e12/sm_TWa_2_MWh;
+
+*if there is no generation in remind, then just take the omv value of one tech
+cdata("c_var_con","lig")$(sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel",COALte)) eq 0) = remind_OMcost("DEU","omv","pc")*1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","CCGT")$(sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) eq 0) = remind_OMcost("DEU","omv","ngcc") *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","bio")$(sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) eq 0) = remind_OMcost("DEU","omv","bioigcc") *1.2 *1e12/sm_TWa_2_MWh;
+cdata("c_var_con","nuc")$(sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) eq 0) = remind_OMcost("DEU","omv","tnrs") *1.2 *1e12/sm_TWa_2_MWh;
 
 ** there is no var OM cost for VRE in remind
-*rdata("c_var_res","Solar") = remind_OMcost("DEU","omv","spv") *1.2 *1e12/sm_TWa_2_MWh;
-*rdata("c_var_res","Wind_on") = remind_OMcost("DEU","omv","wind")  *1.2 *1e12/sm_TWa_2_MWh;
+*rdata("c_var_res","Solar") = remind_OMcost("DEU","omv","spv") * 1.2 * 1e12 / sm_TWa_2_MWh;
+*rdata("c_var_res","Wind_on") = remind_OMcost("DEU","omv","wind") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
-p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  *1.2 *1e12/sm_TWa_2_MWh;
+p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
-c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct)   ;
+c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
@@ -702,18 +710,16 @@ con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
 obj..
          Z =E=
                  sum( (ct,h) , c_m(ct)*G_L(ct,h) )
-*** turning off ramping cost for the coupled version for consistency reasons
+*** ramping cost
                  + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
                  + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
-*** grid cost (from REMIND), no var O&M grid cost
-                 + sum( grid , c_i_grid(grid)*N_GRID(grid) )
-                 + sum( grid , griddata("c_fix_grid",grid)*N_GRID(grid) )
+
 %P2G%$ontext
 *** P2G ramping cost
-                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g)*C_P2GUP(p2g,h) )
+                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g) * C_P2GUP(p2g,h) )
                  + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
 *** P2G var O&M cost
-                 + sum( (p2g,h) , p2gdata("c_var_p2g",p2g) *C_P2G(p2g,h) )
+                 + sum( (p2g,h) , p2gdata("c_var_p2g",p2g) * C_P2G(p2g,h) )
 $ontext
 $offtext
 *** curtailment cost and variable O&M cost for non-dispatchable
@@ -737,6 +743,10 @@ $offtext
                  + sum( p2g , p2gdata("c_fix_p2g",p2g)*N_P2G(p2g) )
 $ontext
 $offtext
+*** grid cost (from REMIND), no var O&M grid cost
+                 + sum( grid , c_i_grid(grid)*N_GRID(grid) )
+                 + sum( grid , griddata("c_fix_grid",grid)*N_GRID(grid) )
+                 
                  + sum( sto , c_i_sto_e(sto)*N_STO_E(sto) )
                  + sum( sto , stodata("c_fix_sto",sto)/2*(N_STO_P(sto)+N_STO_E(sto)) )
                  + sum( sto , c_i_sto_p(sto)*N_STO_P(sto) )
@@ -835,10 +845,10 @@ $offtext
 
 *** q32_limitCapTeGrid eqn in REMIND
 eq3_grid(grid)..
+        P_RES("Solar") + 1.5 * P_RES("Wind_on")
+        =L=
         N_GRID(grid) / remind_gridfac_reg
-        =G=
-        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
-*        P_RES("Solar") + 1.5 * P_RES("Wind_on")
+*        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
 ;
 * ---------------------------------------------------------------------------- *
 *==========           Hourly maximum generation caps and constraints related to reserves   *==========
@@ -1127,6 +1137,7 @@ eq2_maxprod_elh2
 eq2_minprod_p2g
 $ontext
 $offtext
+
 eq3_grid
 
 con2a_loadlevel

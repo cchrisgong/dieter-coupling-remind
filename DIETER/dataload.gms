@@ -110,6 +110,7 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 
 *remember to load sets first
 $gdxin RMdata_4DT.gdx
+*$gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_tmp
@@ -137,7 +138,7 @@ $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 
-display remind_iter;
+display remind_iter, remind_budget_lastiter, remind_budget;
 
 $IFTHEN.FC %fuel_cost% == "fixed"
 
