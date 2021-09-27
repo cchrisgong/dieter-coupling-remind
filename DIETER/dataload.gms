@@ -280,7 +280,7 @@ elasticity                Demand elasticity
 
 
 *====== Reserves ======
-
+*%reserves%$ontext
 phi_reserves_share(reserves)             Shares of SRL and MRL up and down
 *reserves_intercept(reserves)
 reserves_slope(reserves,res)
@@ -288,8 +288,11 @@ phi_reserves_call_y(year,h,reserves)     Hourly share of reserve provision that 
 phi_reserves_call(reserves,h)            Hourly share of reserve provision that is actually activated
 phi_reserves_pr                          ??? /0.05/
 ;
+*$ontext
+*$offtext
 
-
+*repress printing out all the input data
+$offlisting
 *================================================================================================
 parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
 /
@@ -336,6 +339,8 @@ $include "VRE_potential_DEU_2019.csv"
 *$include "VRE_potential_USA_renewNinja.csv"
 $offdelim
 ;
+
+
 
 phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 
@@ -408,13 +413,16 @@ $offdelim
 *
 *phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
 
-*$ontext
-*$offtext
+$onlisting
+
 
 $onecho >temp.tmp
 
 par=phi_reserves_call_y          rng=Reserves!b49:lya73  rdim=2 cdim=1
 $offecho
+
+*$ontext
+*$offtext
 
 *%skip_Excel%$call "gdxxrw Data_Input_v1.0.2.xlsx @temp.tmp o=Data_input.gdx";
 
@@ -459,19 +467,12 @@ c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( stodata("inv_interest_st
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( stodata("inv_interest_sto",sto) * (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto)) )
                  / ( (1+stodata("inv_interest_sto",sto))**(stodata("inv_lifetime_sto",sto))-1 )       ;
 
-c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
-                 / ( (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt))-1 )       ;
-c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
-                 / ( (1+dsmdata_shift("inv_interest_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))-1 )       ;
+*c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
+*                 / ( (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt))-1 )       ;
+*c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
+*                 / ( (1+dsmdata_shift("inv_interest_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))-1 )       ;
+*
 
-* Adjust investment costs on model's hourly basis ?
-
-*c_i(ct) = c_i(ct)*card(h)/8760 ;
-*c_i_res(res) = c_i_res(res)*card(h)/8760 ;
-%second_hour%c_i_sto_e(sto) = c_i_sto_e(sto)*card(h)/8760 ;
-c_i_sto_p(sto) = c_i_sto_p(sto)*card(h)/8760 ;
-c_i_dsm_cu(dsm_curt) = c_i_dsm_cu(dsm_curt)*card(h)/8760 ;
-c_i_dsm_shift(dsm_shift) = c_i_dsm_shift(dsm_shift)*card(h)/8760 ;
 %second_hour%$ontext
 c_i_sto_e(sto) = c_i_sto_e(sto)*card(h)/8760 * 2 ;
 dsmdata_cu("t_dur_dsm_cu",dsm_curt) = dsmdata_cu("t_dur_dsm_cu",dsm_curt) / 2 ;

@@ -508,8 +508,8 @@ con_fuelprice_reg_remind(all_yr,"ror",reg) = 0;
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
 
 *smooth over 3 years regardless whether fuel cost if smoothed over iteration or fixed to first iteration
-*con_fuelprice_reg_smoothed(ct,reg) = (con_fuelprice_reg_remind("2015",ct,reg) + 2 * con_fuelprice_reg_remind("2020",ct,reg) + con_fuelprice_reg_remind("2025",ct,reg)) / 4;
-con_fuelprice_reg_smoothed(ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg);
+con_fuelprice_reg_smoothed(ct,reg) = (con_fuelprice_reg_remind("2015",ct,reg) + 2 * con_fuelprice_reg_remind("2020",ct,reg) + con_fuelprice_reg_remind("2025",ct,reg)) / 4;
+*con_fuelprice_reg_smoothed(ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg);
 *================================================================
 
 *eta from remind
@@ -568,6 +568,8 @@ c_m(ct) = c_m_reg(ct,"DEU");
 *================================================================
 *=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
+*note on tech harmonization: ngcc, ngccc, gaschp have the same lifetime in REMIND, 35 years; igcc, igccc, pc, pcc, pco, coalchp all have 40 years; biochp, bioigcc, bioigccc have 40 years
+*fnrs and tnrs have 50 years
 disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
 disc_fac_con("hc") = disc_fac_con("lig");
 disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
@@ -1250,6 +1252,9 @@ corr_fac_res(res,h) = 0 ;
 corr_fac_sto(sto,h) = 0 ;
 corr_fac_dsm_cu(dsm_curt,h) = 0 ;
 corr_fac_dsm_shift(dsm_shift,h) = 0 ;
+
+*suppress print solutions to limit lst size, placed before solve statement
+option solprint = off ;
 
 solve DIETER using lp minimizing Z ;
 
