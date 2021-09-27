@@ -114,7 +114,7 @@ $gdxin RMdata_4DT.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_tmp
-$load  remind_budget = qm_budget.m
+*$load  remind_budget = qm_budget.m
 $load  remind_budget_lastiter = p32_budget
 $load  remind_totseelDem = p32_seelUsableDem
 $load  remind_totseh2Dem = p32_seh2elh2Dem
@@ -138,22 +138,25 @@ $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 
-display remind_iter, remind_budget_lastiter, remind_budget;
-
 $IFTHEN.FC %fuel_cost% == "fixed"
-
 $gdxin fulldata_1.gdx
 $load  remind_fuelprice = q_balPe.m
 $gdxin
-
 $ENDIF.FC
 
 
 $IFTHEN.FC %fuel_cost% == "smooth"
-$gdxin fulldata.gdx
+$gdxin RMdata_4DT.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter
 $gdxin
 $ENDIF.FC
+
+*load 1st iteration budget
+$gdxin fulldata_1.gdx
+$load  remind_budget = qm_budget.m
+$gdxin
+
+display remind_iter, remind_budget_lastiter, remind_budget;
 
 Parameters
 
@@ -188,7 +191,7 @@ budget_smoothed(all_yr,reg) average budget over 2 iter calculated from REMIND
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
 con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
 con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
-
+con_fuelprice_reg_remind_reporting(ct,reg) Fuel price from REMIND for reporting
 *====== Renewables ======
 
 *--- Generation and fixed costs ---*

@@ -90,7 +90,7 @@ $offtext
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',p2g)$(totFlexLoad ne 0) = c_i_p2g(p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75) ;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',p2g)$(totFlexLoad ne 0) = p2gdata('c_fix_p2g',p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75)  ;
                                                   
-        report_tech('REMIND',yr,reg,'fuel cost - divided by eta ($/MWh)',ct_remind) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_smoothed(ct,reg)/cdata('eta_con',ct));
+        report_tech('REMIND',yr,reg,'fuel cost - divided by eta ($/MWh)',ct_remind) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_remind_reporting(ct,reg)/cdata('eta_con',ct));
         report_tech('REMIND',yr,reg,'CO2 cost ($/MWh)',ct_remind) = sum(DT_RM(ct,ct_remind), cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg)) ;
          
          
@@ -128,13 +128,13 @@ $offtext
         
 
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','coal') = RM_postInv_prodSe_con(yr,reg,"coal") /( RM_postInv_cap_con(yr,reg,"coal") *8760) *1e2;
+*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','coal') = RM_postInv_prodSe_con(yr,reg,"coal") /( RM_postInv_cap_con(yr,reg,"coal") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','CCGT') = RM_postInv_prodSe_con(yr,reg,"CCGT") /( RM_postInv_cap_con(yr,reg,"CCGT") *8760) *1e2;
+*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','CCGT') = RM_postInv_prodSe_con(yr,reg,"CCGT") /( RM_postInv_cap_con(yr,reg,"CCGT") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'biochp')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','nuc') = remind_CF(yr,reg,'tnrs')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','nuc') = RM_postInv_prodSe_con(yr,reg,"nuc") /( RM_postInv_cap_con(yr,reg,"nuc") *8760) *1e2;
+*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','nuc') = RM_postInv_prodSe_con(yr,reg,"nuc") /( RM_postInv_cap_con(yr,reg,"nuc") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','ror') = sum(grade, remind_pm_dataren(reg, 'nur', grade, 'hydro') * remind_vm_CapDistr(yr, reg, 'hydro', grade) / remind_cap(yr, reg, 'hydro', '1'))*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Solar') = sum( h, phi_res('Solar', h) ) / card(h) * 1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Wind_on') = sum( h, phi_res('Wind_on', h) ) / card(h) * 1e2;
