@@ -148,7 +148,7 @@ $offtext
  
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',res) =  (P_RES.l(res) - P_RES.lo(res)) / 1e3 ;
-        report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') +N_CON.l('hc') - N_CON.lo('lig')- N_CON.lo('hc')) / 1e3 ;
+        report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') +N_CON.l('hc') - N_CON.lo(ct)) / 1e3 ;
         
         report_tech('DIETER',yr,reg,'capacities storage (GW)',sto) =  N_STO_P.l(sto) / 1e3 ;
         report_tech('DIETER',yr,reg,'capacities storage (TWh)',sto) =  N_STO_E.l(sto) /1e6;

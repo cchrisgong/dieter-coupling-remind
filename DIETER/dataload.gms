@@ -113,7 +113,7 @@ $gdxin RMdata_4DT.gdx
 *$gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
-$load  remind_iter = sm32_tmp
+$load  remind_iter = sm32_iter
 *$load  remind_budget = qm_budget.m
 $load  remind_budget_lastiter = p32_budget
 $load  remind_totseelDem = p32_seelUsableDem
