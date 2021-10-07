@@ -52,12 +52,12 @@ $setglobal second_hour ""
 ****fuel cost option:
 *smooth will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-*$setglobal fuel_cost smooth
-$setglobal fuel_cost fixed
+$setglobal fuel_cost smooth
+*$setglobal fuel_cost fixed
 *==========
 ****whether to shave off scarcity price
-*$setglobal price_shave on
-$setglobal price_shave off
+$setglobal price_shave on
+*$setglobal price_shave off
 
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
@@ -409,6 +409,7 @@ N_CON.lo("bio") = sum(te_remind,
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
+
 $ENDIF.CB
 
 
@@ -572,7 +573,7 @@ cdata("eta_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
      / sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte));
 cdata("eta_con","OCGT_eff") = remind_eta1("2020","DEU","ngt");
 cdata("eta_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
-    = sum(BIOte, (remind_eta1("2020","DEU", BIOte) + remind_eta2("2020","DEU", BIOte))* remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte))
+    = sum(BIOte, (remind_eta1("2020","DEU", BIOte) + remind_eta2("2020","DEU", BIOte)) * remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte))
      / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte)); 
 cdata("eta_con","ror") = remind_eta2("2020","DEU","hydro");
 cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
@@ -580,12 +581,12 @@ cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
      / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel", NUCte));
 
 *if there is no generation in remind, then just take the average eta value of remind techs in one category
-cdata("eta_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0)=sum(COALte,remind_eta1("2020","DEU",COALte))/card(COALte);
+cdata("eta_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0)=sum(COALte,(remind_eta1("2020","DEU", COALte)+remind_eta2("2020","DEU", COALte)))/card(COALte);
 cdata("eta_con","hc") = cdata("eta_con","lig") * 0.92;
-cdata("eta_con","CCGT")$(sum(NonPeakGASte,remind_prodSe("2020","DEU","pegas","seel",NonPeakGASte)) eq 0)=sum(NonPeakGASte,remind_eta1("2020","DEU",NonPeakGASte))/card(NonPeakGASte);
-cdata("eta_con","bio")$(sum(BIOte,remind_prodSe("2020","DEU","pebiolc","seel",BIOte)) eq 0)=sum(BIOte,remind_eta1("2020","DEU",BIOte))/card(BIOte);
+cdata("eta_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0)=sum(NonPeakGASte,(remind_eta1("2020","DEU", NonPeakGASte)+remind_eta2("2020","DEU", NonPeakGASte) ) )/card(NonPeakGASte);
+cdata("eta_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)=sum(BIOte, (remind_eta1("2020","DEU", BIOte) + remind_eta2("2020","DEU", BIOte)))/card(BIOte);
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
-cdata("eta_con","nuc")$(sum(NUCte,remind_prodSe("2020","DEU","peur","seel",NUCte)) eq 0)=remind_eta2("2020","DEU","tnrs");
+cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)=remind_eta2("2020","DEU","tnrs");
 
 ***** carbon content from remind (average over remind te since CCS plants have lower carbon content) ***** 
 *dieter value (tCO2/MWh) = remind value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = remind value * (44/12 * 1e9) / (8760000000) 
@@ -610,14 +611,19 @@ cdata("carbon_content","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0
 cdata("c_var_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
     = sum(COALte, remind_OMcost("DEU","omv",COALte)  * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
      / sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte)) *1.2*1e12/sm_TWa_2_MWh;
+     
 cdata("c_var_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
     = sum(NonPeakGASte, remind_OMcost("DEU","omv",NonPeakGASte) * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))
      / sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) *1.2*1e12/sm_TWa_2_MWh;
+     
 cdata("c_var_con","OCGT_eff") = remind_OMcost("DEU","omv","ngt")  *1.2*1e12/sm_TWa_2_MWh;
+
 cdata("c_var_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
     = sum(BIOte, remind_OMcost("DEU","omv",BIOte)  * remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte))
      / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) *1.2*1e12/sm_TWa_2_MWh;
+
 cdata("c_var_con","ror") = remind_OMcost("DEU","omv","hydro")  *1.2*1e12/sm_TWa_2_MWh;
+
 cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
     = sum(NUCte, remind_OMcost("DEU","omv",NUCte)  * remind_prodSe("2020", "DEU", "peur", "seel",NUCte))
      / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) *1.2*1e12/sm_TWa_2_MWh;
@@ -821,8 +827,8 @@ obj..
 
 %P2G%$ontext
 *** P2G ramping cost
-                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g) * C_P2GUP(p2g,h) )
-                 + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
+*                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g) * C_P2GUP(p2g,h) )
+*                 + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
 *** P2G var O&M cost
                  + sum( (p2g,h) , p2gdata("c_var_p2g",p2g) * C_P2G(p2g,h) )
 $ontext
@@ -942,7 +948,8 @@ con2c_maxprodannual_conv_nuc("nuc")..
 %P2G%$ontext
 * Constraints for capfac of electrolyzers (at least 30%, in line with current data)
 eq2_maxprod_elh2('elh2')..
-        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2')
+*        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') *8760
+        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') 
 ;
 
 $ontext
@@ -1317,7 +1324,6 @@ corr_fac_res
 corr_fac_sto
 corr_fac_dsm_cu
 corr_fac_dsm_shift
-gross_energy_demand
 calc_maxprice
 calc_minprice
 p32_report4RM
@@ -1358,10 +1364,10 @@ solve DIETER using lp minimizing Z ;
 
 p32_report4RM(yr,reg,ct,'capacity') = N_CON.l(ct);
 p32_report4RM(yr,reg,res,'capacity') = P_RES.l(res);
-p32_report4RM(yr,reg,p2g,'capacity') = N_P2G.l(p2g);
 
 %P2G%$ontext
-p32_report4RM(yr,reg,'elh2','capacity') = N_P2G.l('elh2');
+*multiply with efficiency of el->h2 to get REMIND unit for eletrolyzer (DIETER unit: /el_equivalent, REMIND unit: /H2_equivalent)
+p32_report4RM(yr,reg,'elh2','capacity') = N_P2G.l('elh2') * remind_eta2(yr,reg,"elh2");
 $ontext
 $offtext
 *** inflexible residual demand

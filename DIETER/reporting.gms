@@ -37,9 +37,8 @@ $offtext
         report('DIETER',yr,reg,'load-weighted price for fixed demand ($/MWh)') = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h)) ;
         report('DIETER',yr,reg,'price w/ scarcity price shaved ($/MWh)') = annual_load_weighted_price_shaved;
         
-*       Define gross energy demand for reporting, egual to equation 5a
-        gross_energy_demand = sum( h , d(h) + sum( sto , STO_IN.l(sto,h) - STO_OUT.l(sto,h) ));        
-        report('DIETER',yr,reg,'gross_energy_demand (TWh)') = gross_energy_demand /1e6;
+*       Define gross energy demand for reporting, egual to equation 5a      
+        report('DIETER',yr,reg,'gross energy demand (TWh)') = totLoad /1e6;
 
 *       report('DIETER',yr,reg,'curtailment of fluct res absolute') = sum((res,h),CU.l(res,h))  /1e6 ;
 *       report('DIETER',yr,reg,'curtailment of fluct res relative')$report('DIETER',yr,reg,'curtailment of fluct res absolute') = sum((res,h),CU.l(res,h))/sum((res,h),G_RES.l(res,h)) ;
@@ -152,9 +151,9 @@ $offtext
         
         report_tech('DIETER',yr,reg,'capacities storage (GW)',sto) =  N_STO_P.l(sto) / 1e3 ;
         report_tech('DIETER',yr,reg,'capacities storage (TWh)',sto) =  N_STO_E.l(sto) /1e6;
-        report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / gross_energy_demand  * 1e2;
-        report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / gross_energy_demand  * 1e2;
-        report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / gross_energy_demand  * 1e2;
+        report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / totLoad  * 1e2;
+        report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
+        report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / totLoad  * 1e2;
 *        report_tech('DIETER',yr,reg,'curtailment of fluct res relative',res) =  sum(h,CU.l(res,h))/ (sum(h,G_RES.l(res,h) - corr_fac_res(res,h) ) + sum(h,CU.l(res,h)) )  * 1e2;
         
 *       report_tech('DIETER',yr,reg,'load-weighted price for flex demand', flexTe) = -sum(h,con1a_bal.m(h)*C_P2G.l("elh2",h))/sum(h,C_P2G.l("elh2",h)) ;
