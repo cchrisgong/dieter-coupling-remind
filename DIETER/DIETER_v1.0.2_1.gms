@@ -49,11 +49,17 @@ $setglobal ror_variable ""
 * Set star to run test variant with each second hour
 $setglobal second_hour ""
 
-****fuel cost option:
-*smooth will load averaged fuel cost over 3 iterations
+****fuel cost option (averaged over iteration or not, averaged over years or not):
+*smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-$setglobal fuel_cost smooth
-*$setglobal fuel_cost fixed
+$setglobal fuel_cost_iter smoothed
+*$setglobal fuel_cost_iter fixed
+*-------------
+****fuel cost option 2:
+*averaged will use 3-year averaged fuel cost (calculated in DIETER)
+*noavg will use non year-averaged fuel cost (but iteration averaged, done in remind)
+*$setglobal fuel_cost_yr avg
+$setglobal fuel_cost_yr no_avg
 *==========
 ****whether to shave off scarcity price
 $setglobal price_shave on
@@ -66,12 +72,21 @@ $setglobal price_shave on
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
 $setglobal cap_bound hardLo
+*$setglobal cap_bound softLo
 *$setglobal cap_bound none
 *$setglobal cap_bound fixed
 
 *whether to split lignite and hard coal
 $setglobal coal_split off
 *$setglobal coal_split on
+
+*whether couple elh2 flexible demand
+$setglobal coup_elh2 on
+*$setglobal coup_elh2 off
+
+*whether ramping cost for conventional and for electrolyzers are turned on
+*$setglobal ramping_cost on
+$setglobal ramping_cost off
 
 * Definition of strings for report parameters and sanity checks
 * (Do not change settings below)
@@ -234,12 +249,16 @@ demand
 *================================================================
 *================ scale up demand ===============================
 DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
-* only after a few iter, switch on h2 flexible demand
-*totFlexLoad = 0;
-*if (remind_iter > 3,
+
 totLoad = remind_totseelDem("2020", "DEU", "seel") * sm_TWa_2_MWh;
+
+$IFTHEN %coup_elh2% == "off"
+totFlexLoad = 0;
+$ENDIF
+
+$IFTHEN %coup_elh2% == "on"
 totFlexLoad = remind_totseh2Dem("2020", "DEU", "seh2") * sm_TWa_2_MWh;
-*);
+$ENDIF
 
 totFixedLoad = totLoad - totFlexLoad;
 d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
@@ -286,8 +305,8 @@ dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
 
 * Limit 0<weight<1
-share_wind_on_CF_match$(share_wind_on_CF_match>1) = 1;
-share_wind_on_CF_match$(share_wind_on_CF_match<0) = 0;
+share_wind_on_CF_match$(share_wind_on_CF_match > 1) = 1;
+share_wind_on_CF_match$(share_wind_on_CF_match < 0) = 0;
 
 *AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
 phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
@@ -406,7 +425,9 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
+$IFTHEN.H2 %coup_elh2% == "on"
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
+$ENDIF.H2
 
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
@@ -414,10 +435,10 @@ $ENDIF.CB
 
 
 $IFTHEN.CB %cap_bound% == "softLo"
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
 
-
+$IFTHEN.CS %coal_split% == "on"
 N_CON.lo("lig") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2,.2*SMax(h, d(h)));
@@ -425,6 +446,15 @@ N_CON.lo("lig") = min(sum(te_remind,
 N_CON.lo("hc") = min(sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2,.2*SMax(h, d(h)));
+$ENDIF.CS
+
+$IFTHEN.CS %coal_split% == "off"
+N_CON.lo("lig") = min(sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6,.2*SMax(h, d(h)));
+                    
+N_CON.fx("hc") = 0;
+$ENDIF.CS
                     
 N_CON.lo("nuc") = min(sum(te_remind,
                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
@@ -534,33 +564,35 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
-*remind_budget is kind of like inflation rate, "smooth" it over 2 iterations to avoid budget being eps in some iterations
-*sometimes the coupled run might have an iteration where budget is 0 (for unknown reasons), in this case DIETER will take the last iteration budget value, which is hopefully non-zero
-budget_smoothed(all_yr,reg)$(abs(remind_budget(all_yr,reg)) le sm_eps) = remind_budget_lastiter(all_yr,reg);
-budget_smoothed(all_yr,reg)$(abs(remind_budget(all_yr,reg)) gt sm_eps) = remind_budget(all_yr,reg);
 
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
 $IFTHEN.CS %coal_split% == "on"
-con_fuelprice_reg_remind(all_yr,"lig",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
-con_fuelprice_reg_remind(all_yr,"hc",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg_remind(all_yr,"hc",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
 $ENDIF.CS
 
 $IFTHEN.CS %coal_split% == "off"
-con_fuelprice_reg_remind(all_yr,"lig",reg) = -remind_fuelprice(all_yr,reg,"pecoal") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"hc",reg) = con_fuelprice_reg_remind(all_yr,"lig",reg);
 $ENDIF.CS
 
-con_fuelprice_reg_remind(all_yr,"CCGT",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = -remind_fuelprice(all_yr,reg,"pegas") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"bio",reg) = -remind_fuelprice(all_yr,reg,"pebiolc") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"nuc",reg) = -remind_fuelprice(all_yr,reg,"peur") / (-budget_smoothed(all_yr,reg)) * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"CCGT",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"bio",reg) = remind_fuelprice(all_yr,reg,"pebiolc") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind(all_yr,"nuc",reg) = remind_fuelprice(all_yr,reg,"peur") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"ror",reg) = 0;
 
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
 
+$IFTHEN.FC2 %fuel_cost_yr% == "avg"
 *smooth over 3 years regardless whether fuel cost if smoothed over iteration or fixed to first iteration
-con_fuelprice_reg_smoothed(ct,reg) = (con_fuelprice_reg_remind("2015",ct,reg) + 2 * con_fuelprice_reg_remind("2020",ct,reg) + con_fuelprice_reg_remind("2025",ct,reg)) / 4;
-*con_fuelprice_reg_smoothed(ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg);
+con_fuelprice_reg_yr_avg(ct,reg) = (con_fuelprice_reg_remind("2015",ct,reg) + 2 * con_fuelprice_reg_remind("2020",ct,reg) + con_fuelprice_reg_remind("2025",ct,reg)) / 4;
+$ENDIF.FC2
+
+$IFTHEN.FC2 %fuel_cost_yr% == "no_avg"
+con_fuelprice_reg_yr_avg(ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg);
+$ENDIF.FC2
+
 *================================================================
 
 ****** fuel efficiency eta from remind ***** 
@@ -645,7 +677,7 @@ p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / s
 ***** END of variable O&M from remind *****
 
 ***** summing variable cost components
-c_m_reg(ct,reg) = con_fuelprice_reg_smoothed(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
+c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
@@ -741,8 +773,8 @@ con1a_bal                Supply Demand Balance in case of cost minimization
 * Flex load total
 eq1_flexload             total P2G demand
 * P2G capacity constraint
-eq2_maxprod_elh2         P2G capacity factor lower bound
-eq2_minprod_p2g          P2G capacity constraint
+eq2_minprod_elh2         P2G capacity factor lower bound
+eq2_maxprod_p2g          P2G capacity constraint
 
 eq3_grid                 VRE grid constraint
 
@@ -759,11 +791,10 @@ con2c_maxprodannual_conv_nuc Full load hour constraint (for coal)
 * Capacity contraints and flexibility constraints
 con3a_maxprod_conv       Capacity Constraint conventionals
 
-con3i_maxprod_ror        Capacity constraint Run-of-river
-con3j_minprod_ror        Minimum production RoR if reserves contracted
+con3i_maxprod_ror        Annual capacity constraint Run-of-river
+eq2_capfac_ror_avg       Annual capacity constraint Run-of-river
 
 con3k_maxprod_res        Capacity constraints renewables
-con3l_minprod_res        Minimum production RES if reserves contracted
 
 * Storage constraints
 con4a_stolev_start        Storage Level Dynamics Initial Condition
@@ -784,7 +815,7 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 con5a_spv_share             Gross solar PV share
 con5b_wind_on_share         Gross wind onshore share
 con5c_wind_off_share        Gross wind offshore share
-con5d_maxBIO             Maximum yearly biomass energy
+*con5d_maxBIO             Maximum yearly biomass energy
 con5_demand
 con5e_P2Gshare              Gross power to gas share
 
@@ -822,13 +853,18 @@ obj..
          Z =E= 
                    sum( (ct,h) , c_m(ct)*G_L(ct,h) )
 *** ramping cost
-*                 + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
-*                 + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
+
+$IFTHEN %ramping_cost% == "on"
+                 + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
+                 + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
+$ENDIF
 
 %P2G%$ontext
-*** P2G ramping cost
+*** P2G ramping cost, likely do not need this, considering electrolyzers (even alkaline one) are very flexible now
+$IFTHEN %ramping_cost% == "on"
 *                 + sum( (p2g,h)$(ord(h)>1) , p2gdata("p2g_up",p2g) * C_P2GUP(p2g,h) )
 *                 + sum( (p2g,h) , p2gdata("p2g_do",p2g)*C_P2GDO(p2g,h) )
+$ENDIF
 *** P2G var O&M cost
                  + sum( (p2g,h) , p2gdata("c_var_p2g",p2g) * C_P2G(p2g,h) )
 $ontext
@@ -946,10 +982,11 @@ con2c_maxprodannual_conv_nuc("nuc")..
 ;
 
 %P2G%$ontext
+
 * Constraints for capfac of electrolyzers (at least 30%, in line with current data)
-eq2_maxprod_elh2('elh2')..
-*        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') *8760
-        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') 
+eq2_minprod_elh2('elh2')..
+        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') *8760
+*        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2')
 ;
 
 $ontext
@@ -973,12 +1010,16 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
         =L= N_CON(ct)
 ;
 
-* Constraints on run of river
+*** hourly generation is constrained by theoretical capfac
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-        =L= capfac_ror *N_CON('ror')
+        =L= 0.4 * N_CON('ror')
 ;
 
+* annual average capfac on run of river to be constrained by remind theoretical capfac
+eq2_capfac_ror_avg("ror")..
+        sum(h, G_L("ror",h) ) =L= capfac_ror * 8760 * N_CON("ror")
+;
 
 * Constraints on renewables
 con3k_maxprod_res(res,h)..
@@ -992,16 +1033,9 @@ $offtext
         =E= phi_res(res,h)*P_RES(res)
 ;
 
-con3l_minprod_res(res,h)..
-        RP_RES('PR_do',res,h)
-        + RP_RES('SR_do',res,h)
-        + RP_RES('MR_do',res,h)
-        =L= G_RES(res,h)
-;
-
 %P2G%$ontext
 * Constraints on p2g
-eq2_minprod_p2g(p2g,h)..
+eq2_maxprod_p2g(p2g,h)..
         C_P2G(p2g,h)
         =L= N_P2G(p2g)
 ;
@@ -1247,8 +1281,8 @@ obj
 con1a_bal
 %P2G%$ontext
 eq1_flexload
-eq2_maxprod_elh2
-eq2_minprod_p2g
+eq2_minprod_elh2
+eq2_maxprod_p2g
 $ontext
 $offtext
 
@@ -1267,7 +1301,11 @@ con2c_maxprodannual_conv
 con2c_maxprodannual_conv_nuc
 
 con3a_maxprod_conv
+
+*** two types of capfac constraint on ror: like dispatchable or like VRE
+eq2_capfac_ror_avg
 con3i_maxprod_ror
+
 con3k_maxprod_res
 
 con4a_stolev_start
@@ -1468,20 +1506,21 @@ annual_load_weighted_price_shaved = sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l
 $ontext
 $offtext
 
-p32_reportmk_4RM(yr,reg,ct,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
+*** if generation is not 0, pass the market value (w/ scarcity price shaved) from DIETER to REMIND, if generation is 0, pass the average annual price to REMIND
+p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) =
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct);
 
-p32_reportmk_4RM(yr,reg,ct,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) eq 0 ) = EPS;
+p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price_shaved;
     
-p32_reportmk_4RM(yr,reg,'coal','market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') ne 0) =
+p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) ne 0 ) =
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal');
 
-p32_reportmk_4RM(yr,reg,'coal','market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') eq 0 ) = EPS;
+p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) eq 0 ) = annual_load_weighted_price_shaved;
     
-p32_reportmk_4RM(yr,reg,res,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) ne 0) = 
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = 
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res);
     
-p32_reportmk_4RM(yr,reg,res,'market_value')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) eq 0 ) = EPS;
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price_shaved;
 
 ******************* without scarcity price shaving ****************************
 annual_load_weighted_price = -sum(h,con1a_bal.m(h)*d(h))/totLoad ;

@@ -30,16 +30,14 @@ remind_totseh2Dem(yr, reg, se_remind)
 remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
 p32_fuelprice_avgiter(all_yr,reg,pe_remind)
-*for loading fixed REMIND fuel costs from 2nd iter
-remind_fuelprice_fixed(all_yr,reg,pe_remind)
 *REMIND variable for fuel cost
 q_balPe(all_yr,reg,pe_remind)
 *-------------------------
-* REMIND budget and last iteration budget (some averaging is needed as sometimes for some iterations budget goes to zero)
-qm_budget(yr,reg)
-remind_budget(all_yr,reg)
-p32_budget(yr,reg)
-remind_budget_lastiter(all_yr,reg)
+** REMIND budget and last iteration budget (some averaging is needed as sometimes for some iterations budget goes to zero)
+*qm_budget(yr,reg)
+*remind_budget(all_yr,reg)
+*p32_budget(yr,reg)
+*remind_budget_lastiter(all_yr,reg)
 *------------------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -83,6 +81,7 @@ remind_vm_capDistr(yr, reg, te_remind, grade)
 *remind_CF contain scaling that accounts for smaller turbines or panels/lower CFs in earlier years (only for wind and solar in remind)
 remind_CF(yr,reg,te_remind) 
 pm_cf(yr,reg,te_remind)
+vm_capFac(yr,reg,te_remind)
 *load grid factor (for large country it is larger, otherwise 1)
 p32_grid_factor(reg)
 remind_gridfac(reg)
@@ -91,7 +90,6 @@ remind_gridfac(reg)
 remind_flatco2(yr,reg)
 f21_taxCO2eqHist(yr,reg)
 *-------------------------------------
-remind_totdemand_inMWh
 sm_TWa_2_MWh Conversion factor between TWa and MWh /8760000000/
 *-------------------------------------
 remind_carboncontent(pe_remind, se_remind, te_remind, gas_remind)
@@ -109,13 +107,12 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 
 
 *remember to load sets first
+*$If exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 *$gdxin fulldata.gdx
 *$load  yr = t
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_iter
-*$load  remind_budget = qm_budget.m
-$load  remind_budget_lastiter = p32_budget
 $load  remind_totseelDem = p32_seelUsableDem_avg
 $load  remind_totseh2Dem = p32_seh2elh2Dem_avg
 *$load  remind_fuelprice = p32_fuelprice_avgiter
@@ -133,30 +130,31 @@ $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
-$load  remind_CF = pm_cf
+*$load  remind_CF = pm_cf
+$load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 
-$IFTHEN.FC %fuel_cost% == "fixed"
+$IFTHEN.FC %fuel_cost_iter% == "fixed"
 $gdxin fulldata_1.gdx
 $load  remind_fuelprice = q_balPe.m
 $gdxin
 $ENDIF.FC
 
 
-$IFTHEN.FC %fuel_cost% == "smooth"
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
 $gdxin RMdata_4DT.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter
 $gdxin
 $ENDIF.FC
 
-*load 1st iteration budget
-$gdxin fulldata_1.gdx
-$load  remind_budget = qm_budget.m
-$gdxin
+**load 1st iteration budget
+*$gdxin fulldata_1.gdx
+*$load  remind_budget = qm_budget.m
+*$gdxin
 
-display remind_iter, remind_budget_lastiter, remind_budget;
+*display remind_iter, remind_budget_lastiter, remind_budget;
 
 Parameters
 
@@ -190,7 +188,7 @@ budget_smoothed(all_yr,reg) average budget over 2 iter calculated from REMIND
 *""fuel price" means without dividing by efficiency eta
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
 con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
-con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
+con_fuelprice_reg_yr_avg(ct,reg) Fuel price can be smoothed over several years
 con_fuelprice_reg_remind_reporting(ct,reg) Fuel price from REMIND for reporting
 *====== Renewables ======
 
