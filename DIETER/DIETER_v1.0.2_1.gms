@@ -81,8 +81,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-$setglobal coup_elh2 on
-*$setglobal coup_elh2 off
+$setglobal elh2_coup on
+*$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -179,7 +179,7 @@ Parameter totFlexLoad total flexible load;
 Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
 Parameter capfac_ror constant cap. factor of hydro power;
 Parameter remind_gridfac_reg  grid factor per region;
-Parameter r Investment interest rate /0.06/;
+Parameter r Investment interest rate;
 Parameter disc_fac_con(ct) Discount factor for overnight investment;
 Parameter disc_fac_res(res) Discount factor for overnight investment;
 Parameter disc_fac_p2g(p2g) Discount factor for overnight investment;
@@ -252,11 +252,11 @@ DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
 
 totLoad = remind_totseelDem("2020", "DEU", "seel") * sm_TWa_2_MWh;
 
-$IFTHEN %coup_elh2% == "off"
+$IFTHEN %elh2_coup% == "off"
 totFlexLoad = 0;
 $ENDIF
 
-$IFTHEN %coup_elh2% == "on"
+$IFTHEN %elh2_coup% == "on"
 totFlexLoad = remind_totseh2Dem("2020", "DEU", "seh2") * sm_TWa_2_MWh;
 $ENDIF
 
@@ -388,10 +388,9 @@ P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
 
 
+$IFTHEN.CS %coal_split% == "on"
 * half-half split between lig and hc for DEU
 * TW-> MW
-*
-$IFTHEN.CS %coal_split% == "on"
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 /2;
@@ -425,7 +424,7 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
-$IFTHEN.H2 %coup_elh2% == "on"
+$IFTHEN.H2 %elh2_coup% == "on"
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 $ENDIF.H2
 
@@ -682,6 +681,22 @@ c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
 *======================= FIXED COST =============================
+*interest rate
+if (remind_iter eq 0,
+remind_r("2020","DEU") = 0.05;
+r = remind_r("2020","DEU");
+);
+if (remind_iter > 0,
+r = remind_r("2020","DEU");
+);
+
+* since we would like to couple all years to limit distortions, but growth rate after 2100 is weird (2130 has negative growth rate) due to various artefact, we simply set interest rates
+* after 2100 to 5%, this only sets 2110, 2130, 2150 three years
+if (sum(yr,yr.val) > 2100,
+remind_r("2020","DEU") = 0.05;
+r = remind_r("2020","DEU");
+);
+
 *=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 *note on tech harmonization: ngcc, ngccc, gaschp have the same lifetime in REMIND, 35 years; igcc, igccc, pc, pcc, pco, coalchp all have 40 years; biochp, bioigcc, bioigccc have 40 years
