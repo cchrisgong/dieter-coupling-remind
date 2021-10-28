@@ -49,6 +49,17 @@ $setglobal ror_variable ""
 * Set star to run test variant with each second hour
 $setglobal second_hour ""
 
+* Definition of strings for report parameters and sanity checks
+* (Do not change settings below)
+$setglobal em_share ""
+$setglobal sec_hour "1"
+
+%second_hour%$ontext
+$setglobal sec_hour "8760/2208"
+$ontext
+$offtext
+
+*** ================== coupling switches =======================
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
@@ -81,22 +92,13 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-$setglobal elh2_coup on
-*$setglobal elh2_coup off
+*$setglobal elh2_coup on
+$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
-* Definition of strings for report parameters and sanity checks
-* (Do not change settings below)
-$setglobal em_share ""
-$setglobal sec_hour "1"
-
-%second_hour%$ontext
-$setglobal sec_hour "8760/2208"
-$ontext
-$offtext
 
 * to reduce the size of lst file
 option limcol    = 0;
