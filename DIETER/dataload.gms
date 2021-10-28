@@ -119,7 +119,6 @@ $ifThen.firstIter not exist RMdata_4DT.gdx
 remind_iter = 0;
 $gdxin input.gdx
 $load  remind_cap = vm_cap.l
-*$load  remind_iter = sm32_iter
 *$load  remind_r = p32_R_4DT
 $load  remind_totseelDem = p32_seelUsableDem_avg
 $load  remind_totseh2Dem = p32_seh2elh2Dem_avg

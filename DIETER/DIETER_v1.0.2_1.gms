@@ -38,13 +38,6 @@ $setglobal DSM ""
 $setglobal P2G "*"
 $setglobal reserves ""
 
-* Set star to select run-of-river options either as a simple exogenous parameter or as an endogenous variable including reserve provision:
-* if nothing is selected, ROR capacity will be set to zero
-* if parameter option is selected, set appropriate values in fix.gmx
-* if variable option is selected, set appropriate bound in data_input excel
-$setglobal ror_parameter ""
-$setglobal ror_variable ""
-
 
 * Set star to run test variant with each second hour
 $setglobal second_hour ""
@@ -92,8 +85,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-*$setglobal elh2_coup on
-$setglobal elh2_coup off
+$setglobal elh2_coup on
+*$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -103,8 +96,6 @@ $setglobal ramping_cost off
 * to reduce the size of lst file
 option limcol    = 0;
 option limrow    = 0;
-
-$if "%ror_parameter%" == "*" $if "%ror_variable%" == "*" $abort Choose appropriate ROR option! ;
 
 *==========
 *==========
@@ -173,7 +164,7 @@ alias (reserves,reservesreserves) ;
 
 $include dataload.gms
 *$stop
-
+Parameter t year;
 Parameter sm_eps small number: 1e-9 /1e-9/;
 Parameter totLoad total secondary electricity load;
 Parameter totFixedLoad total fixed load;
@@ -271,13 +262,6 @@ d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 
 earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = (remind_capEarlyReti(yr, reg, te_remind) - remind_capEarlyReti2("2015", reg, te_remind) ) * remind_cap(yr, reg, te_remind, "1")
                                                                             / (1 - remind_capEarlyReti(yr, reg, te_remind)) ;
-
-*==========
-*scale up wind theoretical capfac to be closer to current generation of wind turbine, 0.32
-*DIETER_OLDWindOnCapfac = sum(h, phi_res_y_reg('2019',"DEU",h,"Wind_on"))/8760;
-*phi_res_y_reg('2019',"DEU",h,"Wind_on") = phi_res_y_reg('2019',"DEU",h,"Wind_on") * 0.32 / DIETER_OLDWindOnCapfac;
-*phi_res_y_reg('2019',"DEU",h,"Wind_on") = phi_res_y_reg('2019',"DEU",h,"Wind_on");
-
 
 ****************
 *AO* Match VRE CFs of DIETER to REMIND values
@@ -688,13 +672,15 @@ if (remind_iter eq 0,
 remind_r("2020","DEU") = 0.05;
 r = remind_r("2020","DEU");
 );
-if (remind_iter > 0,
+
+if (remind_iter gt 0,
 r = remind_r("2020","DEU");
 );
 
 * since we would like to couple all years to limit distortions, but growth rate after 2100 is weird (2130 has negative growth rate) due to various artefact, we simply set interest rates
 * after 2100 to 5%, this only sets 2110, 2130, 2150 three years
-if (sum(yr,yr.val) > 2100,
+t(yr) = yr.val;
+if (sum(yr,t(yr)) gt 2100,
 remind_r("2020","DEU") = 0.05;
 r = remind_r("2020","DEU");
 );
