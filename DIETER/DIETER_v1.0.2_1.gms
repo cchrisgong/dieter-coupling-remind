@@ -85,8 +85,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-$setglobal elh2_coup on
-*$setglobal elh2_coup off
+*$setglobal elh2_coup on
+$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -308,7 +308,7 @@ capfac_ror = remind_HydroCapFac;
 
 ****************
 *pass on VRE gen share from RM to DT instead of capacities, using the following transformation
-*(total generation X gen.share) / (cap.fac. X 8760) = capacity, where (total generation X gen.share) = generation
+*(total_generation X gen.share) / (cap.fac. X 8760) = capacity, where (total_generation X gen.share) = generation
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
@@ -321,7 +321,7 @@ preInv_remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)$(remind_cap(yr,
 *Remind post-investment cap ( TW-> MW )
 RM_postInv_cap_con(yr,reg,"coal") = sum(te_remind, sum( grade, remind_cap(yr, reg, te_remind, grade)$(COALte(te_remind)) )) * 1e6;
 RM_postInv_cap_con(yr,reg,"CCGT") =  sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(NonPeakGASte(te_remind)) )) * 1e6;
-RM_postInv_cap_con(yr,reg,"OCGT_eff") = sum(   grade, remind_cap(yr, reg, "ngt", grade) )* 1e6;
+RM_postInv_cap_con(yr,reg,"OCGT_eff") = sum( grade, remind_cap(yr, reg, "ngt", grade) ) * 1e6;
 RM_postInv_cap_con(yr,reg,"bio") = sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(BIOte(te_remind)) )) * 1e6;
 RM_postInv_cap_con(yr,reg,"nuc") = sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(NUCte(te_remind)) )) * 1e6;
 RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grade)) * 1e6;
@@ -580,8 +580,8 @@ $ENDIF.FC2
 
 *================================================================
 
-****** fuel efficiency eta from remind ***** 
-** split pecoal into lignite and hc for rough comparison (not finalized), adding eta1 and eta2 together since sometimes eta from remind is stored in one parameter, sometimes the other
+****** fuel efficiency eta from REMIND ***** 
+** split pecoal into lignite and hc for rough comparison (not finalized), adding eta1 and eta2 together since sometimes eta from REMIND is stored in one parameter, sometimes the other
 cdata("eta_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
     = sum(COALte, (remind_eta1("2020","DEU", COALte)+remind_eta2("2020","DEU", COALte)) * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
      / sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte));
@@ -597,7 +597,7 @@ cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
     = sum(NUCte, (remind_eta1("2020","DEU", NUCte) + remind_eta2("2020","DEU", NUCte)) * remind_prodSe("2020", "DEU", "peur", "seel", NUCte))
      / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel", NUCte));
 
-*if there is no generation in remind, then just take the average eta value of remind techs in one category
+*if there is no generation in REMIND, then just take the average eta value of REMIND techs in one category
 cdata("eta_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0)=sum(COALte,(remind_eta1("2020","DEU", COALte)+remind_eta2("2020","DEU", COALte)))/card(COALte);
 cdata("eta_con","hc") = cdata("eta_con","lig") * 0.92;
 cdata("eta_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0)=sum(NonPeakGASte,(remind_eta1("2020","DEU", NonPeakGASte)+remind_eta2("2020","DEU", NonPeakGASte) ) )/card(NonPeakGASte);
@@ -605,8 +605,8 @@ cdata("eta_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)=sum(BIO
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)=remind_eta2("2020","DEU","tnrs");
 
-***** carbon content from remind (average over remind te since CCS plants have lower carbon content) ***** 
-*dieter value (tCO2/MWh) = remind value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = remind value * (44/12 * 1e9) / (8760000000) 
+***** carbon content from REMIND (average over REMIND te since CCS plants have lower carbon content) ***** 
+*dieter value (tCO2/MWh) = REMIND value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = REMIND value * (44/12 * 1e9) / (8760000000) 
 cdata("carbon_content","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
     = sum(COALte, remind_carboncontent("pecoal","seel",COALte,"co2") * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
      / sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
@@ -615,7 +615,7 @@ cdata("carbon_content","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0
      / sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 
-*if there is no generation in remind, then just take the average carbon content value of remind techs
+*if there is no generation in REMIND, then just take the average carbon content value of REMIND techs
 cdata("carbon_content","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0)
     = sum(COALte,remind_carboncontent("pecoal","seel", COALte,"co2"))/card(COALte) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","hc") = cdata("carbon_content","lig");
@@ -624,11 +624,11 @@ cdata("carbon_content","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0
 
 *omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1.2 to T$(2015)/TWa then multiply * 1e12 to get $(2015)/TWa, divides sm_TWa_2_MWh to get $(2015)/MWh
 
-***** variable O&M from remind ***** 
+***** variable O&M from REMIND ***** 
 cdata("c_var_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
-    = sum(COALte, remind_OMcost("DEU","omv",COALte)  * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
+    = sum(COALte, remind_OMcost("DEU","omv",COALte) * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
      / sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte)) *1.2*1e12/sm_TWa_2_MWh;
-     
+
 cdata("c_var_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
     = sum(NonPeakGASte, remind_OMcost("DEU","omv",NonPeakGASte) * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))
      / sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte)) *1.2*1e12/sm_TWa_2_MWh;
@@ -636,16 +636,16 @@ cdata("c_var_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
 cdata("c_var_con","OCGT_eff") = remind_OMcost("DEU","omv","ngt")  *1.2*1e12/sm_TWa_2_MWh;
 
 cdata("c_var_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
-    = sum(BIOte, remind_OMcost("DEU","omv",BIOte)  * remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte))
+    = sum(BIOte, remind_OMcost("DEU","omv",BIOte) * remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte))
      / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel",BIOte)) *1.2*1e12/sm_TWa_2_MWh;
 
 cdata("c_var_con","ror") = remind_OMcost("DEU","omv","hydro")  *1.2*1e12/sm_TWa_2_MWh;
 
 cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
-    = sum(NUCte, remind_OMcost("DEU","omv",NUCte)  * remind_prodSe("2020", "DEU", "peur", "seel",NUCte))
+    = sum(NUCte, remind_OMcost("DEU","omv",NUCte) * remind_prodSe("2020", "DEU", "peur", "seel",NUCte))
      / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel",NUCte)) *1.2*1e12/sm_TWa_2_MWh;
 
-*if there is no generation in remind, then just take the average omv value over techs in one given category
+*if there is no generation in REMIND, then just take the average omv value over techs in one given category
 cdata("c_var_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte, remind_OMcost("DEU","omv",COALte))/card(COALte)*1.2*1e12/sm_TWa_2_MWh;
 cdata("c_var_con","hc") = cdata("c_var_con","lig");
 cdata("c_var_con","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0) = sum(NonPeakGASte, remind_OMcost("DEU","omv",NonPeakGASte))/card(NonPeakGASte)*1.2*1e12/sm_TWa_2_MWh;
@@ -653,13 +653,13 @@ cdata("c_var_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0) = sum
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_OMcost("DEU","omv","tnrs")*1.2*1e12/sm_TWa_2_MWh;
 
-** there is no var OM cost for VRE in remind
+** there is no var OM cost for VRE in REMIND
 *rdata("c_var_res","Solar") = remind_OMcost("DEU","omv","spv") * 1.2 * 1e12 / sm_TWa_2_MWh;
 *rdata("c_var_res","Wind_on") = remind_OMcost("DEU","omv","wind") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
 p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
-***** END of variable O&M from remind *****
+***** END of variable O&M from REMIND *****
 
 ***** summing variable cost components
 c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
@@ -667,12 +667,13 @@ c_m(ct) = c_m_reg(ct,"DEU");
 
 *================================================================
 *======================= FIXED COST =============================
-*interest rate
+*interest rate (before REMIND starts take the interest rate as 5% as a first approximation)
 if (remind_iter eq 0,
 remind_r("2020","DEU") = 0.05;
 r = remind_r("2020","DEU");
 );
 
+*once REMIND starts, read in the interest rate from REMIND
 if (remind_iter gt 0,
 r = remind_r("2020","DEU");
 );
@@ -746,7 +747,7 @@ c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
 c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *================================================================
-*=======read in fixed OM cost from remind ========
+*=======read in fixed OM cost from REMIND ========
 *note that omf is the proportion from overnight investment cost, not annuitized
 ** split pecoal into lignite and hc for rough comparison (not finalized)annuitized
 ** no need to harmonize many to one mapping, since omf are the same for tech in the same category
@@ -1428,16 +1429,16 @@ $ontext
 $offtext
 
 
-p32_report4RM(yr,reg,res,'usable generation') = sum( h , G_RES.l(res,h) );
-p32_report4RM(yr,reg,ct,'usable generation') = sum( h , G_L.l(ct,h) );
+p32_report4RM(yr,reg,res,'usable_generation') = sum( h , G_RES.l(res,h) );
+p32_report4RM(yr,reg,ct,'usable_generation') = sum( h , G_L.l(ct,h) );
 
-p32_report4RM(yr,reg,res,'total generation') = sum( h , G_RES.l(res,h) +CU.l(res,h));
-p32_report4RM(yr,reg,ct,'total generation') = sum( h , G_L.l(ct,h) );
+p32_report4RM(yr,reg,res,'total_generation') = sum( h , G_RES.l(res,h) +CU.l(res,h));
+p32_report4RM(yr,reg,ct,'total_generation') = sum( h , G_L.l(ct,h) );
 %P2G%$ontext
-p32_report4RM(yr,reg,'elh2','total consumption') = sum( h , C_P2G.l("elh2",h) );
+p32_report4RM(yr,reg,'elh2','total_consumption') = sum( h , C_P2G.l("elh2",h) );
 $ontext
 $offtext
-p32_report4RM(yr,reg,'seel','total consumption') = sum( h , d(h) );
+p32_report4RM(yr,reg,'seel','total_consumption') = sum( h , d(h) );
 
 p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
 p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
@@ -1463,11 +1464,11 @@ p32_report4RM(yr,reg,'elh2','capfac')$(not p32_report4RM(yr,reg,'elh2','capfac')
 $ontext
 $offtext
 
-p32_report4RM(yr,reg,ct,'usable generation')$(not p32_report4RM(yr,reg,ct,'usable generation')) = eps;
-p32_report4RM(yr,reg,res,'usable generation')$(not p32_report4RM(yr,reg,res,'usable generation')) = eps;
+p32_report4RM(yr,reg,ct,'usable_generation')$(not p32_report4RM(yr,reg,ct,'usable_generation')) = eps;
+p32_report4RM(yr,reg,res,'usable_generation')$(not p32_report4RM(yr,reg,res,'usable_generation')) = eps;
 
-p32_report4RM(yr,reg,ct,'total generation')$(not p32_report4RM(yr,reg,ct,'total generation')) = eps;
-p32_report4RM(yr,reg,res,'total generation')$(not p32_report4RM(yr,reg,res,'total generation')) = eps;
+p32_report4RM(yr,reg,ct,'total_generation')$(not p32_report4RM(yr,reg,ct,'total_generation')) = eps;
+p32_report4RM(yr,reg,res,'total_generation')$(not p32_report4RM(yr,reg,res,'total_generation')) = eps;
 
 p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) = eps;
 p32_report4RM(yr,reg,'coal','gen_share')$(not p32_report4RM(yr,reg,'coal','gen_share')) = eps;
