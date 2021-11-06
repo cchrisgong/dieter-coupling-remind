@@ -151,7 +151,7 @@ $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_iter
-$load  remind_r = p32_R_4DT
+$load  remind_r = p32_r4DT
 $load  remind_totseelDem = p32_seelUsableProd_avg
 $load  remind_totseh2Dem = p32_seh2elh2Dem_avg
 *$load  remind_fuelprice = p32_fuelprice_avgiter
