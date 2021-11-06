@@ -385,19 +385,19 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 *$offdelim
 */;
 
-parameter dsmdata_cu(all_dsm_cu,dsm_curt)      "Various Data for DSM"
-/
-$ondelim
-$include "DSM_curt.csv"
-$offdelim
-/;
-
-parameter dsmdata_shift(all_dsm_shift,dsm_shift)      "Various Data for DSM"
-/
-$ondelim
-$include "DSM_shift.csv"
-$offdelim
-/;
+*parameter dsmdata_cu(all_dsm_cu,dsm_curt)      "Various Data for DSM"
+*/
+*$ondelim
+*$include "DSM_curt.csv"
+*$offdelim
+*/;
+*
+*parameter dsmdata_shift(all_dsm_shift,dsm_shift)      "Various Data for DSM"
+*/
+*$ondelim
+*$include "DSM_shift.csv"
+*$offdelim
+*/;
 
 
 *parameter AC_demand(year,reg,h)      "AC Demand hour h for cost minimization for different years and specific regions"

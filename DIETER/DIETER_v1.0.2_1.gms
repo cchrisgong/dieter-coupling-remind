@@ -840,8 +840,8 @@ con8a_max_I_con                 Maximum installable capacity: Conventionals
 con8b_max_I_res                 Maximum installable capacity: Renewables
 con8c_max_I_sto_e               Maximum installable energy: Storage in MWh
 con8d_max_I_sto_p               Maximum installable capacity: Storage inflow-outflow in MW
-con8e_max_I_dsm_cu              Maximum installable capacity: DSM load curtailment
-con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
+*con8e_max_I_dsm_cu              Maximum installable capacity: DSM load curtailment
+*con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
 
 
 ;
@@ -1266,14 +1266,14 @@ con8d_max_I_sto_p(sto)..
          N_STO_P(sto) =L= stodata("m_sto_p",sto)
 ;
 
-con8e_max_I_dsm_cu(dsm_curt)..
-         N_DSM_CU(dsm_curt) =L= dsmdata_cu("m_dsm_cu",dsm_curt)
-;
-
-con8f_max_I_dsm_shift_pos(dsm_shift)..
-         N_DSM_SHIFT(dsm_shift) =L= dsmdata_shift("m_dsm_shift",dsm_shift)
-;
-
+*con8e_max_I_dsm_cu(dsm_curt)..
+*         N_DSM_CU(dsm_curt) =L= dsmdata_cu("m_dsm_cu",dsm_curt)
+*;
+*
+*con8f_max_I_dsm_shift_pos(dsm_shift)..
+*         N_DSM_SHIFT(dsm_shift) =L= dsmdata_shift("m_dsm_shift",dsm_shift)
+*;
+*
 
 ********************************************************************************
 *==========           MODEL *==========
@@ -1342,8 +1342,8 @@ con4k_PHS_EtoP
 *con7f_DSMshift_profile
 *con7g_DSMshift_profile_maxACpower
 
-con8e_max_I_dsm_cu
-con8f_max_I_dsm_shift_pos
+*con8e_max_I_dsm_cu
+*con8f_max_I_dsm_shift_pos
 $ontext
 $offtext
 
