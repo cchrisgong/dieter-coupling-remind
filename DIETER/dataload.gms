@@ -18,6 +18,7 @@ $offtext
 *======================================================
 
 Parameters
+* check in the future: remind variables probably do not need to be declared in dieter below
 *=========== for loading remind output ===========
 *------------------------
 *Investment interest rate
@@ -117,12 +118,11 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 *** load input.gdx before REMIND starts
 $ifThen.firstIter not exist RMdata_4DT.gdx
 remind_iter = 0;
-$gdxin input.gdx
+$gdxin RMdata_4DT_input.gdx
 $load  remind_cap = vm_cap.l
-*$load  remind_r = p32_R_4DT
-$load  remind_totseelDem = p32_seelUsableDem_avg
-$load  remind_totseh2Dem = p32_seh2elh2Dem_avg
-$load  remind_fuelprice = p32_fuelprice_avgiter
+$load  remind_totseelDem = p32_seelUsableProd
+$load  remind_totseh2Dem = p32_seh2elh2Dem
+$load  remind_fuelprice = p32_fuelprice_curriter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
@@ -137,7 +137,6 @@ $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
-*$load  remind_CF = pm_cf
 $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
@@ -153,7 +152,7 @@ $gdxin RMdata_4DT.gdx
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_iter
 $load  remind_r = p32_R_4DT
-$load  remind_totseelDem = p32_seelUsableDem_avg
+$load  remind_totseelDem = p32_seelUsableProd_avg
 $load  remind_totseh2Dem = p32_seh2elh2Dem_avg
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
@@ -170,7 +169,6 @@ $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
-*$load  remind_CF = pm_cf
 $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
