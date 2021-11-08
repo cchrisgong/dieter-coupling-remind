@@ -563,9 +563,9 @@ $ENDIF.CS
 
 con_fuelprice_reg_remind(all_yr,"CCGT",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"bio",reg) = remind_fuelprice(all_yr,reg,"pebiolc") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"nuc",reg) = remind_fuelprice(all_yr,reg,"peur") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"ror",reg) = 0;
+con_fuelprice_reg_remind(all_yr,"bio",reg) = remind_fuelprice(all_yr,reg,"pebiolc") * 1e12 / sm_TWa_2_MWh * 1.2;
 
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
 
@@ -668,23 +668,23 @@ c_m(ct) = c_m_reg(ct,"DEU");
 *================================================================
 *======================= FIXED COST =============================
 *interest rate (before REMIND starts take the interest rate as 5% as a first approximation)
-if (remind_iter eq 0,
-remind_r("2020","DEU") = 0.05;
-r = remind_r("2020","DEU");
-);
-
+*if (remind_iter eq 0,
+*remind_r("2020","DEU") = 0.05;
+*r = remind_r("2020","DEU");
+*);
+*
 *once REMIND starts, read in the interest rate from REMIND
-if (remind_iter gt 0,
+*if (remind_iter gt 0,
 r = remind_r("2020","DEU");
-);
+*);
 
 * since we would like to couple all years to limit distortions, but growth rate after 2100 is weird (2130 has negative growth rate) due to various artefact, we simply set interest rates
 * after 2100 to 5%, this only sets 2110, 2130, 2150 three years
-t(yr) = yr.val;
-if (sum(yr,t(yr)) gt 2100,
-remind_r("2020","DEU") = 0.05;
-r = remind_r("2020","DEU");
-);
+*t(yr) = yr.val;
+*if (sum(yr,t(yr)) gt 2100,
+*remind_r("2020","DEU") = 0.05;
+*r = remind_r("2020","DEU");
+*);
 
 *=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)

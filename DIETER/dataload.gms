@@ -120,6 +120,7 @@ $ifThen.firstIter not exist RMdata_4DT.gdx
 remind_iter = 0;
 $gdxin RMdata_4DT_input.gdx
 $load  remind_cap = vm_cap.l
+$load  remind_r = p32_r4DT
 $load  remind_totseelDem = p32_seelUsableProd
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_fuelprice = p32_fuelprice_curriter
@@ -143,7 +144,6 @@ $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
 $endIf.firstIter
 
-
 ********
 **** during REMIND run, load special data before fulldata.gdx drops for the REMIND iteration
 **remember to load sets first
@@ -152,8 +152,8 @@ $gdxin RMdata_4DT.gdx
 $load  remind_cap = vm_cap.l
 $load  remind_iter = sm32_iter
 $load  remind_r = p32_r4DT
-$load  remind_totseelDem = p32_seelUsableProd_avg
-$load  remind_totseh2Dem = p32_seh2elh2Dem_avg
+$load  remind_totseelDem = p32_seelUsableProdAvg
+$load  remind_totseh2Dem = p32_seh2elh2DemAvg
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
@@ -176,17 +176,17 @@ $gdxin
 $endIf.duringRun
 
 **** options to load fuel price differently
-$IFTHEN.FC %fuel_cost_iter% == "fixed"
-$Ifthen.duringRun exist fulldata_1.gdx
-$gdxin fulldata_1.gdx
-$load  remind_fuelprice = q_balPe.m
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+$Ifthen.duringRun exist RMdata_4DT.gdx
+$gdxin RMdata_4DT.gdx
+$load  remind_fuelprice = p32_fuelprice_avgiter
 $gdxin
 $endIf.duringRun
 $ENDIF.FC
 
-$IFTHEN.FC %fuel_cost_iter% == "smoothed"
-$Ifthen.duringRun exist RMdata_4DT.gdx
-$gdxin RMdata_4DT.gdx
+$IFTHEN.FC %fuel_cost_iter% == "fixed"
+$Ifthen.duringRun exist fulldata_1.gdx
+$gdxin fulldata_1.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter
 $gdxin
 $endIf.duringRun
