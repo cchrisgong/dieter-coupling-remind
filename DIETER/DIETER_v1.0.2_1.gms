@@ -104,7 +104,7 @@ Sets
 *============== remind sets ==================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-all_yr      for smoothing prices                     /2015,2020,2025/
+all_yr      for smoothing prices                     /2005,2020,2150/
 *t           year from remind to be loaded                
 te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
@@ -560,6 +560,9 @@ $IFTHEN.CS %coal_split% == "off"
 con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"hc",reg) = con_fuelprice_reg_remind(all_yr,"lig",reg);
 $ENDIF.CS
+
+*smooth/manipulate biomass PE price to a linear function
+remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150-2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
 
 con_fuelprice_reg_remind(all_yr,"CCGT",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;

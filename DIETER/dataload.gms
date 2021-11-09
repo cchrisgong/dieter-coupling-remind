@@ -39,8 +39,6 @@ remind_totseh2Dem(yr, reg, se_remind)
 remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
 p32_fuelprice_avgiter(all_yr,reg,pe_remind)
-*REMIND variable for fuel cost
-q_balPe(all_yr,reg,pe_remind)
 *-------------------------
 ** REMIND budget and last iteration budget (some averaging is needed as sometimes for some iterations budget goes to zero)
 *qm_budget(yr,reg)
