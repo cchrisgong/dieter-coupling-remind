@@ -547,6 +547,14 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 *================================================================
 *================ read in fuel price from remind ================
 
+
+*smooth/manipulate biomass PE price to a linear function
+*if ((remind_iter eq 0),
+remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
+remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
+remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+*);
+
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
 
@@ -560,9 +568,6 @@ $IFTHEN.CS %coal_split% == "off"
 con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"hc",reg) = con_fuelprice_reg_remind(all_yr,"lig",reg);
 $ENDIF.CS
-
-*smooth/manipulate biomass PE price to a linear function
-remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150-2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
 
 con_fuelprice_reg_remind(all_yr,"CCGT",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
 con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
