@@ -56,14 +56,20 @@ $offtext
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-$setglobal fuel_cost_iter smoothed
+*$setglobal fuel_cost_iter smoothed
 *$setglobal fuel_cost_iter fixed
+$setglobal fuel_cost_iter cubicFit
 *-------------
 ****fuel cost option 2:
 *averaged will use 3-year averaged fuel cost (calculated in DIETER)
 *noavg will use non year-averaged fuel cost (but iteration averaged, done in remind)
 *$setglobal fuel_cost_yr avg
 $setglobal fuel_cost_yr no_avg
+*-------------
+****fuel cost option 3:
+*with a supply curve
+$setglobal fuel_cost_suppc no_suppcurve
+*$setglobal fuel_cost_suppc suppcurve
 *==========
 ****whether to shave off scarcity price
 $setglobal price_shave on
@@ -76,7 +82,8 @@ $setglobal price_shave on
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
 $setglobal cap_bound hardLo
-*$setglobal cap_bound softLo
+*$setglobal cap_bound softLo1
+*$setglobal cap_bound softLo2
 *$setglobal cap_bound none
 *$setglobal cap_bound fixed
 
@@ -104,8 +111,8 @@ Sets
 *============== remind sets ==================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-all_yr      for smoothing prices                     /2005,2020,2150/
-*t           year from remind to be loaded                
+*yr      for smoothing prices                     /2005,2020,2150/
+t           year from remind to be loaded                
 te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
@@ -153,18 +160,16 @@ OCGT_eff.OCGT_eff
 bio.bio
 /
 
+*==========
 
+$include dataload.gms
 
 Alias (h,hh) ;
 alias (res,resres) ;
 alias(se_remind,se_remind2);
 alias (reserves,reservesreserves) ;
 
-*==========
-
-$include dataload.gms
 *$stop
-Parameter t year;
 Parameter sm_eps small number: 1e-9 /1e-9/;
 Parameter totLoad total secondary electricity load;
 Parameter totFixedLoad total fixed load;
@@ -236,7 +241,7 @@ RP_STO_OUT(reserves,sto,h)                Reserve provision by storage out in ho
 RP_DSM_CU(reserves,dsm_curt,h)            Reserve provision by DSM load curtailment in hour h in MW
 RP_DSM_SHIFT(reserves,dsm_shift,h)        Reserve provision by DSM load shifting in hour h in MW
 
-demand
+pref_FC(ct)              Fuel cost prefactor (share depenedent)
 ;
 
 *================================================================
@@ -371,7 +376,7 @@ P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind
 *);
 *
 
-N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * 8760) ;
+N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
 
 
 $IFTHEN.CS %coal_split% == "on"
@@ -419,7 +424,7 @@ N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind"
 $ENDIF.CB
 
 
-$IFTHEN.CB %cap_bound% == "softLo"
+$IFTHEN.CB %cap_bound% == "softLo1"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
 
@@ -440,6 +445,8 @@ N_CON.lo("lig") = min(sum(te_remind,
                     
 N_CON.fx("hc") = 0;
 $ENDIF.CS
+
+N_CON.lo("ror") = min(preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ,.2*SMax(h, d(h)));
                     
 N_CON.lo("nuc") = min(sum(te_remind,
                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
@@ -457,7 +464,48 @@ N_CON.lo("bio") = min(sum(te_remind,
                     ) * 1e6,.2*SMax(h, d(h)));
 $ENDIF.CB
 
-$IFTHEN.CB %cap_bound% == "earlyReti"
+$IFTHEN.CB %cap_bound% == "softLo2"
+P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
+
+$IFTHEN.CS %coal_split% == "on"
+N_CON.lo("lig") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2 * 0.8;
+
+N_CON.lo("hc") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2 * 0.8;
+$ENDIF.CS
+
+$IFTHEN.CS %coal_split% == "off"
+N_CON.lo("lig") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 * 0.8;
+                    
+N_CON.fx("hc") = 0;
+$ENDIF.CS
+
+N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) * 0.8;
+                    
+N_CON.lo("nuc") = sum(te_remind,
+                   sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+                    ) * 1e6 * 0.8;
+
+N_CON.lo("CCGT") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+                    ) * 1e6 * 0.8;
+
+N_CON.lo("OCGT_eff") = sum(grade, preInv_remind_cap("2020", "DEU", "ngt", grade)) * 1e6 * 0.8;
+
+      
+N_CON.lo("bio") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+                    ) * 1e6 * 0.8;
+$ENDIF.CB
+
+**** earlyReti is deprecated (and missing ror)
+$IFTHEN.CB %cap_bound% == "earlyReti" 
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 
@@ -549,10 +597,13 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 
 *smooth/manipulate biomass PE price to a linear function
-*if ((remind_iter eq 0),
-remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
-remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
-remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+*t(yr) = yr.val;
+*if (sum(yr,t(yr)) lt 2055,
+**if ((remind_iter eq 0),
+*remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
+*remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
+*remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+**);
 *);
 
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
@@ -560,20 +611,20 @@ remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") -
 
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
 $IFTHEN.CS %coal_split% == "on"
-con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
-con_fuelprice_reg_remind(all_yr,"hc",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal") - 3.6;
+con_fuelprice_reg_remind("2020","hc",reg) = remind_fuelprice("2020",reg,"pecoal") + 1.8;
 $ENDIF.CS
 
 $IFTHEN.CS %coal_split% == "off"
-con_fuelprice_reg_remind(all_yr,"lig",reg) = remind_fuelprice(all_yr,reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"hc",reg) = con_fuelprice_reg_remind(all_yr,"lig",reg);
+con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal");
+con_fuelprice_reg_remind("2020","hc",reg) = con_fuelprice_reg_remind("2020","lig",reg);
 $ENDIF.CS
 
-con_fuelprice_reg_remind(all_yr,"CCGT",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"OCGT_eff",reg) = remind_fuelprice(all_yr,reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"nuc",reg) = remind_fuelprice(all_yr,reg,"peur") * 1e12 / sm_TWa_2_MWh * 1.2;
-con_fuelprice_reg_remind(all_yr,"ror",reg) = 0;
-con_fuelprice_reg_remind(all_yr,"bio",reg) = remind_fuelprice(all_yr,reg,"pebiolc") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind("2020","CCGT",reg) = remind_fuelprice("2020",reg,"pegas");
+con_fuelprice_reg_remind("2020","OCGT_eff",reg) = remind_fuelprice("2020",reg,"pegas");
+con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur");
+con_fuelprice_reg_remind("2020","ror",reg) = 0;
+con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc");
 
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
 
@@ -669,30 +720,25 @@ p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / s
 
 ***** END of variable O&M from REMIND *****
 
+$IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
 c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
+$ENDIF.FC3
+
+** CG: currently, suppcurve turns DIETER from LP to NLP
+$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
+** with supply curve response in DIETER: building linear demand/price relation to help with convergence
+** CG: non reactive part of the marginal cost
+c_m_reg_nrp(ct,reg) = cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
+c_m_nrp(ct) = c_m_reg_nrp(ct,"DEU");
+c_m_FC(ct) = con_fuelprice_reg_yr_avg(ct,"DEU")/cdata("eta_con",ct);
+$ENDIF.FC3
 
 *================================================================
 *======================= FIXED COST =============================
-*interest rate (before REMIND starts take the interest rate as 5% as a first approximation)
-*if (remind_iter eq 0,
-*remind_r("2020","DEU") = 0.05;
-*r = remind_r("2020","DEU");
-*);
-*
 *once REMIND starts, read in the interest rate from REMIND
-*if (remind_iter gt 0,
 r = remind_r("2020","DEU");
-*);
-
-* since we would like to couple all years to limit distortions, but growth rate after 2100 is weird (2130 has negative growth rate) due to various artefact, we simply set interest rates
-* after 2100 to 5%, this only sets 2110, 2130, 2150 three years
-*t(yr) = yr.val;
-*if (sum(yr,t(yr)) gt 2100,
-*remind_r("2020","DEU") = 0.05;
-*r = remind_r("2020","DEU");
-*);
 
 *=======annuitized investment cost ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
@@ -726,7 +772,8 @@ c_i_ovnt("CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
 c_i_ovnt("OCGT_eff") = remind_CapCost("2020", "DEU", "ngt") * 1e6 * 1.2;
 c_i_ovnt("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
             = sum(BIOte, remind_CapCost("2020", "DEU", BIOte) * remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte))
-              / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte)) * 1e6 * 1.2;              
+              / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte)) * 1e6 * 1.2;
+*regardless of generation, overnight cost for hydro is the same, no downscaling              
 c_i_ovnt("ror") = remind_CapCost("2020", "DEU", "hydro") * 1e6 * 1.2;
 c_i_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
             = sum(NUCte, remind_CapCost("2020", "DEU", NUCte) * remind_prodSe("2020", "DEU", "peur", "seel", NUCte))
@@ -741,7 +788,6 @@ c_i_ovnt("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)
             = sum(BIOte, remind_CapCost("2020", "DEU", BIOte))/card(BIOte) * 1e6 * 1.2;              
 c_i_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_CapCost("2020", "DEU", "tnrs") * 1e6 * 1.2;
-
 c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") * 1e6 * 1.2 ;
 c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * 1e6 * 1.2;
 
@@ -850,8 +896,9 @@ con8c_max_I_sto_e               Maximum installable energy: Storage in MWh
 con8d_max_I_sto_p               Maximum installable capacity: Storage inflow-outflow in MW
 *con8e_max_I_dsm_cu              Maximum installable capacity: DSM load curtailment
 *con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
-
-
+$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve"     
+eq4_pref                     Calculate generation-share dependent prefactor for fuel cost supply curve
+$ENDIF.FC3
 ;
 
 
@@ -862,10 +909,15 @@ con8d_max_I_sto_p               Maximum installable capacity: Storage inflow-out
 * ---------------------------------------------------------------------------- *
 
 obj..
-         Z =E= 
-                   sum( (ct,h) , c_m(ct)*G_L(ct,h) )
-*** ramping cost
+         Z =E=
 
+$IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"        
+                   sum( (ct,h) , c_m(ct)*G_L(ct,h) )
+$ENDIF.FC3
+$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve"        
+                   sum( (ct,h) , (c_m_nrp(ct) + c_m_FC(ct) * pref_FC(ct)) * G_L(ct,h) )
+$ENDIF.FC3
+*** ramping cost
 $IFTHEN %ramping_cost% == "on"
                  + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
                  + sum( (ct,h) , cdata("c_do",ct)*G_DO(ct,h) )
@@ -1022,7 +1074,7 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
         =L= N_CON(ct)
 ;
 
-*** hourly generation is constrained by theoretical capfac
+*** hourly generation is constrained by theoretical capfac (since we do not have a hydro time series and want to stay realistic)
 con3i_maxprod_ror(h)..
         G_L('ror',h)
         =L= 0.4 * N_CON('ror')
@@ -1124,35 +1176,8 @@ con4k_PHS_EtoP('Sto5')..
 
 
 * ---------------------------------------------------------------------------- *
-*==========           Quotas for renewables and biomass *==========
+*==========           Quotas                         *==========
 * ---------------------------------------------------------------------------- *
-
-*sum( h , P_RES("Solar") * phi_res("Solar",h ) )
-*       =E= spv_share * net_energy_demand ;
-*sum( h , P_RES("Wind_on") * phi_res("Wind_on",h )+P_RES("Wind_off") * phi_res("Wind_off",h ) )
-*      =E= wind_share_on * net_energy_demand;
-
-
-
-*
-*con5a_spv_share..
-*sum( h , G_RES("Solar",h))
-*        =E= spv_share * sum(h,d(h)) ;
-*
-*con5b_wind_on_share..
-*sum( h , (G_RES("Wind_on",h) ))
-*        =E= wind_share_on * sum(h,d(h));
-*
-*
-*con5c_wind_off_share..
-*        sum( h , (G_RES("Wind_off",h)+CU("Wind_off",h) ))
-*        =E= wind_share_off * sum(h,d(h));
-*
-*
-*con5d_maxBIO..
-*         sum( h , G_L('bio',h) ) =L= cdata("m_con_e",'bio')
-*;
-*
 *
 **power to gas share
 *con5e_P2Gshare..
@@ -1283,6 +1308,14 @@ con8d_max_I_sto_p(sto)..
 *;
 *
 
+$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
+***CG: if sum(h, G_L(ct,h)) = generation_DIETER_currentIter is larger than REMIND's last iteration gen share RM_postInv_prodSe_con for "ct" conventional tech,
+***then pref_FC > 1, making the FC more expensive in current iteration DIETER, lowering its current share
+eq4_pref(ct)..
+          pref_FC(ct) =E=  1 + ( sum(h, G_L(ct,h)) / totLoad - sum(DT_RM(ct,ct_remind), RM_postInv_prodSe_con("2020","DEU",ct_remind))/ totLoad)
+;
+$ENDIF.FC3
+
 ********************************************************************************
 *==========           MODEL *==========
 ********************************************************************************
@@ -1330,6 +1363,11 @@ con4i_maxin_lev
 con4j_ending
 con4k_PHS_EtoP
 
+$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
+eq4_pref
+$ENDIF.FC3
+
+
 *con5d_maxBIO
 
 *con8a_max_I_con
@@ -1366,6 +1404,7 @@ $offtext
 *==========
 
 option lp = cplex;
+option nlp = conopt;
 option threads = 6;
 
 parameter
