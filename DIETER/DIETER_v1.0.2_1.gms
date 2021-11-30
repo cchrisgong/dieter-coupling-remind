@@ -81,7 +81,7 @@ $setglobal price_shave on
 * softLo = soft lower bound (maximum of 20% peak capacity and remind preInvest cap) for dispatchables, hard lower bound for VRE
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
-*$setglobal cap_bound hardLo
+$setglobal cap_bound hardLo
 *$setglobal cap_bound softLo1
 *$setglobal cap_bound softLo2
 *$setglobal cap_bound none
@@ -628,7 +628,12 @@ con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur")
 con_fuelprice_reg_remind("2020","ror",reg) = 0;
 con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc");
 
+$IFTHEN.FC not %fuel_cost_iter% == "cubicFit"
+con_fuelprice_reg_remind("2020",ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg) * 1e12 / sm_TWa_2_MWh * 1.2;
+$ENDIF.FC
+ 
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
+
 
 $IFTHEN.FC2 %fuel_cost_yr% == "avg"
 *smooth over 3 years regardless whether fuel cost if smoothed over iteration or fixed to first iteration
