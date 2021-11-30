@@ -17,6 +17,8 @@ $offtext
 *===== Defines and uploads parameters      =====
 *======================================================
 
+
+
 Parameters
 * check in the future: remind variables probably do not need to be declared in dieter below
 *=========== for loading remind output ===========
@@ -36,16 +38,13 @@ p32_seh2elh2Dem(yr, reg, se_remind)
 remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 *fuel price
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
 remind_fuelprice(all_yr,reg,pe_remind)
+$ENDIF.FC
+*remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
-p32_fuelprice_avgiter(all_yr,reg,pe_remind)
+*p32_fuelprice_avgiter(all_yr,reg,pe_remind)
 *-------------------------
-** REMIND budget and last iteration budget (some averaging is needed as sometimes for some iterations budget goes to zero)
-*qm_budget(yr,reg)
-*remind_budget(all_yr,reg)
-*p32_budget(yr,reg)
-*remind_budget_lastiter(all_yr,reg)
-*------------------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
 remind_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -112,42 +111,44 @@ dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
 ;
 
-******* CG: for 1 DIETER run before REMIND run is initiated, based on input data for REMIND input.gdx (which is usually the result of some previous run)
-*** load input.gdx before REMIND starts
-$ifThen.firstIter not exist RMdata_4DT.gdx
-remind_iter = 0;
-$gdxin RMdata_4DT_input.gdx
-$load  remind_cap = vm_cap.l
-$load  remind_r = p32_r4DT
-$load  remind_totseelDem = p32_seelUsableProd
-$load  remind_totseh2Dem = p32_seh2elh2Dem
-$load  remind_fuelprice = p32_fuelprice_curriter
-$load  remind_flatco2 = f21_taxCO2eqHist
-$load  remind_OMcost = pm_data
-$load  remind_CapCost = vm_costTeCapital.l
-$load  remind_prodSe = vm_prodSe.l
-$load  remind_prodSe_Resxcurt = vm_usableSeTe.l
-$load  remind_lifetime = fm_dataglob
-$load  remind_eta1 = pm_dataeta
-$load  remind_eta2 = pm_eta_conv
-$load  remind_gridfac = p32_grid_factor
-$load  remind_pm_ts = pm_ts
-$load  remind_deltaCap = vm_deltaCap.l
-$load  remind_capEarlyReti = vm_capEarlyReti.l
-$load  remind_capEarlyReti2 = vm_capEarlyReti.l
-$load  remind_carboncontent = fm_dataemiglob
-$load  remind_CF = vm_capFac.l
-$load  remind_pm_dataren = pm_dataren
-$load  remind_vm_capDistr = vm_capDistr.l
-$gdxin
-$endIf.firstIter
-
+******** CG: for 1 DIETER run before REMIND run is initiated, based on input data for REMIND input.gdx (which is usually the result of some previous run)
+**** load input.gdx before REMIND starts
+*$ifThen.firstIter not exist RMdata_4DT.gdx
+*remind_iter = 0;
+*$gdxin RMdata_4DT_input.gdx
+*$load  t = tDT32
+*$load  remind_cap = vm_cap.l
+*$load  remind_r = p32_r4DT
+*$load  remind_totseelDem = p32_seelUsableProd
+*$load  remind_totseh2Dem = p32_seh2elh2Dem
+**$load  remind_fuelprice = p32_fuelprice_curriter
+*$load  remind_flatco2 = f21_taxCO2eqHist
+*$load  remind_OMcost = pm_data
+*$load  remind_CapCost = vm_costTeCapital.l
+*$load  remind_prodSe = vm_prodSe.l
+*$load  remind_prodSe_Resxcurt = vm_usableSeTe.l
+*$load  remind_lifetime = fm_dataglob
+*$load  remind_eta1 = pm_dataeta
+*$load  remind_eta2 = pm_eta_conv
+*$load  remind_gridfac = p32_grid_factor
+*$load  remind_pm_ts = pm_ts
+*$load  remind_deltaCap = vm_deltaCap.l
+*$load  remind_capEarlyReti = vm_capEarlyReti.l
+*$load  remind_capEarlyReti2 = vm_capEarlyReti.l
+*$load  remind_carboncontent = fm_dataemiglob
+*$load  remind_CF = vm_capFac.l
+*$load  remind_pm_dataren = pm_dataren
+*$load  remind_vm_capDistr = vm_capDistr.l
+*$gdxin
+*$endIf.firstIter
+*
 ********
 **** during REMIND run, load special data before fulldata.gdx drops for the REMIND iteration
 **remember to load sets first
 $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 $load  remind_cap = vm_cap.l
+$load  t = tDT32
 $load  remind_iter = sm32_iter
 $load  remind_r = p32_r4DT
 $load  remind_totseelDem = p32_seelUsableProdAvg
@@ -190,6 +191,15 @@ $gdxin
 $endIf.duringRun
 $ENDIF.FC
 
+$IFTHEN.FC %fuel_cost_iter% == "cubicFit"
+parameter remind_fuelprice(t,reg,pe_remind)      "Fuel Price from REMIND which has been fitted to a polynom"
+/
+$ondelim
+$include "FittedFuelPrice_runningAvg.csv"
+$offdelim
+/;
+$ENDIF.FC
+
 Parameters
 
 *====== Conventionals ======
@@ -216,12 +226,10 @@ Parameters
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-budget_smoothed(all_yr,reg) average budget over 2 iter calculated from REMIND
 
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
-*con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
+con_fuelprice_reg_remind(yr,ct,reg) Fuel price calculated from REMIND
 con_fuelprice_reg_yr_avg(ct,reg) Fuel price can be smoothed over several years
 con_fuelprice_reg_remind_reporting(ct,reg) Fuel price from REMIND for reporting
 *====== Renewables ======
@@ -472,6 +480,10 @@ $offecho
 Parameters
 c_m_reg(ct,reg)          Marginal production costs for conventional plants including variable O&M costs
 c_m(ct)                  Marginal production costs for current region
+c_m_reg_nrp(ct,reg)      Marginal production costs that are not reactive (excluding FC which has a supply curve)
+c_m_nrp(ct)              Marginal production costs that are not reactive (excluding FC which has a supply curve) for current region
+c_m_FC(ct)               Marginal fuel costs from REMIND
+
 c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
 c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
