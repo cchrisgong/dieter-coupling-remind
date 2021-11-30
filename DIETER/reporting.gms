@@ -190,20 +190,27 @@ $offtext
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',res) = c_i_res(res) / 1e3;
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',p2g) = c_i_p2g(p2g) / 1e3;
         
-        report_tech('DIETER',yr,reg,'annualized investment cost ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_i(ct) / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
-        report_tech('DIETER',yr,reg,'annualized investment cost ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = c_i_res(res) / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
-        report_tech('DIETER',yr,reg,'annualized investment cost ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = c_i_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+       
+        report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = c_i_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
+        report_tech('DIETER',yr,reg,'annualized investment cost - marg($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;   
 
 *       OM cost
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',ct) = cdata('c_fix_con',ct) / 1e3;
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',res) = rdata('c_fix_res',res) / 1e3;
         report_tech('DIETER',yr,reg,'O&M cost ($/kW)',p2g) = p2gdata('c_fix_p2g',p2g) / 1e3;
         
-        report_tech('DIETER',yr,reg,'O&M cost ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata('c_fix_con',ct)  / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
-        report_tech('DIETER',yr,reg,'O&M cost ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = rdata('c_fix_res',res) / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
-        report_tech('DIETER',yr,reg,'O&M cost ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (8760 * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;
+        report_tech('DIETER',yr,reg,'O&M cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata('c_fix_con',ct)  / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'O&M cost - avg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = rdata('c_fix_res',res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
+        report_tech('DIETER',yr,reg,'O&M cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;
         
-
+        report_tech('DIETER',yr,reg,'O&M cost - marg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) ne 0) = cdata('c_fix_con',ct)  / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'O&M cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = rdata('c_fix_res',res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
+        report_tech('DIETER',yr,reg,'O&M cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
+        
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg);
         report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);
