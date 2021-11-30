@@ -56,9 +56,9 @@ $offtext
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-*$setglobal fuel_cost_iter smoothed
+$setglobal fuel_cost_iter smoothed
 *$setglobal fuel_cost_iter fixed
-$setglobal fuel_cost_iter cubicFit
+*$setglobal fuel_cost_iter cubicFit
 *-------------
 ****fuel cost option 2:
 *averaged will use 3-year averaged fuel cost (calculated in DIETER)
@@ -81,7 +81,7 @@ $setglobal price_shave on
 * softLo = soft lower bound (maximum of 20% peak capacity and remind preInvest cap) for dispatchables, hard lower bound for VRE
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
-$setglobal cap_bound hardLo
+*$setglobal cap_bound hardLo
 *$setglobal cap_bound softLo1
 *$setglobal cap_bound softLo2
 *$setglobal cap_bound none
@@ -111,7 +111,7 @@ Sets
 *============== remind sets ==================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-*yr      for smoothing prices                     /2005,2020,2150/
+all_yr      for smoothing prices                        /2005,2020,2150/
 t           year from remind to be loaded                
 te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
@@ -597,14 +597,16 @@ RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 
 *smooth/manipulate biomass PE price to a linear function
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
 *t(yr) = yr.val;
 *if (sum(yr,t(yr)) lt 2055,
 **if ((remind_iter eq 0),
-*remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
-*remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
-*remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
+remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
+remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
 **);
 *);
+$ENDIF.FC
 
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $

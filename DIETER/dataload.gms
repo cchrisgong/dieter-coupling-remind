@@ -38,6 +38,9 @@ p32_seh2elh2Dem(yr, reg, se_remind)
 remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 *fuel price
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+remind_fuelprice(all_yr,reg,pe_remind)
+$ENDIF.FC
 *remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
 *p32_fuelprice_avgiter(all_yr,reg,pe_remind)
@@ -192,7 +195,7 @@ $IFTHEN.FC %fuel_cost_iter% == "cubicFit"
 parameter remind_fuelprice(t,reg,pe_remind)      "Fuel Price from REMIND which has been fitted to a polynom"
 /
 $ondelim
-$include "FittedFuelPrice.csv"
+$include "FittedFuelPrice_runningAvg.csv"
 $offdelim
 /;
 $ENDIF.FC
