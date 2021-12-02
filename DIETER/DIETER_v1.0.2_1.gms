@@ -628,7 +628,8 @@ con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur")
 con_fuelprice_reg_remind("2020","ror",reg) = 0;
 con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc");
 
-$IFTHEN.FC not %fuel_cost_iter% == "cubicFit"
+*** as long as NOT using cubicFit
+$IFTHEN.FC NOT %fuel_cost_iter% == "cubicFit"
 con_fuelprice_reg_remind("2020",ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg) * 1e12 / sm_TWa_2_MWh * 1.2;
 $ENDIF.FC
  
@@ -1488,11 +1489,11 @@ p32_report4RM(yr,reg,ct,'usable_generation') = sum( h , G_L.l(ct,h) );
 
 p32_report4RM(yr,reg,res,'total_generation') = sum( h , G_RES.l(res,h) +CU.l(res,h));
 p32_report4RM(yr,reg,ct,'total_generation') = sum( h , G_L.l(ct,h) );
+p32_report4RM(yr,reg,'el','total_consumption') = sum( h , d(h) );
 %P2G%$ontext
 p32_report4RM(yr,reg,'elh2','total_consumption') = sum( h , C_P2G.l("elh2",h) );
 $ontext
 $offtext
-p32_report4RM(yr,reg,'seel','total_consumption') = sum( h , d(h) );
 
 p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
 p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
