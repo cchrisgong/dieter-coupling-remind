@@ -14,10 +14,18 @@ cReg <- "DEU"
 #"RMdata_4DT.gdx" is the in-between iteration gdx produced by REMIND (before fulldata.gdx is produced)
 gdx <- paste0(mydatapath,"RMdata_4DT.gdx")
 
+# fitType = "coalGasCubic"
+fitType = "allLinear"
+  
+if (fitType == "coalGasCubic"){
 peTypeList_cubic = c("pecoal", "pegas")
 peTypeList_linear = c("pebiolc")
-# peTypeList_cubic = c()
-# peTypeList_linear = c("pebiolc", "pecoal", "pegas")
+}
+
+if (fitType == "allLinear"){
+peTypeList_cubic = c()
+peTypeList_linear = c("pebiolc", "pecoal", "pegas")
+}
 
 sm_TWa_2_MWh = 8760000000
 mycolors =  c("fitted FP" = "#999959", "raw FP" = "#0c0c0c")
@@ -91,15 +99,23 @@ fitFuelPrice_cubic <- function(peType){
   return(FP)
 }
 
+if (fitType == "coalGasCubic"){
 fittedFuelPrice0 <- lapply(peTypeList_cubic, fitFuelPrice_cubic)
 fittedFuelPrice1 <- rbindlist(fittedFuelPrice0)
+}
 
 fittedFuelPrice0 <- lapply(peTypeList_linear, fitFuelPrice_linear)
 fittedFuelPrice2 <- rbindlist(fittedFuelPrice0)
 
-# fittedFuelPrice <- fittedFuelPrice2
+
+if (fitType == "coalGasCubic"){
 fittedFuelPrice <- list(fittedFuelPrice1, fittedFuelPrice2) %>%
   reduce(full_join)
+}
+
+if (fitType == "allLinear"){
+ fittedFuelPrice <- fittedFuelPrice2
+}
 
 #plot raw fuel price and fitted fuel price for each iteration
 p<-ggplot() +
@@ -108,7 +124,7 @@ p<-ggplot() +
   coord_cartesian(ylim = c(0, 80))+
   theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))+
   facet_wrap(~fuel)
-ggsave(filename = paste0(mydatapath, "checkFittedFC_i=", iter,".png"), p, width = 8, height = 5, units = "in", dpi = 120)
+ggsave(filename = paste0(mydatapath, "checkFittedFC_",fitType,"_i=", iter,".png"), p, width = 8, height = 5, units = "in", dpi = 120)
 
 #output only fitted fuel price to csv
 fittedFuelPrice <- fittedFuelPrice %>% 
