@@ -56,9 +56,9 @@ $offtext
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-$setglobal fuel_cost_iter smoothed
-*$setglobal fuel_cost_iter fixed
-*$setglobal fuel_cost_iter cubicFit
+*$setglobal fuel_cost_iter smoothed
+*$setglobal fuel_cost_iter fixed (deprecated)
+$setglobal fuel_cost_iter cubicFit
 *-------------
 ****fuel cost option 2:
 *averaged will use 3-year averaged fuel cost (calculated in DIETER)
@@ -611,15 +611,17 @@ $ENDIF.FC
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
 
-** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
+$IFTHEN.FC  %fuel_cost_iter% == "cubicFit"
+*** NO need for unit conversion
 $IFTHEN.CS %coal_split% == "on"
+** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
 con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal") - 3.6;
 con_fuelprice_reg_remind("2020","hc",reg) = remind_fuelprice("2020",reg,"pecoal") + 1.8;
 $ENDIF.CS
 
 $IFTHEN.CS %coal_split% == "off"
 con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal");
-con_fuelprice_reg_remind("2020","hc",reg) = con_fuelprice_reg_remind("2020","lig",reg);
+con_fuelprice_reg_remind("2020","hc",reg) = remind_fuelprice("2020",reg,"pecoal");
 $ENDIF.CS
 
 con_fuelprice_reg_remind("2020","CCGT",reg) = remind_fuelprice("2020",reg,"pegas");
@@ -627,10 +629,28 @@ con_fuelprice_reg_remind("2020","OCGT_eff",reg) = remind_fuelprice("2020",reg,"p
 con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur");
 con_fuelprice_reg_remind("2020","ror",reg) = 0;
 con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc");
+$ENDIF.FC
 
-*** as long as NOT using cubicFit
-$IFTHEN.FC NOT %fuel_cost_iter% == "cubicFit"
-con_fuelprice_reg_remind("2020",ct,reg) =  con_fuelprice_reg_remind("2020",ct,reg) * 1e12 / sm_TWa_2_MWh * 1.2;
+
+
+$IFTHEN.FC  %fuel_cost_iter% == "smoothed"
+*** need unit conversion
+$IFTHEN.CS %coal_split% == "on"
+** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
+con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 - 3.6;
+con_fuelprice_reg_remind("2020","hc",reg) = remind_fuelprice("2020",reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2 + 1.8;
+$ENDIF.CS
+
+$IFTHEN.CS %coal_split% == "off"
+con_fuelprice_reg_remind("2020","lig",reg) = remind_fuelprice("2020",reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind("2020","hc",reg) = remind_fuelprice("2020",reg,"pecoal") * 1e12 / sm_TWa_2_MWh * 1.2;
+$ENDIF.CS
+
+con_fuelprice_reg_remind("2020","CCGT",reg) = remind_fuelprice("2020",reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind("2020","OCGT_eff",reg) = remind_fuelprice("2020",reg,"pegas") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur") * 1e12 / sm_TWa_2_MWh * 1.2;
+con_fuelprice_reg_remind("2020","ror",reg) = 0;
+con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc") * 1e12 / sm_TWa_2_MWh * 1.2;
 $ENDIF.FC
  
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
