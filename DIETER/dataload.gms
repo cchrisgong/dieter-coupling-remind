@@ -111,37 +111,6 @@ dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
 ;
 
-******** CG: for 1 DIETER run before REMIND run is initiated, based on input data for REMIND input.gdx (which is usually the result of some previous run)
-**** load input.gdx before REMIND starts
-*$ifThen.firstIter not exist RMdata_4DT.gdx
-*remind_iter = 0;
-*$gdxin RMdata_4DT_input.gdx
-*$load  t = tDT32
-*$load  remind_cap = vm_cap.l
-*$load  remind_r = p32_r4DT
-*$load  remind_totseelDem = p32_seelUsableProd
-*$load  remind_totseh2Dem = p32_seh2elh2Dem
-**$load  remind_fuelprice = p32_fuelprice_curriter
-*$load  remind_flatco2 = f21_taxCO2eqHist
-*$load  remind_OMcost = pm_data
-*$load  remind_CapCost = vm_costTeCapital.l
-*$load  remind_prodSe = vm_prodSe.l
-*$load  remind_prodSe_Resxcurt = vm_usableSeTe.l
-*$load  remind_lifetime = fm_dataglob
-*$load  remind_eta1 = pm_dataeta
-*$load  remind_eta2 = pm_eta_conv
-*$load  remind_gridfac = p32_grid_factor
-*$load  remind_pm_ts = pm_ts
-*$load  remind_deltaCap = vm_deltaCap.l
-*$load  remind_capEarlyReti = vm_capEarlyReti.l
-*$load  remind_capEarlyReti2 = vm_capEarlyReti.l
-*$load  remind_carboncontent = fm_dataemiglob
-*$load  remind_CF = vm_capFac.l
-*$load  remind_pm_dataren = pm_dataren
-*$load  remind_vm_capDistr = vm_capDistr.l
-*$gdxin
-*$endIf.firstIter
-*
 ********
 **** during REMIND run, load special data before fulldata.gdx drops for the REMIND iteration
 **remember to load sets first
