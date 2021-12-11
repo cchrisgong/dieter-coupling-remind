@@ -213,12 +213,18 @@ $offtext
         report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
   
         report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata("c_var_con",ct);
-        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = p2gdata("c_var_res",res) ;
+        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = rdata("c_var_res",res) ;
         
 
         report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata("c_var_p2g","elh2") ;
         
         
+*       LCOE_marg $/MWh
+        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h)) ne 0) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h$(G_L.l(ct,h) = N_CON.l(ct) ) , G_L.l(ct,h) )
+                                                                                + con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg) ;
+
+
+
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg);
         report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);

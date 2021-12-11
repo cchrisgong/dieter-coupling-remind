@@ -92,8 +92,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-*$setglobal elh2_coup on
-$setglobal elh2_coup off
+$setglobal elh2_coup on
+*$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -130,16 +130,18 @@ reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
+all_te        all dieter techs                       /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2/
+te        all dieter techs                      
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct(all_te)        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
-res       Renewable technologies                 /Wind_on, Wind_off, Solar/
+res(all_te)       Renewable technologies                 /Wind_on, Wind_off, Solar/
 sto       Storage technolgies                    /Sto1*Sto7/
-p2g       Sector Coupling P2G Technologies       /elh2/
+p2g(all_te)       Sector Coupling P2G Technologies       /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -161,6 +163,7 @@ bio.bio
 /
 
 *==========
+*te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
 
 $include dataload.gms
 
