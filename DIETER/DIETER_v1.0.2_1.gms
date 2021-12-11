@@ -92,8 +92,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-$setglobal elh2_coup on
-*$setglobal elh2_coup off
+*$setglobal elh2_coup on
+$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -419,6 +419,7 @@ $IFTHEN.H2 %elh2_coup% == "on"
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 $ENDIF.H2
 
+*** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
 $ENDIF.CB
@@ -750,7 +751,7 @@ p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / s
 
 $IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
-c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
+c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) * 1.2 + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
 $ENDIF.FC3
 
@@ -758,7 +759,7 @@ $ENDIF.FC3
 $IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
 ** with supply curve response in DIETER: building linear demand/price relation to help with convergence
 ** CG: non reactive part of the marginal cost
-c_m_reg_nrp(ct,reg) = cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) + cdata("c_var_con",ct) ;
+c_m_reg_nrp(ct,reg) = cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) * 1.2 + cdata("c_var_con",ct) ;
 c_m_nrp(ct) = c_m_reg_nrp(ct,"DEU");
 c_m_FC(ct) = con_fuelprice_reg_yr_avg(ct,"DEU")/cdata("eta_con",ct);
 $ENDIF.FC3
@@ -901,7 +902,7 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 con5a_spv_share             Gross solar PV share
 con5b_wind_on_share         Gross wind onshore share
 con5c_wind_off_share        Gross wind offshore share
-*con5d_maxBIO             Maximum yearly biomass energy
+con5d_capfacBIO             fix capacity factor of biomass energy
 con5_demand
 con5e_P2Gshare              Gross power to gas share
 
@@ -1202,11 +1203,14 @@ con4k_PHS_EtoP('Sto5')..
         N_STO_E('Sto5') =L= stodata("etop_max",'Sto5') * N_STO_P('Sto5')
 ;
 
-
+*** fix biomass plant capfac to 80%
+con5d_capfacBIO..
+sum(h, G_L("bio",h) ) =E= 0.8 * 8760 * N_CON("bio")
+;
 * ---------------------------------------------------------------------------- *
 *==========           Quotas                         *==========
 * ---------------------------------------------------------------------------- *
-*
+
 **power to gas share
 *con5e_P2Gshare..
 *sum( h , STO_OUT("sto7",h) )
@@ -1396,7 +1400,7 @@ eq4_pref
 $ENDIF.FC3
 
 
-*con5d_maxBIO
+con5d_capfacBIO
 
 *con8a_max_I_con
 *con8b_max_I_res
