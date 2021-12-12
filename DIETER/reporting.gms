@@ -135,7 +135,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
 *        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','CCGT') = RM_postInv_prodSe_con(yr,reg,"CCGT") /( RM_postInv_cap_con(yr,reg,"CCGT") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'biochp')*1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'bioigcc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','nuc') = remind_CF(yr,reg,'tnrs')*1e2;
 *        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','nuc') = RM_postInv_prodSe_con(yr,reg,"nuc") /( RM_postInv_cap_con(yr,reg,"nuc") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','ror') = sum(grade, remind_pm_dataren(reg, 'nur', grade, 'hydro') * remind_vm_CapDistr(yr, reg, 'hydro', grade) / remind_cap(yr, reg, 'hydro', '1'))*1e2;

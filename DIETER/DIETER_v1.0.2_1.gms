@@ -113,11 +113,15 @@ yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                        /2005,2020,2150/
 t           year from remind to be loaded                
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+*te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
-COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
-NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+*COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
+*NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
+*BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
 NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
 
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
@@ -780,7 +784,7 @@ disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r)
 disc_fac_con("hc") = disc_fac_con("lig");
 disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
 disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
-disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "biochp") / (-1+(1+r) ** remind_lifetime("lifetime", "biochp")) ;
+disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "bioigcc") / (-1+(1+r) ** remind_lifetime("lifetime", "bioigcc")) ;
 disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
 disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
 
@@ -841,7 +845,7 @@ cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
 cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
 cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
 cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","biochp") * c_i_ovnt("bio");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
 cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
 cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
