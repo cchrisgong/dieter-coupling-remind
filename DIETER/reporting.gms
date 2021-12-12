@@ -135,7 +135,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
 *        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','CCGT') = RM_postInv_prodSe_con(yr,reg,"CCGT") /( RM_postInv_cap_con(yr,reg,"CCGT") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'bioigcc')*1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'biochp')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','nuc') = remind_CF(yr,reg,'tnrs')*1e2;
 *        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','nuc') = RM_postInv_prodSe_con(yr,reg,"nuc") /( RM_postInv_cap_con(yr,reg,"nuc") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','ror') = sum(grade, remind_pm_dataren(reg, 'nur', grade, 'hydro') * remind_vm_CapDistr(yr, reg, 'hydro', grade) / remind_cap(yr, reg, 'hydro', '1'))*1e2;
@@ -212,8 +212,8 @@ $offtext
         report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = rdata('c_fix_res',res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
   
-        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata("c_var_con",ct);
-        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = rdata("c_var_res",res) ;
+        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata("c_var_con","lig");
+        report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata("c_var_p2g","elh2") ;
         
 
         report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata("c_var_p2g","elh2") ;
