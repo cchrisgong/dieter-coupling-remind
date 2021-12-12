@@ -16,6 +16,9 @@ gdx <- paste0(mydatapath,"RMdata_4DT.gdx")
 
 # fitType = "coalGasCubic"
 fitType = "allLinear"
+
+# averageOverIter = 1
+averageOverIter = 0
   
 if (fitType == "coalGasCubic"){
 peTypeList_cubic = c("pecoal", "pegas")
@@ -135,7 +138,7 @@ write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice_i=", iter, ".cs
 
 
 #=================== now average over all previous iterations  ====================00
-
+if (averageOverIter == 1){
 FC_csv <- list.files(mydatapath, pattern="FittedFuelPrice_i=[0-9]+\\.csv")
 
 id <- NULL
@@ -160,4 +163,9 @@ df_FC_avg <- df_FC_list %>%
   dplyr::summarise( value = mean(value), .groups = "keep" ) %>% 
   dplyr::ungroup(t,regi,fuel)
 
-write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice_runningAvg.csv"), sep = ",", row.names = F, col.names = F)
+write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice.csv"), sep = ",", row.names = F, col.names = F)
+}
+
+if (averageOverIter == 0){
+write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice.csv"), sep = ",", row.names = F, col.names = F)
+}

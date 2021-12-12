@@ -164,7 +164,7 @@ $IFTHEN.FC %fuel_cost_iter% == "cubicFit"
 parameter remind_fuelprice(t,reg,pe_remind)      "Fuel Price from REMIND which has been fitted to a polynom"
 /
 $ondelim
-$include "FittedFuelPrice_runningAvg.csv"
+$include "FittedFuelPrice.csv"
 $offdelim
 /;
 $ENDIF.FC
