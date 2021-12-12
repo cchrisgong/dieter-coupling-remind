@@ -92,8 +92,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-*$setglobal elh2_coup on
-$setglobal elh2_coup off
+$setglobal elh2_coup on
+*$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -113,11 +113,15 @@ yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                        /2005,2020,2150/
 t           year from remind to be loaded                
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+*te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
-COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
-NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+*COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
+*NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
+*BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
 NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
 
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
@@ -130,16 +134,18 @@ reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
+all_te        all dieter techs                       /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2/
+te        all dieter techs                      
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct(all_te)        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
-res       Renewable technologies                 /Wind_on, Wind_off, Solar/
+res(all_te)       Renewable technologies                 /Wind_on, Wind_off, Solar/
 sto       Storage technolgies                    /Sto1*Sto7/
-p2g       Sector Coupling P2G Technologies       /elh2/
+p2g(all_te)       Sector Coupling P2G Technologies       /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -161,6 +167,7 @@ bio.bio
 /
 
 *==========
+*te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
 
 $include dataload.gms
 
@@ -751,7 +758,7 @@ p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / s
 
 $IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
-c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg)  * 1.2 + cdata("c_var_con",ct) ;
+c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_flatco2("2020",reg) * 1.2 + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
 $ENDIF.FC3
 
@@ -777,7 +784,7 @@ disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r)
 disc_fac_con("hc") = disc_fac_con("lig");
 disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
 disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
-disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "biochp") / (-1+(1+r) ** remind_lifetime("lifetime", "biochp")) ;
+disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "bioigcc") / (-1+(1+r) ** remind_lifetime("lifetime", "bioigcc")) ;
 disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
 disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
 
@@ -838,7 +845,7 @@ cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
 cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
 cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
 cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","biochp") * c_i_ovnt("bio");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
 cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
 cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
@@ -902,7 +909,7 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 con5a_spv_share             Gross solar PV share
 con5b_wind_on_share         Gross wind onshore share
 con5c_wind_off_share        Gross wind offshore share
-*con5d_maxBIO             Maximum yearly biomass energy
+con5d_capfacBIO             fix capacity factor of biomass energy
 con5_demand
 con5e_P2Gshare              Gross power to gas share
 
@@ -1089,9 +1096,9 @@ $offtext
 eq3_grid(grid)..
         N_GRID(grid) / remind_gridfac_reg
         =G=
-        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
+*        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
 *       + 3 * P_RES("Wind_off") * ("Wind_off")
-*        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
+        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
 ;
 
 * ---------------------------------------------------------------------------- *
@@ -1203,11 +1210,14 @@ con4k_PHS_EtoP('Sto5')..
         N_STO_E('Sto5') =L= stodata("etop_max",'Sto5') * N_STO_P('Sto5')
 ;
 
-
+*** fix biomass plant capfac to 80%
+con5d_capfacBIO..
+sum(h, G_L("bio",h) ) =E= 0.8 * 8760 * N_CON("bio")
+;
 * ---------------------------------------------------------------------------- *
 *==========           Quotas                         *==========
 * ---------------------------------------------------------------------------- *
-*
+
 **power to gas share
 *con5e_P2Gshare..
 *sum( h , STO_OUT("sto7",h) )
@@ -1397,7 +1407,7 @@ eq4_pref
 $ENDIF.FC3
 
 
-*con5d_maxBIO
+con5d_capfacBIO
 
 *con8a_max_I_con
 *con8b_max_I_res
