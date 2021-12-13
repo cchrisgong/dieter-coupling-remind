@@ -61,9 +61,11 @@ remind_OMcost(reg,char_remind,te_remind)
 vm_costTeCapital(yr, reg, te_remind)
 remind_CapCost(yr, reg, te_remind)
 *------------------------------------
-*plant lifetime from REMIND
+*plant lifetime and annuity from REMIND
 fm_dataglob(char_remind,te_remind)
 remind_lifetime(char_remind, te_remind)
+remind_annuity(te_remind)
+p_teAnnuity(te_remind)
 *------------------------------------
 *fuel conversion efficiency, pm_dataeta and pm_eta_conv have etas for different te
 pm_dataeta(yr,reg,te_remind)
@@ -129,6 +131,7 @@ $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = fm_dataglob
+$load  remind_annuity = p_teAnnuity
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor

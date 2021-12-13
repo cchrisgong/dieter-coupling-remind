@@ -776,24 +776,43 @@ $ENDIF.FC3
 *once REMIND starts, read in the interest rate from REMIND
 r = remind_r("2020","DEU");
 
-*=======annuitized investment cost ==================
+*===================== annuitized investment cost (calculated from full lifetime in REMIND, i.e no early retirement) ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 *note on tech harmonization: ngcc, ngccc, gaschp have the same lifetime in REMIND, 35 years; igcc, igccc, pc, pcc, pco, coalchp all have 40 years; biochp, bioigcc, bioigccc have 40 years
 *fnrs and tnrs have 50 years. So no need to harmonize the multiple techs
-disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
-disc_fac_con("hc") = disc_fac_con("lig");
-disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
-disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
-disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "bioigcc") / (-1+(1+r) ** remind_lifetime("lifetime", "bioigcc")) ;
-disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
-disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
+*disc_fac_con("lig") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
+*disc_fac_con("hc") = disc_fac_con("lig");
+*disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
+*disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
+*disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "bioigcc") / (-1+(1+r) ** remind_lifetime("lifetime", "bioigcc")) ;
+*disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
+*disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
+*
+*disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
+*disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
+*
+*disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
+*disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
-disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
-disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
 
-disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
-disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
+*===================== annuitized investment cost (calculated from discounted lifetime REMIND) ==================
+disc_fac_con("lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
+        = sum(COALte, remind_annuity(COALte) * remind_prodSe("2020", "DEU", "pecoal", "seel", COALte))
+              / sum(COALte, remind_prodSe("2020", "DEU", "pecoal", "seel", COALte));
+disc_fac_con("hc") = disc_fac_con("lig");              
 
+disc_fac_con("CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
+            = sum(NonPeakGASte, remind_annuity(NonPeakGASte) * remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte))
+              / sum(NonPeakGASte, remind_prodSe("2020", "DEU", "pegas", "seel",NonPeakGASte));
+disc_fac_con("OCGT_eff") = remind_annuity("ngt");
+disc_fac_con("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
+            = sum(BIOte, remind_annuity(BIOte) * remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte))
+              / sum(BIOte, remind_prodSe("2020", "DEU", "pebiolc", "seel", BIOte));
+disc_fac_con("ror") = remind_annuity("hydro");
+disc_fac_con("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
+            = sum(NUCte, remind_annuity(NUCte) * remind_prodSe("2020", "DEU", "peur", "seel", NUCte))
+              / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel", NUCte)) * 1e6 * 1.2;
+              
 *======= read in investment cost from remind ========
 *overnight investment cost
 *# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
