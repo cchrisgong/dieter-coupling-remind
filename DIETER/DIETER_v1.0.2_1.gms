@@ -909,7 +909,7 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 con5a_spv_share             Gross solar PV share
 con5b_wind_on_share         Gross wind onshore share
 con5c_wind_off_share        Gross wind offshore share
-con5d_capfacBIO             fix capacity factor of biomass energy
+*con5d_capfacBIO             fix capacity factor of biomass energy
 con5_demand
 con5e_P2Gshare              Gross power to gas share
 
@@ -1211,9 +1211,9 @@ con4k_PHS_EtoP('Sto5')..
 ;
 
 *** fix biomass plant capfac to 80%
-con5d_capfacBIO..
-sum(h, G_L("bio",h) ) =E= 0.8 * 8760 * N_CON("bio")
-;
+*con5d_capfacBIO..
+*sum(h, G_L("bio",h) ) =E= 0.8 * 8760 * N_CON("bio")
+*;
 * ---------------------------------------------------------------------------- *
 *==========           Quotas                         *==========
 * ---------------------------------------------------------------------------- *
@@ -1407,7 +1407,7 @@ eq4_pref
 $ENDIF.FC3
 
 
-con5d_capfacBIO
+*con5d_capfacBIO
 
 *con8a_max_I_con
 *con8b_max_I_res
