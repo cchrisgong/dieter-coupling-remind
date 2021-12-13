@@ -92,8 +92,8 @@ $setglobal coal_split off
 *$setglobal coal_split on
 
 *whether couple elh2 flexible demand
-$setglobal elh2_coup on
-*$setglobal elh2_coup off
+*$setglobal elh2_coup on
+$setglobal elh2_coup off
 
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
@@ -812,6 +812,12 @@ disc_fac_con("ror") = remind_annuity("hydro");
 disc_fac_con("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
             = sum(NUCte, remind_annuity(NUCte) * remind_prodSe("2020", "DEU", "peur", "seel", NUCte))
               / sum(NUCte, remind_prodSe("2020", "DEU", "peur", "seel", NUCte)) * 1e6 * 1.2;
+
+disc_fac_res("Solar") = remind_annuity("spv") ;
+disc_fac_res("Wind_on") = remind_annuity("wind") ;
+disc_fac_p2g("elh2") = remind_annuity("elh2") ;
+disc_fac_grid("vregrid") = remind_annuity("gridwind") ;
+
               
 *======= read in investment cost from remind ========
 *overnight investment cost
