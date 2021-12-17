@@ -874,22 +874,22 @@ c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *================================================================
 *=======read in fixed OM cost from REMIND ========
-*note that omf is the proportion from overnight investment cost, not annuitized
+*note that omf is the proportion from overnight investment cost, NOT annuitized
 ** split pecoal into lignite and hc for rough comparison (not finalized)annuitized
 ** no need to harmonize many to one mapping, since omf are the same for tech in the same category
-cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i("lig");
-cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i("hc") ;
-cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i("CCGT");
-cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i("bio");
-cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i("ror");
-cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i("nuc");
+cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
+cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
+cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
+cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
+cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
+cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
-rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_res("Solar");
-rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_res("Wind_on");
+rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
+rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
 
-p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_p2g("elh2");
-griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_grid("vregrid");
+p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
+griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
 
 remind_gridfac_reg = remind_gridfac("DEU");
 
