@@ -206,7 +206,7 @@ $offtext
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',res) = rdata('c_fix_res',res) / 1e3;
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',p2g) = p2gdata('c_fix_p2g',p2g) / 1e3;
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',grid) = griddata("c_fix_grid",grid) / 1e3;
-                
+        
         report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = cdata('c_fix_con',ct)  / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res) ne 0) = rdata('c_fix_res',res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = p2gdata('c_fix_p2g',p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;

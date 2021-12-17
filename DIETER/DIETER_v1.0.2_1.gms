@@ -99,6 +99,9 @@ $setglobal elh2_coup off
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
+*turn on or off combined heat-and-power plants coupling
+*$setglobal CHP on
+$setglobal CHP off
 
 * to reduce the size of lst file
 option limcol    = 0;
@@ -112,18 +115,25 @@ Sets
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                        /2005,2020,2150/
-t           year from remind to be loaded                
-*te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
-gas_remind  remind emission gases                    /co2/
-*COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
-COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
-*NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
-NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
-*BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
-NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
+t           year from remind to be loaded
 
+$IFTHEN %CHP% == "on"
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+$ENDIF
+
+$IFTHEN %CHP% == "off"
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
+$ENDIF
+
+
+NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
+gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
@@ -866,19 +876,19 @@ c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *note that omf is the proportion from overnight investment cost, not annuitized
 ** split pecoal into lignite and hc for rough comparison (not finalized)annuitized
 ** no need to harmonize many to one mapping, since omf are the same for tech in the same category
-cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
-cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("hc") ;
-cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
-cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
-cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
-cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
+cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i("lig");
+cdata("c_fix_con","hc") = remind_OMcost("DEU","omf","pc") * c_i("hc") ;
+cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i("CCGT");
+cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i("OCGT_eff");
+cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i("bio");
+cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i("ror");
+cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i("nuc");
 
-rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
-rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
+rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_res("Solar");
+rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_res("Wind_on");
 
-p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
-griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
+p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_p2g("elh2");
+griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_grid("vregrid");
 
 remind_gridfac_reg = remind_gridfac("DEU");
 
@@ -1143,7 +1153,7 @@ con3i_maxprod_ror(h)..
 
 * annual average capfac on run of river to be constrained by remind theoretical capfac
 eq2_capfac_ror_avg("ror")..
-        sum(h, G_L("ror",h) ) =L= capfac_ror * 8760 * N_CON("ror")
+        sum(h, G_L("ror",h) ) =E= capfac_ror * 8760 * N_CON("ror")
 ;
 
 * Constraints on renewables
@@ -1523,10 +1533,11 @@ p32_report4RM(yr,reg,res,'capacity') = P_RES.l(res);
 p32_report4RM(yr,reg,'elh2','capacity') = N_P2G.l('elh2') * remind_eta2(yr,reg,"elh2");
 $ontext
 $offtext
+
 *** inflexible residual demand
-*excluding VRE and hydro
+******excluding VRE and hydro
 *residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_On",h) - G_L.l("ror",h);
-*only excluding VRE
+******only excluding VRE
 residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_On",h); 
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
 
