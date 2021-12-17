@@ -21,13 +21,13 @@ fitType = "allLinear"
 averageOverIter = 0
   
 if (fitType == "coalGasCubic"){
-peTypeList_cubic = c("pecoal", "pegas")
+peTypeList_cubic = c("pecoal", "pegas", "peur")
 peTypeList_linear = c("pebiolc")
 }
 
 if (fitType == "allLinear"){
 peTypeList_cubic = c()
-peTypeList_linear = c("pebiolc", "pecoal", "pegas")
+peTypeList_linear = c("pebiolc", "pecoal", "pegas", "peur")
 }
 
 sm_TWa_2_MWh = 8760000000
