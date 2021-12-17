@@ -114,7 +114,7 @@ Sets
 *============== remind sets ==================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-all_yr      for smoothing prices                        /2005,2020,2150/
+all_yr      for smoothing prices                     /2005,2020,2150/
 t           year from remind to be loaded
 
 $IFTHEN %CHP% == "on"
@@ -622,6 +622,7 @@ $IFTHEN.FC %fuel_cost_iter% == "smoothed"
 remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
 remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
 remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+remind_fuelprice("2020",reg,"peur") = (remind_fuelprice("2150",reg,"peur") - remind_fuelprice("2005",reg,"peur"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"peur");
 **);
 *);
 $ENDIF.FC
