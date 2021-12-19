@@ -148,7 +148,7 @@ $offtext
  
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',res) =  (P_RES.l(res) - P_RES.lo(res)) / 1e3 ;
-        report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') +N_CON.l('hc') - N_CON.lo('lig')- N_CON.lo('hc')) / 1e3 ;
+        report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') + N_CON.l('hc') - N_CON.lo('lig') - N_CON.lo('hc')) / 1e3 ;
         
         report_tech('DIETER',yr,reg,'capacities storage (GW)',sto) =  N_STO_P.l(sto) / 1e3 ;
         report_tech('DIETER',yr,reg,'capacities storage (TWh)',sto) =  N_STO_E.l(sto) /1e6;
@@ -200,6 +200,11 @@ $offtext
         
 *       Grid cost
         report_tech('DIETER',yr,reg,'grid cost ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) / totLoad;
+*       Grid cost for each VRE type        
+*        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) ) / totLoad * ( sum(h, G_RES.l("Solar",h) ) /( sum( h, G_RES.l("Solar",h) ) + 1.5 * sum(h, G_RES.l("Wind_on",h))));
+*        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / totLoad * ( 1.5 * sum(h, G_RES.l("Wind_on",h) ) /( sum( h, G_RES.l("Solar",h) ) + 1.5 * sum(h, G_RES.l("Wind_on",h))));
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) ) / (sum(h, G_RES.l("Solar",h) ) ) * (  sum(h, G_RES.l("Solar",h) ) /( sum( h, G_RES.l("Solar",h) ) + 1.5 * sum(h, G_RES.l("Wind_on",h))));
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / sum(h, G_RES.l("Wind_on",h) ) * ( 1.5 * sum(h, G_RES.l("Wind_on",h) ) /( sum( h, G_RES.l("Solar",h) ) + 1.5 * sum(h, G_RES.l("Wind_on",h))));
         
 *       OM cost
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',ct) = cdata('c_fix_con',ct) / 1e3;
@@ -230,7 +235,7 @@ $offtext
 
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg);
-        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);
+        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct)$(N_CON.l(ct) ne 0 )  = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);
 *       CO2 cost
         report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_flatco2(yr,reg);
         

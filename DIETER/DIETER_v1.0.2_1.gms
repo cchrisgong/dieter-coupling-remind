@@ -78,7 +78,8 @@ $setglobal price_shave on
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
 * hardLo = hard lower bound for all tech
-* softLo = soft lower bound (maximum of 20% peak capacity and remind preInvest cap) for dispatchables, hard lower bound for VRE
+* softLo1 = soft lower bound (maximum of 20% peak capacity and remind preInvest cap) for dispatchables, hard lower bound for VRE
+* softLo2 = 80% of hard lower bound
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
 $setglobal cap_bound hardLo
