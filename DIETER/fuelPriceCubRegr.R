@@ -134,7 +134,7 @@ fittedFuelPrice <- fittedFuelPrice %>%
   filter(label =="fitted FP") %>% 
   select(-label)
          
-write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice_i=", iter, ".csv"), sep = ",", row.names = F)
+write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice_i=", iter, ".csv"), sep = ",", row.names = F, col.names = F)
 
 
 #=================== now average over all previous iterations  ====================00
