@@ -23,6 +23,10 @@ Parameters
 * check in the future: remind variables probably do not need to be declared in dieter below
 *=========== for loading remind output ===========
 *------------------------
+*binary H2 coupling switch
+remind_h2switch
+s32_H2switch
+*------------------------
 *Investment interest rate
 R_4DT(yr, reg)
 remind_r(yr, reg)
@@ -124,6 +128,7 @@ $load  remind_iter = sm32_iter
 $load  remind_r = p32_r4DT
 $load  remind_totseelDem = p32_seelUsableProdCoup
 $load  remind_totseh2Dem = p32_seh2elh2Dem
+$load  remind_h2switch = s32_H2switch
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
@@ -449,7 +454,7 @@ $offecho
 *$load phi_reserves_share reserves_intercept reserves_slope phi_reserves_call_y
 ;
 
-Parameters
+Parameters 
 c_m_reg(ct,reg)          Marginal production costs for conventional plants including variable O&M costs
 c_m(ct)                  Marginal production costs for current region
 c_m_reg_nrp(ct,reg)      Marginal production costs that are not reactive (excluding FC which has a supply curve)

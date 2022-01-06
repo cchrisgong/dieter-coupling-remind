@@ -92,10 +92,6 @@ $setglobal cap_bound hardLo
 $setglobal coal_split off
 *$setglobal coal_split on
 
-*whether couple elh2 flexible demand
-*$setglobal elh2_coup on
-$setglobal elh2_coup off
-
 *whether ramping cost for conventional and for electrolyzers are turned on
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
@@ -103,6 +99,10 @@ $setglobal ramping_cost off
 *turn on or off combined heat-and-power plants coupling
 *$setglobal CHP on
 $setglobal CHP off
+
+*consider early retirement for capex or not
+*$setglobal capex_er on
+*$setglobal capex_er off
 
 * to reduce the size of lst file
 option limcol    = 0;
@@ -119,10 +119,10 @@ all_yr      for smoothing prices                     /2005,2020,2150/
 t           year from remind to be loaded
 
 $IFTHEN %CHP% == "on"
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, gaschp, ngt, biochp, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, coalchp, storspv, storwind, tnrs, fnrs, gridwind/
+te_remind   remind technonlogy					    /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
 NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /biochp, bioigcc, bioigccc/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc, biochp/
 $ENDIF
 
 $IFTHEN %CHP% == "off"
@@ -181,6 +181,17 @@ bio.bio
 *te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
 
 $include dataload.gms
+
+*whether couple elh2 flexible demand
+if (remind_h2switch eq 1,
+$setglobal elh2_coup on
+*$setglobal elh2_coup off
+);
+
+if (remind_h2switch eq 0,
+*$setglobal elh2_coup on
+$setglobal elh2_coup off
+);
 
 Alias (h,hh) ;
 alias (res,resres) ;
@@ -1569,7 +1580,7 @@ $offtext
 
 p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
 p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
-p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/sum(h,d(h)) * 1e2;
+p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/totLoad * 1e2;
 
 %P2G%$ontext
 p32_report4RM(yr,reg,p2g,'dem_share') = sum( h, C_P2G.l(p2g,h) ) / totLoad * 1e2;
