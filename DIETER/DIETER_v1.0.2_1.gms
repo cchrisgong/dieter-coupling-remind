@@ -1569,7 +1569,7 @@ $offtext
 
 p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
 p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
-p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/sum(h,d(h)) * 1e2;
+p32_report4RM(yr,reg,'coal','gen_share') = sum( h , (G_L.l('hc',h) + G_L.l('lig',h)))/totLoad * 1e2;
 
 %P2G%$ontext
 p32_report4RM(yr,reg,p2g,'dem_share') = sum( h, C_P2G.l(p2g,h) ) / totLoad * 1e2;
