@@ -96,10 +96,6 @@ $setglobal coal_split off
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
-*turn on or off combined heat-and-power plants coupling
-*$setglobal CHP on
-$setglobal CHP off
-
 *consider early retirement for capex or not
 *$setglobal capex_er on
 *$setglobal capex_er off
@@ -118,22 +114,8 @@ yr_before   previous year from remind                /2015/
 all_yr      for smoothing prices                     /2005,2020,2150/
 t           year from remind to be loaded
 
-$IFTHEN %CHP% == "on"
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
-COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
-NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc, biochp/
-$ENDIF
 
-$IFTHEN %CHP% == "off"
-te_remind   remind technonlogy					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
-COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
-NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
-BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
-$ENDIF
-
-
-NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
+te_remind   remind technology					    /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
@@ -182,6 +164,10 @@ bio.bio
 
 $include dataload.gms
 
+*** H2 switch for DIETER standalone
+*remind_h2switch = 0;
+*remind_h2switch = 1;
+
 *whether couple elh2 flexible demand
 if (remind_h2switch eq 1,
 $setglobal elh2_coup on
@@ -192,6 +178,39 @@ if (remind_h2switch eq 0,
 *$setglobal elh2_coup on
 $setglobal elh2_coup off
 );
+
+
+*** CHP switch for DIETER standalone
+*remind_CHPswitch = 0;
+*remind_CHPswitch = 1;
+
+*turn on or off combined heat-and-power plants coupling
+if (remind_CHPswitch eq 1,
+$setglobal CHP on
+*$setglobal CHP off
+);
+
+if (remind_CHPswitch eq 0,
+*$setglobal CHP on
+$setglobal CHP off
+);
+
+Sets
+$IFTHEN %CHP% == "on"
+*te_remind   remind technology					    /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco, coalchp/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc, gaschp/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc, biochp/
+$ENDIF
+
+$IFTHEN %CHP% == "off"
+*te_remind   remind technology					    /spv, wind, hydro, elh2, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+COALte(te_remind) "coal to seel tech in REMIND"      /igcc, igccc, pc, pcc, pco/
+NonPeakGASte(te_remind) "gas to seel tech in REMIND" /ngcc, ngccc/
+BIOte(te_remind) "biomass to seel tech in REMIND"    /bioigcc, bioigccc/
+$ENDIF
+NUCte(te_remind) "nuclear to seel tech in REMIND"    /tnrs, fnrs/
+
 
 Alias (h,hh) ;
 alias (res,resres) ;
