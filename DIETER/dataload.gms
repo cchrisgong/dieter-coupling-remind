@@ -122,6 +122,11 @@ demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio betwe
 **remember to load sets first
 $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
+$load  te_remind= REMINDte4DT32
+$load  COALte = COALte32
+$load  NonPeakGASte = NonPeakGASte32
+$load  BIOte = BIOte32
+$load  NUCte = NUCte32
 $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter
@@ -129,7 +134,7 @@ $load  remind_r = p32_r4DT
 $load  remind_totseelDem = p32_usableSeDisp
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch
-$load  remind_CHPswitch = s32_CHPswitch
+*$load  remind_CHPswitch = s32_CHPswitch
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
