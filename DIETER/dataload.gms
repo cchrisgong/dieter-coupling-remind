@@ -26,6 +26,8 @@ Parameters
 *binary H2 coupling switch
 remind_h2switch
 s32_H2switch
+remind_CHPswitch
+s32_CHPswitch
 *------------------------
 *Investment interest rate
 R_4DT(yr, reg)
@@ -36,9 +38,7 @@ vm_cap(yr, reg, te_remind, grade)
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
 *demand
-p32_seelUsableDem(yr, reg, se_remind)
 remind_totseelDem(yr, reg, se_remind)
-p32_seh2elh2Dem(yr, reg, se_remind)
 remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 *fuel price
@@ -126,9 +126,10 @@ $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter
 $load  remind_r = p32_r4DT
-$load  remind_totseelDem = p32_seelUsableProdCoup
+$load  remind_totseelDem = p32_usableSeDisp
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch
+$load  remind_CHPswitch = s32_CHPswitch
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
