@@ -17,30 +17,36 @@ $offtext
 *===== Defines and uploads parameters      =====
 *======================================================
 
+
+
 Parameters
+* check in the future: remind variables probably do not need to be declared in dieter below
 *=========== for loading remind output ===========
+*------------------------
+*binary H2 coupling switch
+remind_h2switch
+s32_H2switch
+*------------------------
+*Investment interest rate
+R_4DT(yr, reg)
+remind_r(yr, reg)
+*------------------------
+*capacity
 vm_cap(yr, reg, te_remind, grade) 
 remind_cap(yr, reg, te_remind, grade)
 *-------------------------
-p32_seelDem(yr, reg, se_remind)
-*vm_usableSe(yr, reg, se_remind)
-remind_totdemand(yr, reg, se_remind)
+*demand
+remind_totseelDem(yr, reg, se_remind)
+remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
-*vm_capFac(yr, reg, te_remind)
-*remind_capFac(yr, reg, te_remind)
-*-------------------------
+*fuel price
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
 remind_fuelprice(all_yr,reg,pe_remind)
+$ENDIF.FC
+*remind_fuelprice(all_yr,reg,pe_remind)
 *for smoothing costs over 2 iterations
-p32_fuelprice_avgiter(all_yr,reg,pe_remind)
-*for loading fixed REMIND fuel costs from 2nd iter
-remind_fuelprice_fixed(all_yr,reg,pe_remind)
+*p32_fuelprice_avgiter(all_yr,reg,pe_remind)
 *-------------------------
-qm_budget(yr,reg)
-remind_budget(all_yr,reg)
-*------------------------------------
-*vm_demSe(yr, reg, se_remind, se_remind2, te_remind)
-*remind_seDem(yr, reg, se_remind, se_remind2, te_remind)
-*------------------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
 remind_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -57,9 +63,11 @@ remind_OMcost(reg,char_remind,te_remind)
 vm_costTeCapital(yr, reg, te_remind)
 remind_CapCost(yr, reg, te_remind)
 *------------------------------------
-*plant lifetime from REMIND
+*plant lifetime and annuity from REMIND
 fm_dataglob(char_remind,te_remind)
 remind_lifetime(char_remind, te_remind)
+remind_annuity(te_remind)
+p_teAnnuity(te_remind)
 *------------------------------------
 *fuel conversion efficiency, pm_dataeta and pm_eta_conv have etas for different te
 pm_dataeta(yr,reg,te_remind)
@@ -83,8 +91,15 @@ remind_vm_capDistr(yr, reg, te_remind, grade)
 *remind_CF contain scaling that accounts for smaller turbines or panels/lower CFs in earlier years (only for wind and solar in remind)
 remind_CF(yr,reg,te_remind) 
 pm_cf(yr,reg,te_remind)
+vm_capFac(yr,reg,te_remind)
+*load grid factor (for large country it is larger, otherwise 1)
+p32_grid_factor(reg)
+remind_gridfac(reg)
 *-------------------------------------
-remind_totdemand_inMWh
+* passing REMIND CO2 price to DIETER, CO2 price in $ per tCO2 
+remind_flatco2(yr,reg)
+f21_taxCO2eqHist(yr,reg)
+*-------------------------------------
 sm_TWa_2_MWh Conversion factor between TWa and MWh /8760000000/
 *-------------------------------------
 remind_carboncontent(pe_remind, se_remind, te_remind, gas_remind)
@@ -94,61 +109,110 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *-------------------------------------
 *iteration from REMIND
 remind_iter
-o_iterationNumber
-
+sm32_tmp
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
 ;
 
-
-*remember to load sets first
-$gdxin fulldata.gdx
-*$load  yr = t
+********
+**** during REMIND run, load special data before fulldata.gdx drops for the REMIND iteration
+**remember to load sets first
+$ifThen.duringRun exist RMdata_4DT.gdx
+$gdxin RMdata_4DT.gdx
+$load  te_remind= REMINDte4DT32
+$load  COALte = COALte32
+$load  NonPeakGASte = NonPeakGASte32
+$load  BIOte = BIOte32
+$load  NUCte = NUCte32
 $load  remind_cap = vm_cap.l
-$load  remind_iter = o_iterationNumber
-*$load  remind_totdemand = vm_usableSe.l
-$load  remind_budget = qm_budget.m
-$load  remind_totdemand = p32_seelDem
+$load  t = tDT32
+$load  remind_iter = sm32_iter
+$load  remind_r = p32_r4DT
+$load  remind_totseelDem = p32_usableSeDisp
+$load  remind_totseh2Dem = p32_seh2elh2Dem
+$load  remind_h2switch = s32_H2switch
+*$load  remind_CHPswitch = s32_CHPswitch
 *$load  remind_fuelprice = p32_fuelprice_avgiter
+$load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = fm_dataglob
+*$load  remind_annuity = p_teAnnuity
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
+$load  remind_gridfac = p32_grid_factor
 $load  remind_pm_ts = pm_ts
 $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
-$load  remind_CF = pm_cf
+$load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $gdxin
+$endIf.duringRun
 
-display remind_iter;
-
-$IFTHEN.FC %fuel_cost% == "fixed"
-
-$gdxin fulldata_1.gdx
-$load  remind_fuelprice = q_balPe.m
+**** options to load fuel price differently
+$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+$Ifthen.duringRun exist RMdata_4DT.gdx
+$gdxin RMdata_4DT.gdx
+$load  remind_fuelprice = p32_fuelprice_avgiter
 $gdxin
-
+$endIf.duringRun
 $ENDIF.FC
 
+$IFTHEN.FC %fuel_cost_iter% == "fixed"
+$Ifthen.duringRun exist fulldata_1.gdx
+$gdxin fulldata_1.gdx
+$load  remind_fuelprice = p32_fuelprice_avgiter
+$gdxin
+$endIf.duringRun
+$ENDIF.FC
+
+$IFTHEN.FC %fuel_cost_iter% == "cubicFit"
+parameter remind_fuelprice(t,reg,pe_remind)      "Fuel Price from REMIND which has been fitted to a linear function or a polynom"
+/
+$ondelim
+$include "FittedFuelPrice.csv"
+$offdelim
+/;
+$ENDIF.FC
 
 Parameters
 
+*====== Conventionals ======
+
+*--- Generation and fixed ---*
+*eta_con(ct)              Efficiency of conventional technologies
+*carbon_content(ct)       CO2 emissions per fuel unit used
+*c_up(ct)                 Load change costs UP in EUR per MW
+*c_do(ct)                 Load change costs DOWN in EUR per MW
+*c_fix_con(ct)            Annual fixed costs per MW
+*c_var_con(ct)            Variable O&M costs per MWh
+
+*--- Investment ---*
+*c_inv_overnight_con(ct)  Investment costs: Overnight
+*inv_lifetime_con(ct)     Investment costs: technical lifetime
+*inv_recovery_con(ct)     Investment costs: Recovery period according to depreciation tables
+*inv_interest_con(ct)     Investment costs: Interest rate
+*m_con(ct)                Investment: maximum installable capacity per technology
+*m_con_e(ct)              Investment: maximum installable energy in TWh per a
+
+*--- Flexibility ---*
+*grad_per_min(ct)         Maximum load change per minute relative to installed capacity
 
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
 *con_fuelprice(ct)        Fuel price conventionals in Euro per MWth
-con_fuelprice_reg_remind(all_yr,ct,reg) Fuel price calculated from REMIND
-con_fuelprice_reg_smoothed(ct,reg) Fuel price smoothed over several years
-con_CO2price              CO2 price in $ per tCO2 /25/
 
+*====== Fuel and CO2 costs ======
+*""fuel price" means without dividing by efficiency eta
+con_fuelprice_reg_remind(yr,ct,reg) Fuel price calculated from REMIND
+con_fuelprice_reg_yr_avg(ct,reg) Fuel price can be smoothed over several years
+con_fuelprice_reg_remind_reporting(ct,reg) Fuel price from REMIND for reporting
 *====== Renewables ======
 
 *--- Generation and fixed costs ---*
@@ -159,6 +223,8 @@ phi_min_res              Upload parameter: Minimum required renewables generatio
 *--- Investment ---*
 c_i_ovnt(ct)             Investment costs: Overnight
 c_i_ovnt_res(res)        Investment costs: Overnight
+c_i_ovnt_p2g(p2g)        Investment costs: Overnight
+c_i_ovnt_grid(grid)      Investment costs: Overnight
 
 
 *====== Time Data ======
@@ -228,7 +294,7 @@ elasticity                Demand elasticity
 
 
 *====== Reserves ======
-
+*%reserves%$ontext
 phi_reserves_share(reserves)             Shares of SRL and MRL up and down
 *reserves_intercept(reserves)
 reserves_slope(reserves,res)
@@ -236,13 +302,17 @@ phi_reserves_call_y(year,h,reserves)     Hourly share of reserve provision that 
 phi_reserves_call(reserves,h)            Hourly share of reserve provision that is actually activated
 phi_reserves_pr                          ??? /0.05/
 ;
+*$ontext
+*$offtext
 
-
+*repress printing out all the input data
+$offlisting
 *================================================================================================
 parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
 /
 $ondelim
 $include "Load_DEU_2019.csv"
+*$include "Load_USA_2019.csv"
 $offdelim
 /;
 
@@ -253,12 +323,22 @@ $include "Conventionals.csv"
 $offdelim
 /;
 
+parameter p2gdata(all_p2gdata,p2g)      "Various Data for P2G Technologies"
+/
+$ondelim
+$include "P2G.csv"
+$offdelim
+/;
+
+
 parameter rdata(all_rdata,res)      "Various Data for Renewable Technologies"
 /
 $ondelim
 $include "Renewables.csv"
 $offdelim
 /;
+
+parameter griddata(all_griddata,grid);
 
 *parameter con_fuelprice_reg(ct,reg)      "Fuel price conventionals in Euro per MWth for different regions"
 */
@@ -270,8 +350,11 @@ $offdelim
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
 $include "VRE_potential_DEU_2019.csv"
+*$include "VRE_potential_USA_renewNinja.csv"
 $offdelim
 ;
+
+
 
 phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 
@@ -282,19 +365,19 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 *$offdelim
 */;
 
-parameter dsmdata_cu(all_dsm_cu,dsm_curt)      "Various Data for DSM"
-/
-$ondelim
-$include "DSM_curt.csv"
-$offdelim
-/;
-
-parameter dsmdata_shift(all_dsm_shift,dsm_shift)      "Various Data for DSM"
-/
-$ondelim
-$include "DSM_shift.csv"
-$offdelim
-/;
+*parameter dsmdata_cu(all_dsm_cu,dsm_curt)      "Various Data for DSM"
+*/
+*$ondelim
+*$include "DSM_curt.csv"
+*$offdelim
+*/;
+*
+*parameter dsmdata_shift(all_dsm_shift,dsm_shift)      "Various Data for DSM"
+*/
+*$ondelim
+*$include "DSM_shift.csv"
+*$offdelim
+*/;
 
 
 *parameter AC_demand(year,reg,h)      "AC Demand hour h for cost minimization for different years and specific regions"
@@ -345,13 +428,16 @@ $offdelim
 *
 *phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
 
-*$ontext
-*$offtext
+$onlisting
+
 
 $onecho >temp.tmp
 
 par=phi_reserves_call_y          rng=Reserves!b49:lya73  rdim=2 cdim=1
 $offecho
+
+*$ontext
+*$offtext
 
 *%skip_Excel%$call "gdxxrw Data_Input_v1.0.2.xlsx @temp.tmp o=Data_input.gdx";
 
@@ -366,12 +452,17 @@ $offecho
 *$load phi_reserves_share reserves_intercept reserves_slope phi_reserves_call_y
 ;
 
-Parameters
+Parameters 
 c_m_reg(ct,reg)          Marginal production costs for conventional plants including variable O&M costs
 c_m(ct)                  Marginal production costs for current region
-c_i(ct)          Annualized investment costs by conventioanl plant per MW
+c_m_reg_nrp(ct,reg)      Marginal production costs that are not reactive (excluding FC which has a supply curve)
+c_m_nrp(ct)              Marginal production costs that are not reactive (excluding FC which has a supply curve) for current region
+c_m_FC(ct)               Marginal fuel costs from REMIND
 
+c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
+c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
+c_i_grid(grid)     Annualized investment costs for grid per MW
 
 c_i_sto_e(sto)   Annualized investment costs storage energy per MWh
 c_i_sto_p(sto)   Annualized investment costs storage capacity per MW
@@ -385,20 +476,17 @@ c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv
                  / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                  / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
-*
-c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
+
+*c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
                  / ( (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt))-1 )       ;
-c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
+*c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
                  / ( (1+dsmdata_shift("inv_interest_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))-1 )       ;
 
-* Adjust investment costs on model's hourly basis ?
+rdata("c_cu",res)= 0;
+p2gdata("p2g_do","elh2") = 10;
+p2gdata("p2g_up","elh2") = 10;
 
-*c_i(ct) = c_i(ct)*card(h)/8760 ;
-*c_i_res(res) = c_i_res(res)*card(h)/8760 ;
-%second_hour%c_i_sto_e(sto) = c_i_sto_e(sto)*card(h)/8760 ;
-c_i_sto_p(sto) = c_i_sto_p(sto)*card(h)/8760 ;
-c_i_dsm_cu(dsm_curt) = c_i_dsm_cu(dsm_curt)*card(h)/8760 ;
-c_i_dsm_shift(dsm_shift) = c_i_dsm_shift(dsm_shift)*card(h)/8760 ;
+
 %second_hour%$ontext
 c_i_sto_e(sto) = c_i_sto_e(sto)*card(h)/8760 * 2 ;
 dsmdata_cu("t_dur_dsm_cu",dsm_curt) = dsmdata_cu("t_dur_dsm_cu",dsm_curt) / 2 ;
