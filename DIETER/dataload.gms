@@ -26,8 +26,6 @@ Parameters
 *binary H2 coupling switch
 remind_h2switch
 s32_H2switch
-remind_CHPswitch
-s32_CHPswitch
 *------------------------
 *Investment interest rate
 R_4DT(yr, reg)

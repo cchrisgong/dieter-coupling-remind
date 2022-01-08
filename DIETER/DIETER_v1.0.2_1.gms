@@ -89,6 +89,12 @@ $setglobal cap_bound hardLo
 *$setglobal cap_bound none
 *$setglobal cap_bound fixed
 
+*softUp1 = upper bound is 1.2 times REMIND cap
+*hardUpVRE = wind upper bound is 1 x REMIND cap (essentially fixing wind to postInvcap)
+*$setglobal cap_bound_up hardUpVRE
+*$setglobal cap_bound_up fixVRE
+*$setglobal cap_bound_up softUp1
+
 *whether to split lignite and hard coal
 $setglobal coal_split off
 *$setglobal coal_split on
@@ -132,16 +138,16 @@ reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-all_te        all dieter techs                       /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2/
+all_te        all dieter techs                   /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2/
 te        all dieter techs                      
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct(all_te)        Conventional Technologies              /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct(all_te)        Conventional Technologies      /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
-res(all_te)       Renewable technologies                 /Wind_on, Wind_off, Solar/
+res(all_te)       Renewable technologies         /Wind_on, Wind_off, Solar/
 sto       Storage technolgies                    /Sto1*Sto7/
 p2g(all_te)       Sector Coupling P2G Technologies       /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
@@ -370,8 +376,8 @@ N_CON.fx("OCGT_ineff") = 0;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 *****************
-* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) 
-preInv_remind_cap(yr, "DEU", te_remind, grade) = remind_cap(yr, "DEU", te_remind, grade) - remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
+* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
+preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade);
 
 
@@ -379,6 +385,14 @@ $IFTHEN.CB %cap_bound% == "hardLo"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 
+$IFTHEN.CBu %cap_bound_up% == "hardUpVRE1"
+P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+$ENDIF.CBu
+
+$IFTHEN.CBu %cap_bound_up% == "fixVRE"
+P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
+P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760)
+$ENDIF.CBu
 
 *if (remind_iter < 7,
 *P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
@@ -522,6 +536,45 @@ N_CON.lo("bio") = sum(te_remind,
                     ) * 1e6 * 0.8;
 $ENDIF.CB
 
+$IFTHEN.CB2 %cap_bound_up% == "softUp1" 
+P_RES.up("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1.2;
+P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1.2;
+
+$IFTHEN.CS %coal_split% == "on"
+N_CON.up("lig") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2 * 1.2;
+
+N_CON.up("hc") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 /2 * 1.2;
+$ENDIF.CS
+
+$IFTHEN.CS %coal_split% == "off"
+N_CON.up("lig") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
+                    ) * 1e6 * 1.2;
+                    
+N_CON.fx("hc") = 0;
+$ENDIF.CS
+
+N_CON.up("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) * 1.2;
+                    
+N_CON.up("nuc") = sum(te_remind,
+                   sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
+                    ) * 1e6 * 1.2;
+
+N_CON.up("CCGT") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NonPeakGASte(te_remind))   )
+                    ) * 1e6 * 1.2;
+
+N_CON.up("OCGT_eff") = sum(grade, preInv_remind_cap("2020", "DEU", "ngt", grade)) * 1e6 * 1.2;
+
+      
+N_CON.up("bio") = sum(te_remind,
+                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
+                    ) * 1e6 * 1.2;
+$ENDIF.CB2
 **** earlyReti is deprecated (and missing ror)
 $IFTHEN.CB %cap_bound% == "earlyReti" 
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
@@ -589,8 +642,17 @@ N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
 N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
 N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
 N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
+
+$IFTHEN.CS %coal_split% == "on"
 N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
 N_CON.fx("hc") = RM_postInv_cap_con("2020", "DEU", "coal")/2 ;
+$ENDIF.CS
+
+$IFTHEN.CS %coal_split% == "off"
+N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
+N_CON.fx("hc") = 0;
+$ENDIF.CS
+
 $ENDIF.CB
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
