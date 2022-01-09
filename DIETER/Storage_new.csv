@@ -1,0 +1,44 @@
+c_m_sto,lith,0.3
+c_m_sto,PbS,0.3
+c_m_sto,flow,0.3
+c_m_sto,PSH,0.0025
+c_m_sto,caes,2
+eta_sto,lith,0.86
+eta_sto,PbS,0.84
+eta_sto,flow,0.88
+eta_sto,PSH,0.79
+eta_sto,caes,0.52
+c_fix_sto,lith,10000
+c_fix_sto,PbS,10000
+c_fix_sto,flow,10000
+c_fix_sto,PSH,15900
+c_fix_sto,caes,16700
+c_inv_overnight_sto_e,lith,372000
+c_inv_overnight_sto_e,PbS,436000
+c_inv_overnight_sto_e,flow,745000
+c_inv_overnight_sto_e,PSH,0
+c_inv_overnight_sto_e,caes,0
+c_inv_overnight_sto_p,lith,388000
+c_inv_overnight_sto_p,PbS,450000
+c_inv_overnight_sto_p,flow,450000
+c_inv_overnight_sto_p,PSH,2500000
+c_inv_overnight_sto_p,caes,1400000
+inv_lifetime_sto,lith,15
+inv_lifetime_sto,PbS,2.6
+inv_lifetime_sto,flow,15
+inv_lifetime_sto,PSH,30
+inv_lifetime_sto,caes,25
+phi_sto_ini,lith,0.5
+phi_sto_ini,PbS,0.5
+phi_sto_ini,flow,0.5
+phi_sto_ini,PSH,0.5
+phi_sto_ini,caes,0.5
+etop_max,lith,
+etop_max,PbS,
+etop_max,flow,
+etop_max,PSH,1000
+etop_max,caes,
+*Sources: Zerrahn,A greenfield model to evaluate long-run power storage requirements for high shares of renewables. DIW Discussion Paper 1457,2015
+*,EIA round trip effiency for battery and pumped hydro from real data 2018-2019,
+*,"DOE report: Energy Storage Technology and Cost Characterization Report (2019) (variable O&M c_fix_sto, RTE, invCost,lifetime; PSH table 4.23,4.24)",
+* ,NREL report: Cost Projections for Utility-Scale Battery Storage (li-ion battery life time),

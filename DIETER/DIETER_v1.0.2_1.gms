@@ -83,11 +83,11 @@ $setglobal price_shave on
 * softLo2 = 80% of hard lower bound
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
-$setglobal cap_bound hardLo
+*$setglobal cap_bound hardLo
 *$setglobal cap_bound softLo1
 *$setglobal cap_bound softLo2
 *$setglobal cap_bound none
-*$setglobal cap_bound fixed
+$setglobal cap_bound fixed
 
 *softUp1 = upper bound is 1.2 times REMIND cap
 *hardUpVRE = wind upper bound is 1 x REMIND cap (essentially fixing wind to postInvcap)
@@ -147,8 +147,8 @@ all_griddata                                     /c_fix_grid, inv_lifetime_grid/
 ct(all_te)        Conventional Technologies      /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
 ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio/
+sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
 res(all_te)       Renewable technologies         /Wind_on, Wind_off, Solar/
-sto       Storage technolgies                    /Sto1*Sto7/
 p2g(all_te)       Sector Coupling P2G Technologies       /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
@@ -175,11 +175,11 @@ bio.bio
 
 $include dataload.gms
 
-********** TWO COUPLED SWITCHES **************
+********** COUPLED SWITCH **************
 *** H2 switch for DIETER standalone
 *remind_h2switch = 0;
 *remind_h2switch = 1;
-
+****************************************
 
 Alias (h,hh) ;
 alias (res,resres) ;
@@ -381,30 +381,20 @@ preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade);
 
 
-$IFTHEN.CB %cap_bound% == "hardLo"
-P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
-P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
-
 $IFTHEN.CBu %cap_bound_up% == "hardUpVRE1"
 P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 $ENDIF.CBu
 
 $IFTHEN.CBu %cap_bound_up% == "fixVRE"
 P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
-P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760)
+P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
+N_CON.up("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (remind_HydroCapFac * 8760) *1.2;
+N_CON.up("nuc") = RM_postInv_cap_con("2020", "DEU", "nuc") * 1.2;
 $ENDIF.CBu
 
-*if (remind_iter < 7,
-*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
-*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
-*);
-*
-*if (remind_iter > 6,
-*P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.9;
-*P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.9;
-*);
-*
-
+$IFTHEN.CB %cap_bound% == "hardLo"
+P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
 
 
@@ -657,18 +647,24 @@ $ENDIF.CB
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
 **********************************************************************
+*
+*N_STO_P.fx("PbS") = 0 ;
+*N_STO_P.fx("caes") = 0 ;
+*N_STO_E.fx("PbS") = 0 ;
+*N_STO_E.fx("caes") = 0 ;
+*STO_IN.fx("caes",h) = 0 ;
+*STO_OUT.fx("caes",h) = 0 ;
+*STO_L.fx("caes",h) = 0 ;
+*STO_IN.fx("PbS",h) = 0 ;
+*STO_OUT.fx("PbS",h) = 0 ;
+*STO_L.fx("PbS",h) = 0 ;
 
 
-*N_STO_P.fx('Sto1') = remind_cap("2020", "DEU", "storspv", "1") * 3 * 1e6 + remind_cap("2020", "DEU", "storwind", "1") * 0.3* 1e6;
-
-N_STO_P.fx(sto) = 0 ;
 N_STO_P.fx(sto) = 0 ;
 N_STO_E.fx(sto) = 0 ;
 STO_IN.fx(sto,h) = 0 ;
 STO_OUT.fx(sto,h) = 0 ;
 STO_L.fx(sto,h) = 0 ;
-RP_STO_IN.fx(reserves,sto,h) = 0 ;
-RP_STO_OUT.fx(reserves,sto,h) = 0 ;
 
 *================================================================
 *======================= VARIABLE COST =============================
@@ -867,7 +863,11 @@ disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
-              
+c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+                
 *======= read in investment cost from remind ========
 *overnight investment cost
 *# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
@@ -1280,8 +1280,8 @@ con4j_ending(sto,h)$( ord(h) = card(h) )..
          STO_L(sto,h) =E= stodata("phi_sto_ini",sto) * N_STO_E(sto)
 ;
 
-con4k_PHS_EtoP('Sto5')..
-        N_STO_E('Sto5') =L= stodata("etop_max",'Sto5') * N_STO_P('Sto5')
+con4k_PHS_EtoP('PSH')..
+        N_STO_E('PSH') =L= stodata("etop_max",'PSH') * N_STO_P('PSH')
 ;
 
 *** fix biomass plant capfac to 80%
@@ -1644,6 +1644,8 @@ p32_report4RM(yr,reg,p2g,'dem_share')$(not p32_report4RM(yr,reg,p2g,'dem_share')
 p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,G_RES.l(res,h));
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
 p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
+
+p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 
 *** calculate multiplicative factor - markup
 
