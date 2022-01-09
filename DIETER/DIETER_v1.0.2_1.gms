@@ -1172,7 +1172,7 @@ eq3_grid(grid)..
         =G=
 *        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
 *       + 3 * P_RES("Wind_off") * ("Wind_off")
-        (sum(h,G_RES("Solar",h)) + 1.5 * sum(h,G_RES("Wind_on",h)))/8760
+        (sum(h,(G_RES("Solar",h)+CU("Solar",h))) + 1.5 * sum(h,(G_RES("Wind_on",h)+CU("Wind_on",h))))/8760
 ;
 
 * ---------------------------------------------------------------------------- *
