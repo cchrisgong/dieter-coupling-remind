@@ -83,11 +83,11 @@ $setglobal price_shave on
 * softLo2 = 80% of hard lower bound
 * earlyReti = for dispatchables: if remind has retired capacity in this year in the last iter, then no lower bound; otherwise it is fixed to remind capacity; hard lower bound for VRE
 * fixed = fix to postInvest cap in REMIND, for speeding up computation
-*$setglobal cap_bound hardLo
+$setglobal cap_bound hardLo
 *$setglobal cap_bound softLo1
 *$setglobal cap_bound softLo2
 *$setglobal cap_bound none
-$setglobal cap_bound fixed
+*$setglobal cap_bound fixed
 
 *softUp1 = upper bound is 1.2 times REMIND cap
 *hardUpVRE = wind upper bound is 1 x REMIND cap (essentially fixing wind to postInvcap)
