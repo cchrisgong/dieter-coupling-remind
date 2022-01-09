@@ -107,9 +107,14 @@ $setglobal ramping_cost off
 *$setglobal capex_er on
 *$setglobal capex_er off
 
+*choose to print solution for debug purpose
+$setglobal debug off
+
 * to reduce the size of lst file
 option limcol    = 0;
 option limrow    = 0;
+
+
 
 *==========
 *==========
@@ -1559,8 +1564,14 @@ corr_fac_sto(sto,h) = 0 ;
 corr_fac_dsm_cu(dsm_curt,h) = 0 ;
 corr_fac_dsm_shift(dsm_shift,h) = 0 ;
 
+** debug
+$IFTHEN.deb %debug% == "on"
+option solprint = on;
+$ENDIF.deb
 *suppress print solutions to limit lst size, placed before solve statement
+$IFTHEN.deb %debug% == "off"
 option solprint = off ;
+$ENDIF.deb
 
 solve DIETER using lp minimizing Z ;
 
