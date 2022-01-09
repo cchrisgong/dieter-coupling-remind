@@ -131,18 +131,16 @@ $offtext
         
 
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
-*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','coal') = RM_postInv_prodSe_con(yr,reg,"coal") /( RM_postInv_cap_con(yr,reg,"coal") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
-*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','CCGT') = RM_postInv_prodSe_con(yr,reg,"CCGT") /( RM_postInv_cap_con(yr,reg,"CCGT") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'bioigcc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','nuc') = remind_CF(yr,reg,'tnrs')*1e2;
-*        report_tech('REMIND',yr,reg,'REMIND CapFac (%) 2','nuc') = RM_postInv_prodSe_con(yr,reg,"nuc") /( RM_postInv_cap_con(yr,reg,"nuc") *8760) *1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','ror') = sum(grade, remind_pm_dataren(reg, 'nur', grade, 'hydro') * remind_vm_CapDistr(yr, reg, 'hydro', grade) / remind_cap(yr, reg, 'hydro', '1'))*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Solar') = sum( h, phi_res('Solar', h) ) / card(h) * 1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','Wind_on') = sum( h, phi_res('Wind_on', h) ) / card(h) * 1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','elh2') = remind_CF(yr,reg,'elh2')*1e2;
-        
+        report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Solar') = remind_realVRECF(yr,reg,"spv");
+        report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_on') = remind_realVRECF(yr,reg,"wind");
 
 ***     ^^^ reporting on remind stuff
  
@@ -282,8 +280,8 @@ $offtext
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)','coal') = p32_reportmk_4RM(yr,reg,'coal','value_factor') * 1e2;
 
 
-        report_tech('DIETER',yr,reg,'Total Generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
-        report_tech('DIETER',yr,reg,'Total Generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
+        report_tech('DIETER',yr,reg,'Total generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
+        report_tech('DIETER',yr,reg,'Total generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total Renewable Curtailment (TWh)',res) = sum( h , CU.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) )   /1e6 ;
         report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) )   /1e6;

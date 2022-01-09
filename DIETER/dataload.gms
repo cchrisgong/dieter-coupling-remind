@@ -50,6 +50,10 @@ $ENDIF.FC
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
 remind_prodSe(yr, reg, pe_remind, se_remind, te_remind)
+v32_storloss(yr, reg, te_remind)
+remind_curt(yr, reg, te_remind)
+remind_realVRECF(yr, reg, te_remind)
+p32_realCapfacVRE(yr, reg, te_remind)
 *------------------------------------
 * REMIND usable energy generated from VRE (excluding curtailment)
 vm_usableSeTe(yr, reg, se_remind, te_remind)
@@ -129,6 +133,8 @@ $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter
 $load  remind_r = p32_r4DT
+$load  remind_curt = v32_storloss
+$load  remind_realVRECF = p32_realCapfacVRE
 $load  remind_totseelDem = p32_usableSeDisp
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch

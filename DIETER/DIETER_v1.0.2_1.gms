@@ -213,8 +213,9 @@ Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for ren
 Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable
 Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
+Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G
-
+Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE
 
 *==========
 
@@ -370,7 +371,11 @@ RM_postInv_prodSe_con(yr,reg,"nuc") = sum(te_remind, remind_prodSe(yr,reg, "peur
 RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Solar") = remind_prodSe_Resxcurt(yr, reg, "seel", "spv")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, "seel", "wind")* sm_TWa_2_MWh ;
+RM_postInv_prodSe_res(yr,reg,"Solar") = remind_prodSe(yr, reg, "pesol", "seel", "spv")* sm_TWa_2_MWh;
+RM_postInv_prodSe_res(yr,reg,"Wind_on") = remind_prodSe(yr, reg, "pewin", "seel", "wind")* sm_TWa_2_MWh;
 RM_postInv_demSe(yr,reg,"elh2") = totFlexLoad;
+RM_curt_rep(yr,reg,"Solar") = remind_curt(yr,reg,"spv")* sm_TWa_2_MWh ;
+RM_curt_rep(yr,reg,"Wind_on") = remind_curt(yr,reg,"wind")* sm_TWa_2_MWh ;
 **********************************************************************
 
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
@@ -390,12 +395,6 @@ $IFTHEN.CBu %cap_bound_up% == "hardUpVRE1"
 P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 $ENDIF.CBu
 
-$IFTHEN.CBu %cap_bound_up% == "fixVRE"
-P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
-P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
-N_CON.up("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (remind_HydroCapFac * 8760) *1.2;
-N_CON.up("nuc") = RM_postInv_cap_con("2020", "DEU", "nuc") * 1.2;
-$ENDIF.CBu
 
 $IFTHEN.CB %cap_bound% == "hardLo"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
@@ -449,6 +448,14 @@ N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
 $ENDIF.CB
+
+
+$IFTHEN.CBu %cap_bound_up% == "fixVRE"
+P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
+P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
+N_CON.up("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (remind_HydroCapFac * 8760) *1.2;
+N_CON.up("nuc") = RM_postInv_cap_con("2020", "DEU", "nuc") * 1.2;
+$ENDIF.CBu
 
 
 $IFTHEN.CB %cap_bound% == "softLo1"
