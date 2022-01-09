@@ -1,0 +1,22 @@
+--- Job DIETER_v1.0.2_1.gms Start 01/09/22 13:30:07 31.2.0 r8ba6aed LEX-LEG x86 64bit/Linux
+--- Applying:
+    /opt/gams/gams31.2_linux_x64_64_sfx/gmsprmun.txt
+--- GAMS Parameters defined
+    Input /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    PageSize 0
+    ScrDir /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/225a/
+    SysDir /opt/gams/gams31.2_linux_x64_64_sfx/
+    LogOption 3
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+GAMS 31.2.0   Copyright (C) 1987-2020 GAMS Development. All rights reserved
+Licensee: Large MUD - 20 User License                    S191218/0001AN-GEN
+          Potsdam-Institut f. Klimafolgenforschung e.V.,             DC8746
+          /opt/gams/gams31.2_linux_x64_64_sfx/gamslice.txt
+--- Starting compilation
+--- DIETER_v1.0.2_1.gms(176) 4 Mb
+--- . dataload.gms(122) 4 Mb
+--- GDXin=/home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/RMdata_4DT.gdx
+--- . dataload.gms(179) 4 Mb

@@ -1,0 +1,10 @@
+Input=/home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+PageSize=0
+ScrDir=225a
+SysDir=/opt/gams/gams31.2_linux_x64_64_sfx
+ScriptNext=225a/gamsnext.sh
+LogOption=3
+ErrMsg=1
+ErrorLog=99
+IDE=1
+LstTitleLeftAligned=1

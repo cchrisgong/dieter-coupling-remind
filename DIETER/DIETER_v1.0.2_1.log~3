@@ -1,0 +1,132 @@
+--- Job DIETER_v1.0.2_1.gms Start 01/09/22 13:25:46 31.2.0 r8ba6aed LEX-LEG x86 64bit/Linux
+--- Applying:
+    /opt/gams/gams31.2_linux_x64_64_sfx/gmsprmun.txt
+--- GAMS Parameters defined
+    Input /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    PageSize 0
+    ScrDir /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/225a/
+    SysDir /opt/gams/gams31.2_linux_x64_64_sfx/
+    LogOption 3
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+GAMS 31.2.0   Copyright (C) 1987-2020 GAMS Development. All rights reserved
+Licensee: Large MUD - 20 User License                    S191218/0001AN-GEN
+          Potsdam-Institut f. Klimafolgenforschung e.V.,             DC8746
+          /opt/gams/gams31.2_linux_x64_64_sfx/gamslice.txt
+--- Starting compilation
+--- DIETER_v1.0.2_1.gms(176) 4 Mb
+--- . dataload.gms(122) 4 Mb
+--- GDXin=/home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/RMdata_4DT.gdx
+--- . dataload.gms(179) 4 Mb
+--- .. FittedFuelPrice.csv(64) 4 Mb
+--- . dataload.gms(314) 4 Mb
+--- .. Load_DEU_2019.csv(8760) 4 Mb
+--- . dataload.gms(322) 4 Mb
+--- .. Conventionals.csv(104) 4 Mb
+--- . dataload.gms(329) 4 Mb
+--- .. P2G.csv(2) 4 Mb
+--- . dataload.gms(337) 4 Mb
+--- .. Renewables.csv(21) 4 Mb
+--- . dataload.gms(352) 4 Mb
+--- .. VRE_potential_DEU_2019.csv(8761) 5 Mb
+--- . dataload.gms(402) 5 Mb
+--- .. Storage_new.csv(44) 5 Mb
+--- . dataload.gms(475) 5 Mb 1 Error
+*** Error 140 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/dataload.gms
+    Unknown symbol
+--- . dataload.gms(481) 5 Mb 2 Errors
+*** Error 409 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/dataload.gms
+    Unrecognizable item - skip to find a new statement
+      looking for a ';' or a key word to get started again
+--- . dataload.gms(483) 5 Mb 3 Errors
+*** Error 409 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/dataload.gms
+    Unrecognizable item - skip to find a new statement
+      looking for a ';' or a key word to get started again
+--- . dataload.gms(509) 5 Mb
+--- DIETER_v1.0.2_1.gms(1566) 5 Mb 4 Errors
+*** Error 257 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Solve statement not checked because of previous errors
+--- DIETER_v1.0.2_1.gms(1581) 5 Mb 5 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- DIETER_v1.0.2_1.gms(1586) 5 Mb 6 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- DIETER_v1.0.2_1.gms(1592) 5 Mb 7 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- DIETER_v1.0.2_1.gms(1600) 5 Mb 8 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- DIETER_v1.0.2_1.gms(1654) 5 Mb 9 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/DIETER_v1.0.2_1.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- DIETER_v1.0.2_1.gms(1765) 5 Mb
+--- . reporting.gms(8) 5 Mb 10 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(9) 5 Mb 11 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(10) 5 Mb 12 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(35) 5 Mb 13 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(153) 5 Mb 14 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(154) 5 Mb 15 Errors
+*** Error 141 in /home/chengong/DIETER/storage_branch/dieter-coupling-remind/DIETER/reporting.gms
+    Symbol declared but no values have been assigned. Check for missing
+       data definition, assignment, data loading or implicit assignment
+       via a solve statement.
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- . reporting.gms(289) 5 Mb
+--- DIETER_v1.0.2_1.gms(1781) 5 Mb 15 Errors
+*** Status: Compilation error(s)
+--- Job DIETER_v1.0.2_1.gms Stop 01/09/22 13:25:46 elapsed 0:00:00.148

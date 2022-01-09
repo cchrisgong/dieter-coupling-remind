@@ -211,7 +211,6 @@ Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generat
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G
 
 
-$include dataload.gms
 *==========
 
 Variables
@@ -869,7 +868,10 @@ disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
-              
+c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;     
 *======= read in investment cost from remind ========
 *overnight investment cost
 *# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
