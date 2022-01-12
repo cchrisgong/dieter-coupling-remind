@@ -141,7 +141,7 @@ pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, omv, lifetime/
-char_remind_dataren "remind character for renewable" /nur/
+char_remind_dataren "remind character for renewable" /nur,maxprod/
 grade 	    remind grade level for technology	      /1*12/
 reg         region set                               /DEU/
 
@@ -222,6 +222,7 @@ Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation fo
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
 Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
 Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
+
 *==========
 
 Variables
@@ -307,12 +308,23 @@ remind_VRECapFac(res)   "VRE capacity factors from REMIND"
 remind_HydroCapFac      "Hydro capacity factor from REMIND"
 dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
 share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
+dieter_newInvFactor(res) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND"
+remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
+remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
+remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
 ;
 
+remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade) / remind_cap("2020", "DEU",te_remind, "1"));
 *AO* Calculate REMIND VRE CFs from grades
-remind_VRECapFac("wind_on") = remind_CF("2020","DEU","wind") * sum(grade, remind_pm_dataren("DEU", "nur", grade, "wind") * remind_vm_CapDistr("2020", "DEU", "wind", grade) / remind_cap("2020", "DEU", "wind", "1"));
-remind_VRECapFac("Solar") = remind_CF("2020","DEU","spv") * sum(grade, remind_pm_dataren("DEU", "nur", grade, "spv") * remind_vm_CapDistr("2020", "DEU", "spv", grade) / remind_cap("2020", "DEU", "spv", "1"));
-remind_HydroCapFac = sum(grade, remind_pm_dataren("DEU", "nur", grade, "hydro") * remind_vm_CapDistr("2020", "DEU", "hydro", grade) / remind_cap("2020", "DEU", "hydro", "1"));
+remind_VRECapFac("Wind_on") = remind_CF("2020","DEU","wind") * remind_average_grade_LF("wind");
+remind_VRECapFac("Solar") = remind_CF("2020","DEU","spv") * remind_average_grade_LF("spv");
+remind_HydroCapFac = remind_average_grade_LF("hydro");
+
+*CG*: for VRE, calculate an investment CAPEX factor for added cap in DIETER which is 1/(capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
+remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
+remind_highest_empty_grade_LF(te_remind) = SMax(grade$(remind_vm_CapDistr("2020", "DEU", te_remind, grade) le 0.9 * remind_gradeMaxCap(grade,te_remind)), remind_pm_dataren("DEU", "nur", grade, te_remind));
+dieter_newInvFactor("Wind_on") = remind_average_grade_LF("wind") / remind_highest_empty_grade_LF("wind");
+dieter_newInvFactor("Solar") = remind_average_grade_LF("spv") / remind_highest_empty_grade_LF("spv");
 
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
@@ -915,8 +927,8 @@ c_i_ovnt("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)
             = sum(BIOte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 * 1.2;              
 c_i_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_CapCost("2020", "DEU", "tnrs") * 1e6 * 1.2;
-c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") * 1e6 * 1.2 ;
-c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * 1e6 * 1.2;
+c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") /dieter_newInvFactor("Solar")* 1e6 * 1.2 ;
+c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") /dieter_newInvFactor("Wind_on")* 1e6 * 1.2;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_i_ovnt_p2g("elh2") = remind_CapCost("2020", "DEU", "elh2") * 1e6 * 1.2 * remind_eta2("2020","DEU","elh2");
@@ -973,7 +985,7 @@ c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 
 *================================================================
 *=======read in fixed OM cost from REMIND ========
-*note that omf is the proportion from overnight investment cost, NOT annuitized
+*note that omf is the proportion from overnight investment cost, NOT annuitized!!!
 ** split pecoal into lignite and hc for rough comparison (not finalized)annuitized
 ** no need to harmonize many to one mapping, since omf are the same for tech in the same category
 cdata("c_fix_con","lig") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("lig");
