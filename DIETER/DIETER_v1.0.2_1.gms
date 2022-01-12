@@ -103,6 +103,10 @@ $setglobal coal_split off
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
+*whether adjustment cost is included in capital cost
+*$setglobal adj_cost on
+$setglobal adj_cost off
+
 *consider early retirement for capex or not
 *$setglobal capex_er on
 *$setglobal capex_er off
@@ -131,7 +135,7 @@ BIOte
 NUCte
 
 te_remind
-* remind technology					       /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
@@ -184,6 +188,7 @@ $include dataload.gms
 *** H2 switch for DIETER standalone
 *remind_h2switch = 0;
 *remind_h2switch = 1;
+*** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
 
 Alias (h,hh) ;
@@ -207,16 +212,16 @@ Parameter disc_fac_grid(grid) Discount factor for overnight investment;
 Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
 Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
 Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
-Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional
-Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable
-Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable
-Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable
-Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional
-Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment
-Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment
-Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G
-Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE
-
+Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional;
+Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional;
+Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment;
+Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment;
+Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
+Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
+Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
 *==========
 
 Variables
@@ -273,17 +278,13 @@ DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
 
 totLoad = remind_totseelDem("2020", "DEU", "seel") * sm_TWa_2_MWh;
 
-*$IFTHEN %elh2_coup% == "off"
 if ((remind_h2switch eq 0),
 totFlexLoad = 0;
 );
-*$ENDIF
 
-*$IFTHEN %elh2_coup% == "on"
 if ((remind_h2switch eq 1),
 totFlexLoad = remind_totseh2Dem("2020", "DEU", "seh2") * sm_TWa_2_MWh;
 );
-*$ENDIF
 
 totFixedLoad = totLoad - totFlexLoad;
 d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
@@ -438,11 +439,9 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
-*$IFTHEN.H2 %elh2_coup% == "on"
 if ((remind_h2switch eq 1),
 N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 );
-*$ENDIF.H2
 
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
@@ -879,10 +878,16 @@ c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
-                
+
+*======= add adjustment cost from REMIND for medium and long term periods ========
+*only couple adjustment cost for >=2030 due to earlier years volatility
+$IFTHEN.AC %adj_cost% == "on"
+remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind)$(yr.val ge 2030);
+$ENDIF.AC
+
 *======= read in investment cost from remind ========
 *overnight investment cost
-*# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
+*# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** split pecoal into lignite and hc for rough comparison (not finalized):  set lignite as REMIND-pc cost + 300€/kW
 ** weighted average of many techs in REMIND
 c_i_ovnt("lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
@@ -922,6 +927,50 @@ c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
 c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
 c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
+
+*======= adjustment cost from remind (for disaggregated reportin)========
+*""overnight" adjustment cost
+*# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
+** split pecoal into lignite and hc for rough comparison (not finalized):  set lignite as REMIND-pc cost + 300€/kW
+** weighted average of many techs in REMIND
+c_adj_ovnt("lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
+            = sum(COALte(te_remind), remind_adjcost("2020", "DEU", te_remind) * remind_prodSe("2020", "DEU", "pecoal", "seel", te_remind))
+              / sum(COALte(te_remind), remind_prodSe("2020", "DEU", "pecoal", "seel", te_remind)) * 1e6 * 1.2;
+c_adj_ovnt("CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") ne 0)
+            = sum(NonPeakGASte(te_remind), remind_adjcost("2020", "DEU", te_remind) * remind_prodSe("2020", "DEU", "pegas", "seel",te_remind))
+              / sum(NonPeakGASte(te_remind), remind_prodSe("2020", "DEU", "pegas", "seel",te_remind)) * 1e6 * 1.2;
+c_adj_ovnt("OCGT_eff") = remind_adjcost("2020", "DEU", "ngt") * 1e6 * 1.2;
+c_adj_ovnt("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") ne 0)
+            = sum(BIOte(te_remind), remind_adjcost("2020", "DEU", te_remind) * remind_prodSe("2020", "DEU", "pebiolc", "seel", te_remind))
+              / sum(BIOte(te_remind), remind_prodSe("2020", "DEU", "pebiolc", "seel", te_remind)) * 1e6 * 1.2;
+*regardless of generation, overnight cost for hydro is the same, no downscaling              
+c_adj_ovnt("ror") = remind_adjcost("2020", "DEU", "hydro") * 1e6 * 1.2;
+c_adj_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") ne 0)
+            = sum(NUCte(te_remind), remind_adjcost("2020", "DEU", te_remind) * remind_prodSe("2020", "DEU", "peur", "seel", te_remind))
+              / sum(NUCte(te_remind), remind_prodSe("2020", "DEU", "peur", "seel", te_remind)) * 1e6 * 1.2;
+ 
+*in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
+c_adj_ovnt("lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(COALte) * 1e6 * 1.2;
+c_adj_ovnt("hc") = c_adj_ovnt("lig") + 300000;
+c_adj_ovnt("CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0)
+            = sum(NonPeakGASte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 * 1.2;
+c_adj_ovnt("bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)
+            = sum(BIOte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(BIOte) * 1e6 * 1.2;              
+c_adj_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)
+            = remind_adjcost("2020", "DEU", "tnrs") * 1e6 * 1.2;
+c_adj_ovnt_res("Solar") = remind_adjcost("2020", "DEU", "spv") * 1e6 * 1.2 ;
+c_adj_ovnt_res("Wind_on") = remind_adjcost("2020", "DEU", "wind") * 1e6 * 1.2;
+
+* since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
+c_adj_ovnt_p2g("elh2") = remind_adjcost("2020", "DEU", "elh2") * 1e6 * 1.2 * remind_eta2("2020","DEU","elh2");
+c_adj_ovnt_grid("vregrid") = remind_adjcost("2020", "DEU", "gridwind") * 1e6 * 1.2;
+
+*annuitized adjustment cost
+c_adj(ct) = c_adj_ovnt(ct) * disc_fac_con(ct);
+c_adj_res(res) = c_adj_ovnt_res(res) * disc_fac_res(res);
+c_adj_p2g(p2g) = c_adj_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
+c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
+
 *================================================================
 *=======read in fixed OM cost from REMIND ========
 *note that omf is the proportion from overnight investment cost, NOT annuitized

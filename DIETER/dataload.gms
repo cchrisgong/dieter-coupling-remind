@@ -78,6 +78,10 @@ pm_dataeta(yr,reg,te_remind)
 pm_eta_conv(yr,reg,te_remind)
 remind_eta1(yr,reg,te_remind)
 remind_eta2(yr,reg,te_remind)
+*------------------------------------
+*adjustment cost
+remind_adjcost(yr, reg, te_remind)
+o_margAdjCostInv(yr, reg, te_remind)
 *-------------------------------------
 *for the purpose of comparing the decision remind and dieter make, use instead the cap. before remind's investment at the beginning of the year, not the end
 remind_pm_ts(yr)
@@ -138,7 +142,7 @@ $load  remind_realVRECF = p32_realCapfacVRE
 $load  remind_totseelDem = p32_usableSeDisp
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch
-*$load  remind_CHPswitch = s32_CHPswitch
+$load  remind_adjcost = o_margAdjCostInv
 *$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_flatco2 = f21_taxCO2eqHist
 $load  remind_OMcost = pm_data
@@ -232,7 +236,11 @@ c_i_ovnt_res(res)        Investment costs: Overnight
 c_i_ovnt_p2g(p2g)        Investment costs: Overnight
 c_i_ovnt_grid(grid)      Investment costs: Overnight
 
-
+*--- Adjustment cost from REMIND---*
+c_adj_ovnt(ct)             Investment costs: Overnight
+c_adj_ovnt_res(res)        Investment costs: Overnight
+c_adj_ovnt_p2g(p2g)        Investment costs: Overnight
+c_adj_ovnt_grid(grid)      Investment costs: Overnight
 *====== Time Data ======
 
 *d_y(year,h)              Demand hour h for cost minimization for different years
@@ -469,6 +477,11 @@ c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
 c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
 c_i_grid(grid)     Annualized investment costs for grid per MW
+
+c_adj(ct)          Annualized adjustment costs by conventioanl plant per MW
+c_adj_res(res)     Annualized adjustment costs by renewable plant per MW
+c_adj_p2g(p2g)     Annualized adjustment costs by P2G plant per MW
+c_adj_grid(grid)     Annualized adjustment costs for grid per MW
 
 c_i_sto_e(sto)   Annualized investment costs storage energy per MWh
 c_i_sto_p(sto)   Annualized investment costs storage capacity per MW
