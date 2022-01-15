@@ -76,6 +76,9 @@ $setglobal fuel_cost_suppc no_suppcurve
 $setglobal price_shave on
 *$setglobal price_shave off
 
+$setglobal wind_shave on
+*$setglobal wind_shave off
+
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
 * hardLo = hard lower bound for all tech
@@ -105,6 +108,7 @@ $setglobal ramping_cost off
 
 *whether adjustment cost is included in capital cost
 *$setglobal adj_cost on
+*$setglobal adj_cost on_select
 $setglobal adj_cost off
 
 *consider early retirement for capex or not
@@ -135,14 +139,14 @@ BIOte
 NUCte
 
 te_remind
-* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+* remind technology					                 /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
-pe_remind   remind primary energy                    /pegas, pecoal,pewin,pesol,pebiolc,peur,pehyd/
+pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, omv, lifetime/
 char_remind_dataren "remind character for renewable" /nur,maxprod/
-grade 	    remind grade level for technology	      /1*12/
+grade 	    remind grade level for technology	     /1*12/
 reg         region set                               /DEU/
 
 *============== DIETER sets ==================
@@ -320,7 +324,9 @@ remind_VRECapFac("Wind_on") = remind_CF("2020","DEU","wind") * remind_average_gr
 remind_VRECapFac("Solar") = remind_CF("2020","DEU","spv") * remind_average_grade_LF("spv");
 remind_HydroCapFac = remind_average_grade_LF("hydro");
 
-*CG*: for VRE, calculate an investment CAPEX factor for added cap in DIETER which is 1/(capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
+*CG*: for VRE, calculate an investment CAPEX factor for added cap in DIETER which is
+* dieter_newInvFactor = (average capfac over all remind grades) /
+* (capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
 remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
 remind_highest_empty_grade_LF("wind") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind"));
 remind_highest_empty_grade_LF("spv") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv"));
@@ -452,9 +458,9 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
-if ((remind_h2switch eq 1),
-N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
-);
+*if ((remind_h2switch eq 1),
+*N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
+*);
 
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
@@ -896,6 +902,10 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
 *only couple adjustment cost for >=2030 due to earlier years volatility
 $IFTHEN.AC %adj_cost% == "on"
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
+$ENDIF.AC
+
+$IFTHEN.AC %adj_cost% == "on_select"
+remind_CapCost(yr,reg,te_remind)$(sameas(te_remind,"spv") AND sameas(te_remind,"wind")) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC
 
 *======= read in investment cost from remind ========
@@ -1746,6 +1756,13 @@ $ENDIF.PriceShave
 *** calculate market value (only in hours where there is no scarcity price)
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
+
+***CG: this allows wind market value to include scarcity price
+$IFTHEN.WindShave %wind_shave% == "off" 
+report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',"Wind_on")$(sum(h, G_RES.l("Wind_on",h)) ne 0 ) = sum( h, G_RES.l("Wind_on",h)*(- con1a_bal.m(h)))/sum( h , G_RES.l("Wind_on",h) );
+$ENDIF.WindShave
+
+
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*hourly_price(h)) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 
