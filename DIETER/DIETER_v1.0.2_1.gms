@@ -108,8 +108,8 @@ $setglobal ramping_cost off
 
 *whether adjustment cost is included in capital cost
 *$setglobal adj_cost on
-*$setglobal adj_cost on_select
-$setglobal adj_cost off
+$setglobal adj_cost on_select
+*$setglobal adj_cost off
 
 *consider early retirement for capex or not
 *$setglobal capex_er on
@@ -194,6 +194,9 @@ $include dataload.gms
 *remind_h2switch = 1;
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
+Sets
+adjte_remind(te_remind)                              /wind, spv, gridwind/
+
 
 Alias (h,hh) ;
 alias (res,resres) ;
@@ -905,7 +908,7 @@ remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adj
 $ENDIF.AC
 
 $IFTHEN.AC %adj_cost% == "on_select"
-remind_CapCost(yr,reg,te_remind)$(sameas(te_remind,"spv") AND sameas(te_remind,"wind")) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
+remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC
 
 *======= read in investment cost from remind ========

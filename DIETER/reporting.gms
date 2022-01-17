@@ -191,11 +191,12 @@ $offtext
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',p2g) = c_i_p2g(p2g) / 1e3;
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',grid) = c_i_grid(grid) / 1e3;
 * for VRE investment cost here is divided by theoretical capfac (pre-curtailment)
-$IFTHEN.AC %adj_cost% == "on"
+$IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)$(yr.val ge 2030)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = (c_i_res(res)-c_adj_res(res)$(yr.val ge 2030)) / (card(h) * remind_VRECapFac(res));
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)$(yr.val ge 2030)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
-     
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',grid) = c_i_grid(grid) * N_GRID.L(grid) / totLoad;
+        
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = (c_i_res(res)-c_adj_res(res)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
@@ -203,10 +204,10 @@ $IFTHEN.AC %adj_cost% == "on"
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res)$(yr.val ge 2030) / (card(h) * remind_VRECapFac(res));
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
-        report_tech('DIETER',yr,reg,'annualized adjustment cost ($/KW)',grid) = c_adj_grid(grid)$(yr.val ge 2030) / 1e3;
-$ENDIF.AC
+        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * N_GRID.L(grid) / totLoad;
+$ENDIF.ACon
 
-$IFTHEN.AC %adj_cost% == "off"
+$IFTHEN.ACoff %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_i_res(res) / (card(h) * remind_VRECapFac(res));
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
@@ -215,18 +216,19 @@ $IFTHEN.AC %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = c_i_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
  
-$ENDIF.AC
+$ENDIF.ACoff
        
 *       Grid cost
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) / totLoad;
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) + c_adj_grid(grid) ) * N_GRID.L(grid) / totLoad;
+        
 *       Grid cost for each VRE type
         VRE_grid_ratio(yr,reg,"Solar") = report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")/
             (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));
         VRE_grid_ratio(yr,reg,"Wind_on") = 1.5* report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")/
             (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));            
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Solar");
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Wind_on");
         
 *       OM cost
