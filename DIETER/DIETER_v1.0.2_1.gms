@@ -151,7 +151,7 @@ reg         region set                               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-all_te        all dieter techs                   /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2/
+all_te        all dieter techs                   /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 te        all dieter techs                      
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
@@ -196,7 +196,7 @@ $include dataload.gms
 ****************************************
 Sets
 adjte_remind(te_remind)                              /wind, spv, gridwind/
-
+adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid/
 
 Alias (h,hh) ;
 alias (res,resres) ;
@@ -461,6 +461,7 @@ N_CON.lo("bio") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(BIOte(te_remind))   )
                     ) * 1e6;
 
+**CG: somehow the coupling doesn't like this bound
 *if ((remind_h2switch eq 1),
 *N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
 *);

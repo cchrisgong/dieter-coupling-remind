@@ -191,6 +191,8 @@ $offtext
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',p2g) = c_i_p2g(p2g) / 1e3;
         report_tech('DIETER',yr,reg,'annualized investment cost ($/kW)',grid) = c_i_grid(grid) / 1e3;
 * for VRE investment cost here is divided by theoretical capfac (pre-curtailment)
+
+* report IC in DIETER and adjustment costs in both models
 $IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)$(yr.val ge 2030)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = (c_i_res(res)-c_adj_res(res)$(yr.val ge 2030)) / (card(h) * remind_VRECapFac(res));
@@ -201,10 +203,22 @@ $IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = (c_i_res(res)-c_adj_res(res)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
  
+
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res)$(yr.val ge 2030) / (card(h) * remind_VRECapFac(res));
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * N_GRID.L(grid) / totLoad;
+        
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res)$(yr.val ge 2030) / (card(h) * remind_VRECapFac(res));
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * N_GRID.L(grid) / totLoad;
+
+*only report those adjustment costs that are coupled
+$IFTHEN.ACon2 %adj_cost% == "on_select"
+        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',all_te)$(not adjte_dieter(all_te)) = 0;
+$ENDIF.ACon2
+
 $ENDIF.ACon
 
 $IFTHEN.ACoff %adj_cost% == "off"
@@ -286,6 +300,11 @@ $ENDIF.ACoff
             = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)*(-con1a_bal.m(h))) / sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h));
         report_tech('DIETER',yr,reg,'DIETER Marginal market value ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)) ne 0 )
             = sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)*(-con1a_bal.m(h)) )/ sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h));
+
+*       shadow price of capacity bound from REMIND, calculated using average capacity factor
+        report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = N_CON.m(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = P_RES.m(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
+        report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad;
 
 *       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
         p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
