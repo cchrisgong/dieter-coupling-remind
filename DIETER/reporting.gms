@@ -305,6 +305,7 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = N_CON.m(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = P_RES.m(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad;
+        report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)') = sum(all_te, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',all_te)* report_tech('DIETER',yr,reg,'genshares (%)',all_te)/1e2);
 
 *       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
         p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =

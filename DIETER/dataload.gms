@@ -105,7 +105,7 @@ p32_grid_factor(reg)
 remind_gridfac(reg)
 *-------------------------------------
 * passing REMIND CO2 price to DIETER, CO2 price in $ per tCO2 
-remind_flatco2(yr,reg)
+remind_co2(yr,reg)
 f21_taxCO2eqHist(yr,reg)
 *-------------------------------------
 sm_TWa_2_MWh Conversion factor between TWa and MWh /8760000000/
@@ -144,7 +144,7 @@ $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch
 $load  remind_adjcost = o_margAdjCostInv
 *$load  remind_fuelprice = p32_fuelprice_avgiter
-$load  remind_flatco2 = f21_taxCO2eqHist
+$load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
