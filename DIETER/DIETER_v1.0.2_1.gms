@@ -335,6 +335,8 @@ remind_highest_empty_grade_LF("wind") = SMax(grade$(remind_vm_CapDistr("2020", "
 remind_highest_empty_grade_LF("spv") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv"));
 remind_highest_empty_grade_LF("hydro") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.9 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro"));
 dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
+**CG: sometimes hydro grades are both full, in which case set factor to 1
+dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
@@ -858,7 +860,7 @@ cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0) = rem
 p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
 ***** END of variable O&M from REMIND *****
-
+** note: for hydro/ror c_m_reg is 0
 $IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
 c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg) * 1.2 + cdata("c_var_con",ct) ;
