@@ -163,7 +163,7 @@ $offtext
 
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
-        report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)','elh2')$(totFlexLoad ne 0 ) = sum( h , C_P2G.l("elh2",h)) / ( N_P2G.l("elh2") * card(h)) * 1e2;
+        report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)$(totFlexLoad ne 0 ) = sum( h , C_P2G.l(p2g,h)) / ( N_P2G.l(p2g) * card(h)) * 1e2;
 
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)$(N_CON.l(ct) ne 0)
           = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
@@ -194,9 +194,9 @@ $offtext
 
 * report IC in DIETER and adjustment costs in both models
 $IFTHEN.ACon not %adj_cost% == "off"
-        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)$(yr.val ge 2030)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
-        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = (c_i_res(res)-c_adj_res(res)$(yr.val ge 2030)) / (card(h) * remind_VRECapFac(res));
-        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)$(yr.val ge 2030)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = (c_i_res(res)-c_adj_res(res)) / (card(h) * remind_VRECapFac(res));
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',grid) = c_i_grid(grid) * N_GRID.L(grid) / totLoad;
         
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)/1e2);
@@ -204,14 +204,14 @@ $IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = (c_i_p2g(p2g)-c_adj_p2g(p2g)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;
  
 
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res)$(yr.val ge 2030) / (card(h) * remind_VRECapFac(res));
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res) / (card(h) * remind_VRECapFac(res));
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
         report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * N_GRID.L(grid) / totLoad;
         
-        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
-        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res)$(yr.val ge 2030) / (card(h) * remind_VRECapFac(res));
-        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g)$(yr.val ge 2030) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
+        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
+        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_adj_res(res) / (card(h) * remind_VRECapFac(res));
+        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * N_GRID.L(grid) / totLoad;
 
 *only report those adjustment costs that are coupled
@@ -225,7 +225,8 @@ $IFTHEN.ACoff %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(remind_VRECapFac(res) ne 0) = c_i_res(res) / (card(h) * remind_VRECapFac(res));
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) ;   
-     
+        report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',grid) = c_i_grid(grid) * N_GRID.L(grid) / totLoad;
+        
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res) ne 0) = c_i_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)/1e2);
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',p2g)/1e2) ;

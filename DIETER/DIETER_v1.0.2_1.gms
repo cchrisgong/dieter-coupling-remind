@@ -194,9 +194,13 @@ $include dataload.gms
 *remind_h2switch = 1;
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
+
 Sets
-adjte_remind(te_remind)                              /wind, spv, gridwind/
-adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid/
+*adjte_remind(te_remind)                              /wind, spv, gridwind,hydro, ngcc, ngccc, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco/
+*adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid, ror, CCGT, bio, lig, hc/
+*
+adjte_remind(te_remind)                              /wind, spv, gridwind, ngcc, ngccc/
+adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid,CCGT/
 
 Alias (h,hh) ;
 alias (res,resres) ;
