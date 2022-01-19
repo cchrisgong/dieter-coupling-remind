@@ -875,7 +875,7 @@ cdata("c_var_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0) = sum
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_OMcost("DEU","omv","tnrs")*1.2*1e12/sm_TWa_2_MWh;
 
-** there is no var OM cost for VRE in REMIND
+** there is no var OM cost for VRE or VREgrid in REMIND
 *rdata("c_var_res","Solar") = remind_OMcost("DEU","omv","spv") * 1.2 * 1e12 / sm_TWa_2_MWh;
 *rdata("c_var_res","Wind_on") = remind_OMcost("DEU","omv","wind") * 1.2 * 1e12 / sm_TWa_2_MWh;
 
