@@ -118,6 +118,9 @@ $setglobal adj_cost on_select
 *choose to print solution for debug purpose
 $setglobal debug off
 
+*choose to have DIETER follow REMIND in nuclear phase-out
+$setglobal nucphaseout on
+
 * to reduce the size of lst file
 option limcol    = 0;
 option limrow    = 0;
@@ -148,6 +151,7 @@ char_remind remind character                         /omf, omv, lifetime/
 char_remind_dataren "remind character for renewable" /nur,maxprod/
 grade 	    remind grade level for technology	     /1*12/
 reg         region set                               /DEU/
+reg_nuc     region with nuclear phase-out            /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
@@ -323,6 +327,7 @@ dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIET
 remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
 remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
 remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
+remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
 ;
 
 remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade) / remind_cap("2020", "DEU",te_remind, "1"));
@@ -335,9 +340,11 @@ remind_HydroCapFac = remind_average_grade_LF("hydro");
 * dieter_newInvFactor = (average capfac over all remind grades) /
 * (capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
 remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
-remind_highest_empty_grade_LF("wind") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind"));
-remind_highest_empty_grade_LF("spv") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv"));
-remind_highest_empty_grade_LF("hydro") = SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.9 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro"));
+remind_lowest_grade_LF(te_remind) = smin(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
+*** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
+remind_highest_empty_grade_LF("wind") = max(remind_lowest_grade_LF("wind"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind")));
+remind_highest_empty_grade_LF("spv") = max(remind_lowest_grade_LF("spv"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv")));
+remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.9 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
 dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
 **CG: sometimes hydro grades are both full, in which case set factor to 1
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
@@ -419,7 +426,18 @@ N_CON.fx("OCGT_ineff") = 0;
 preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade);
 
+**renewable upper bound is the total limit of potential grade capacity in REMIND:
+P_RES.up("Solar") = sum(grade, remind_gradeMaxCap(grade,"spv"))*1e6;
+P_RES.up("Wind_on") = sum(grade, remind_gradeMaxCap(grade,"wind"))*1e6;
+N_CON.up("ror") = sum(grade, remind_gradeMaxCap(grade,"hydro"))*1e6;
 
+** if nuclear phase out then no nuclear should be added in DIETER
+$IFTHEN %nucphaseout% == "on"
+loop(reg,
+    N_CON.up("nuc")$(reg_nuc(reg)) = RM_postInv_cap_con("2020", reg, "nuc"); 
+    );
+$ENDIF
+    
 $IFTHEN.CBu %cap_bound_up% == "hardUpVRE1"
 P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 $ENDIF.CBu

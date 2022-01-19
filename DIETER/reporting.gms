@@ -1,5 +1,6 @@
 ***!!!! reporting variable name should obey the format ''NAME (UNIT)'. ANYTHING IN THE PARENTHESIS WILL BE TREATED AS UNIT
-
+*******************************************************************************************************
+********************************* reporting for hourly data *******************************************
 *     generation MWh -> TWh
         report_tech_hours('DIETER',yr,reg,'generation (GWh)',ct,h) =  ( G_L.l(ct,h) + corr_fac_con(ct,h) )/1e3;
         report_tech_hours('DIETER',yr,reg,'generation (GWh)',res,h) = G_RES.l(res,h) /1e3;
@@ -20,6 +21,8 @@ $offtext
 
         report_hours('DIETER',yr,reg,'hourly wholesale price ($/MWh)',h) = -con1a_bal.m(h);
 
+*******************************************************************************************************
+********************************* reporting for annual system data ************************************
 *       Report files: cap. transformed into GW (divide by 1e3), generation transformed into TWh (divide by 1e6), costs to $/kW, share to *100%
 
 ***     generation MWh -> TWh
@@ -40,6 +43,10 @@ $offtext
 *       Define gross energy demand for reporting, egual to equation 5a      
         report('DIETER',yr,reg,'gross energy demand (TWh)') = totLoad /1e6;
 
+***********************************************************************************************************
+********************************* reporting for annual technology data ************************************
+
+*-------------------------------- reporting for generation and capacities ---------------------------------
         report_tech('DIETER',yr,reg,'Total generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',res) = sum( h , (G_RES.l(res,h)+CU.l(res,h))) /1e6 ;        
@@ -78,8 +85,9 @@ $offtext
 ***     generation from VRE excluding curtailment   
         report_tech('REMIND',yr,reg,'REMIND post-investment generation (TWh)',res) = RM_postInv_prodSe_res_xcurt(yr,reg,res) /1e6;
 
+*-------------------------------- reporting for costs, added capacities and capacity factor  --------------------------------------------
 
-*       ========== report cost ============REMIND============
+*                  ========== report cost ============ REMIND ============
 **coal
 *        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = c_i('lig')  *  RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
 *        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = cdata('c_fix_con','lig') * RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
@@ -107,6 +115,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',p2g)$(totFlexLoad ne 0) = ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * RM_postInv_cap_p2g(yr,reg,p2g) / RM_postInv_demSe(yr,reg,p2g) ;
 
+*                  ========== divestment and investment capacities ============ REMIND ============
 ***     TW -> GW
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','lig') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 /2 ;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','hc') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 /2 ;
@@ -131,7 +140,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Solar') = added_remind_cap(yr, reg, 'spv', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Wind_on') = added_remind_cap(yr, reg, 'wind', '1') * 1e3;
         
-
+*                  ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
@@ -144,6 +153,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Solar') = remind_realVRECF(yr,reg,"spv");
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_on') = remind_realVRECF(yr,reg,"wind");
 
+
 ***     ^^^ reporting on remind stuff
  
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
@@ -155,20 +165,22 @@ $offtext
         report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / totLoad  * 1e2;
         report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
         report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / totLoad  * 1e2;
-*        report_tech('DIETER',yr,reg,'curtailment of fluct res relative',res) =  sum(h,CU.l(res,h))/ (sum(h,G_RES.l(res,h) - corr_fac_res(res,h) ) + sum(h,CU.l(res,h)) )  * 1e2;
-        
-*       report_tech('DIETER',yr,reg,'load-weighted price for flex demand', flexTe) = -sum(h,con1a_bal.m(h)*C_P2G.l("elh2",h))/sum(h,C_P2G.l("elh2",h)) ;
-        
-*       ===================================
 
+*                  ========== capacity factors and revenues ============ DIETER ============
+** capacity factor of average plant in the system (real/post-curtailment capfac)
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)$(totFlexLoad ne 0 ) = sum( h , C_P2G.l(p2g,h)) / ( N_P2G.l(p2g) * card(h)) * 1e2;
 
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct)$(N_CON.l(ct) ne 0)
-          = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)$(P_RES.l(res) ne 0 )
-          = sum( h$(G_RES.l(res,h) = P_RES.l(res)) , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
+** capacity factor of marginal plant: i.e. only suitable for renewables; i.e. for the one additional plant added, it can only be added in the lower rang of still empty VRE potential grade, determined in REMIND
+
+** deprecated: don't think this way of calculating marginal plant is correct
+*        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',res)$(P_RES.l(res) ne 0 )
+*          = sum( h$(G_RES.l(res,h) = P_RES.l(res)) , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;        
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_on") = remind_highest_empty_grade_LF("wind")*1e2;
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Solar") = remind_highest_empty_grade_LF("spv")*1e2;
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"ror") = remind_highest_empty_grade_LF("hydro")*1e2;
 
         report_tech('DIETER',yr,reg,'DIETER Revenue (billionUSD)',ct) = sum( h, G_L.l(ct,h)*(-con1a_bal.m(h)))/1e9;
         report_tech('DIETER',yr,reg,'DIETER Revenue (billionUSD)',res) = sum( h, G_RES.l(res,h)*(-con1a_bal.m(h)))/1e9;
@@ -178,11 +190,8 @@ $offtext
           
         report_tech('DIETER',yr,reg,'DIETER Revenue marginal plant (millionUSD)',ct) = sum( h$(G_L.l(ct,h) = N_CON.l(ct) ),(-con1a_bal.m(h)) )/1e6;
         report_tech('DIETER',yr,reg,'DIETER Revenue marginal plant (millionUSD)',res) = sum( h$(G_RES.l(res,h) = P_RES.l(res) ), (-con1a_bal.m(h)) )/1e6;
-        
-*        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
-*        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
-
-*========== report cost ============DIETER============
+      
+*                  ========== report cost ============ DIETER ============
 *       efficiency -> %
         report_tech('DIETER',yr,reg,'fuel efficiency (%)', ct) = cdata('eta_con',ct) * 1e2;
 *       investment cost ($/MW -> $/kW)
@@ -275,9 +284,9 @@ $ENDIF.ACoff
 
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg);
-        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct)$(N_CON.l(ct) ne 0 )  = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);
+        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 )  = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct);
 *       CO2 cost
-        report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg);
+        report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg);
         
 
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = ( c_i(ct) + cdata('c_fix_con',ct) ) *  N_CON.l(ct) / sum( h , G_L.l(ct,h))
@@ -294,9 +303,7 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h)) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) * P_RES.l(res) / sum( h$(G_RES.l(res,h) = P_RES.l(res) ) , G_RES.l(res,h));
 
 
-*       report_tech('DIETER',yr,reg,'marginal generation',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h$(G_L.l(ct,h) = N_CON.l(ct)) , G_L.l(ct,h)) /1e6 ;
-*       report_tech('DIETER',yr,reg,'marginal generation',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)) /1e6 ;
-*        
+*                  ========== market values and prices ============ DIETER ============
         report_tech('DIETER',yr,reg,'DIETER Marginal market value ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)) ne 0 )
             = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)*(-con1a_bal.m(h))) / sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h));
         report_tech('DIETER',yr,reg,'DIETER Marginal market value ($/MWh)',res)$(sum( h$(G_RES.l(res,h) = P_RES.l(res) ), G_RES.l(res,h)) ne 0 )
