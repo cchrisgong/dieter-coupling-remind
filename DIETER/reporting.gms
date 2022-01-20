@@ -102,7 +102,7 @@ $offtext
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',p2g)$(totFlexLoad ne 0) = c_i_p2g(p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75) ;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',p2g)$(totFlexLoad ne 0) = p2gdata('c_fix_p2g',p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75)  ;
                                                   
-        report_tech('REMIND',yr,reg,'fuel cost - divided by eta ($/MWh)',ct_remind$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0)) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_remind_reporting(ct,reg)/cdata('eta_con',ct));
+        report_tech('REMIND',yr,reg,'fuel cost - divided by eta ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_remind_reporting(ct,reg)/cdata('eta_con',ct));
         report_tech('REMIND',yr,reg,'CO2 cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = sum(DT_RM(ct,ct_remind), cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg)) ;
          
         report_tech('REMIND',yr,reg,'primary energy price ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_remind_reporting(ct,reg));
