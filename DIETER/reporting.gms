@@ -273,16 +273,18 @@ $IFTHEN.ACoff %adj_cost% == "off"
 $ENDIF.ACoff
        
 *       Grid cost
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) + c_adj_grid(grid) ) * N_GRID.L(grid) / totLoad;
+        report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) + c_adj_grid(grid) ) * N_GRID.L(grid) / totLoad;
         
 *       Grid cost for each VRE type
         VRE_grid_ratio(yr,reg,"Solar") = report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")/
             (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));
         VRE_grid_ratio(yr,reg,"Wind_on") = 1.5* report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")/
             (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));            
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")*1e6)
+*** note: in remind2/R/reportLCOE.R, grid cost is divided by total usable energy not just renewable generation, because it was calculated as system LCOE for grid, here we calculate the tech LCOE for VRE, then
+**  later it can be multiplied with generation share and add up to system LCOE same as other tech LCOE components
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Solar")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Solar");
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")+ c_adj_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_on")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Wind_on");
         
 *       OM cost
