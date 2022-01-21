@@ -93,8 +93,6 @@ $setglobal cap_bound hardLo
 *$setglobal cap_bound fixed
 
 *softUp1 = upper bound is 1.2 times REMIND cap
-*hardUpVRE = wind upper bound is 1 x REMIND cap (essentially fixing wind to postInvcap)
-*$setglobal cap_bound_up hardUpVRE
 *$setglobal cap_bound_up fixVRE
 *$setglobal cap_bound_up softUp1
 
@@ -438,10 +436,6 @@ loop(reg,
     );
 $ENDIF
     
-$IFTHEN.CBu %cap_bound_up% == "hardUpVRE1"
-P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
-$ENDIF.CBu
-
 
 $IFTHEN.CB %cap_bound% == "hardLo"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
@@ -499,8 +493,6 @@ $ENDIF.CB
 $IFTHEN.CBu %cap_bound_up% == "fixVRE"
 P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
 P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
-N_CON.up("ror") = remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (remind_HydroCapFac * 8760) *1.2;
-N_CON.up("nuc") = RM_postInv_cap_con("2020", "DEU", "nuc") * 1.2;
 $ENDIF.CBu
 
 
@@ -1829,8 +1821,9 @@ report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal')$(sum( h, (G_L.
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*(-con1a_bal.m(h))) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 
-p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price_shaved;
+p32_reportmk_4RM(yr,reg,'all_te','elec_price_shaved') = annual_load_weighted_price_shaved;
 
+p32_reportmk_4RM(yr,reg,'all_te','elec_price_original') = annual_load_weighted_price;
 
 %P2G%$ontext
 ******************** green H2 absolute markup *****************************************
