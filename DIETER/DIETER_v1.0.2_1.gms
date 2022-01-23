@@ -73,8 +73,8 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal fuel_cost_suppc suppcurve
 *==========
 ****whether to shave off scarcity price
-*$setglobal price_shave on
-$setglobal price_shave off
+$setglobal price_shave on
+*$setglobal price_shave off
 
 $setglobal wind_shave on
 *$setglobal wind_shave off
