@@ -118,6 +118,12 @@ sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
 *iteration from REMIND
 remind_iter
 sm32_tmp
+*iteration switches for dispatch mode
+remind_dispatch_iter_vrefix
+cm_DT_dispatch_i1
+remind_dispatch_iter_fix
+cm_DT_dispatch_i2
+
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
@@ -136,6 +142,8 @@ $load  NUCte = NUCte32
 $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter
+$load  remind_dispatch_iter_vrefix = cm_DT_dispatch_i1
+$load  remind_dispatch_iter_fix = cm_DT_dispatch_i2
 $load  remind_r = p32_r4DT
 $load  remind_curt = v32_storloss.l
 $load  remind_realVRECF = p32_realCapfacVRE

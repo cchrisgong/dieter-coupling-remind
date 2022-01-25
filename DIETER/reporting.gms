@@ -38,7 +38,10 @@ $offtext
         report('DIETER',yr,reg,'obj value (BillionUSD)') = Z.l /1e9;
         report('DIETER',yr,reg,'CO2 price ($/tCO2)') = remind_co2(yr,reg); 
         report('DIETER',yr,reg,'load-weighted price for fixed demand ($/MWh)') = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h)) ;
-        report('DIETER',yr,reg,'price w/ scarcity price shaved ($/MWh)') = annual_load_weighted_price_shaved;
+        report('DIETER',yr,reg,'load-weighted price for total demand ($/MWh)') = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) ;
+        report('DIETER',yr,reg,'price for fixed demand w/ scarcity price shaved ($/MWh)') = sum(h,hourly_price(h)*d(h))/sum(h,d(h)) ;
+        report('DIETER',yr,reg,'price for total demand w/ scarcity price shaved ($/MWh)') = sum(h,hourly_price(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) ;        
+            
         report('DIETER',yr,reg,'investment interest rate') = r *1e2;
 *       Define gross energy demand for reporting, egual to equation 5a      
         report('DIETER',yr,reg,'gross energy demand (TWh)') = totLoad /1e6;

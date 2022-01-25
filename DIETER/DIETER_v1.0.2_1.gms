@@ -546,7 +546,6 @@ $ENDIF.CB2
 ******** (after some degree of convergence is reached) ***************
 **********************************************************************
 $IFTHEN.CB %cap_bound% == "dispatch"
-if ((remind_iter le 20),
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
@@ -564,16 +563,11 @@ N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6;
 
-**CG: somehow the coupling doesn't like this bound(?)
-*if ((remind_h2switch eq 1),
-*N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
-*);
-
-*** gridwind is the only grid tech in REMIND
-N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
+if ((remind_iter gt remind_dispatch_iter_vrefix),
+P_RES.fx(res) = RM_postInv_cap_res("2020", "DEU",res);
 );
 
-if ((remind_iter gt 20),
+if ((remind_iter gt remind_dispatch_iter_fix),
 P_RES.fx(res) = RM_postInv_cap_res("2020", "DEU",res);
 N_CON.fx("ror")= RM_postInv_cap_con("2020", "DEU", "ror") ;
 N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
@@ -581,7 +575,7 @@ N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
 N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
 N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
 N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
-N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
+*N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
 );
 $ENDIF.CB
 
@@ -1750,7 +1744,6 @@ p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(sum( h , C_P2G.l("elh2",h)) eq 0
 *if ((p32_reportmk_4RM("2020","DEU","elh2","value_factor") < 0.1),
 *    p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = 0.1;
 *);
-
 
 
 $ontext
