@@ -324,7 +324,7 @@ remind_VRECapFac(res)   "VRE capacity factors from REMIND"
 remind_HydroCapFac      "Hydro capacity factor from REMIND"
 dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
 share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
-dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND"
+dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND - should be equal or larger than 1"
 remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
 remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
 remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
@@ -354,19 +354,20 @@ dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 
 
-*AO* Calculate necessary share of onshore wind to match DIETER wind CF to REMIND values according to:
-* CF_{REMIND}  = x * CF_{DIETER, onshore} + (1 - x) * CF_{DIETER, offshore}
-* ==> x = ( CF_{REMIND} - CF_{DIETER, offshore} ) / ( CF_{DIETER, onshore} - CF_{DIETER, offshore} ) 
-share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
-
-* Limit 0<weight<1
-share_wind_on_CF_match$(share_wind_on_CF_match > 1) = 1;
-share_wind_on_CF_match$(share_wind_on_CF_match < 0) = 0;
-
-*AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
-phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
+**CG: disable because it is not correct for 2020
+**AO* Calculate necessary share of onshore wind to match DIETER wind CF to REMIND values according to:
+** CF_{REMIND}  = x * CF_{DIETER, onshore} + (1 - x) * CF_{DIETER, offshore}
+** ==> x = ( CF_{REMIND} - CF_{DIETER, offshore} ) / ( CF_{DIETER, onshore} - CF_{DIETER, offshore} ) 
+* share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
+*
+** Limit 0<weight<1
+*share_wind_on_CF_match$(share_wind_on_CF_match > 1) = 1;
+*share_wind_on_CF_match$(share_wind_on_CF_match < 0) = 0;
+*
+**AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
+*phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
 *AO* Scale up time series of solar potential to match the CF of REMIND
-phi_res("Solar", h) = phi_res_y_reg("2019", "DEU", h, "Solar") * remind_VRECapFac("Solar") / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, "Solar")) / card(hh));
+phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
 
 phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
 phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
