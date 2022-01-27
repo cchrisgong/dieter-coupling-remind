@@ -86,10 +86,10 @@ $setglobal wind_shave on
 * softLo2 = 80% of hard lower bound
 * fixed = fix to postInvest cap in REMIND, for speeding up computation. However, this should only be turned on after a few iterations, otherwise REMIND's firm capacities are too low in later years,
 *           result in infes in DIETER
-*$setglobal cap_bound validation
+$setglobal cap_bound validation
 *$setglobal cap_bound softLo
 *$setglobal cap_bound none
-$setglobal cap_bound dispatch
+*$setglobal cap_bound dispatch
 
 *softUp1 = upper bound is 1.2 times REMIND cap
 *$setglobal cap_bound_up fixVRE
