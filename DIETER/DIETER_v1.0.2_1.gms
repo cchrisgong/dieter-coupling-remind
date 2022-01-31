@@ -76,7 +76,7 @@ $setglobal fuel_cost_suppc no_suppcurve
 $setglobal price_shave on
 *$setglobal price_shave off
 
-$setglobal wind_shave on
+*$setglobal wind_shave on
 *$setglobal wind_shave off
 
 **** capacity bound options (bound to remind's preInvest cap)
@@ -345,7 +345,7 @@ remind_lowest_grade_LF(te_remind) = smin(grade$(remind_pm_dataren("DEU", "nur", 
 *** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
 remind_highest_empty_grade_LF("wind") = max(remind_lowest_grade_LF("wind"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind")));
 remind_highest_empty_grade_LF("spv") = max(remind_lowest_grade_LF("spv"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv")));
-remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.9 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
+remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.99 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
 dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
 **CG: sometimes hydro grades are both full, in which case set factor to 1
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
@@ -1689,6 +1689,10 @@ p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) =
 
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price_shaved;
     
+*** CG: cap market_value of OCGT to be at most 5 times annual power price (especially in the case when price_shave = off, this prevents blow up of OCGT generation in REMIND)
+*p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value')$(p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value') > 4 * annual_load_weighted_price_shaved)
+*    = 4 * annual_load_weighted_price_shaved;
+
 p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) ne 0 ) =
     report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal');
 

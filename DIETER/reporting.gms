@@ -99,23 +99,23 @@ $offtext
 **coal
 *        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = c_i('lig')  *  RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
 *        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = cdata('c_fix_con','lig') * RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
-$IFTHEN.ACoff %adj_cost% == "off"
+$IFTHEN.ACon not %adj_cost% == "off"
 *conventional 
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = ( sum(DT_RM(ct,ct_remind),(c_i(ct)-c_adj(ct)))) * RM_postInv_cap_con(yr,reg,ct_remind) / RM_postInv_prodSe_con(yr,reg,ct_remind);
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) =( sum(DT_RM(ct,ct_remind),cdata('c_fix_con',ct))) * RM_postInv_cap_con(yr,reg,ct_remind) / RM_postInv_prodSe_con(yr,reg,ct_remind);
 *renewable
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = (c_i_res(res)-c_adj_res(res))*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
-$ENDIF.ACoff
+$ENDIF.ACon
 
-$IFTHEN.ACon not %adj_cost% == "off"
+$IFTHEN.ACoff %adj_cost% == "off"
 *conventional 
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = ( sum(DT_RM(ct,ct_remind),c_i(ct))) * RM_postInv_cap_con(yr,reg,ct_remind) / RM_postInv_prodSe_con(yr,reg,ct_remind);
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) =( sum(DT_RM(ct,ct_remind),cdata('c_fix_con',ct))) * RM_postInv_cap_con(yr,reg,ct_remind) / RM_postInv_prodSe_con(yr,reg,ct_remind);
 *renewable
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = c_i_res(res)*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res) ;
-$ENDIF.ACon
+$ENDIF.ACoff
 
 *P2G
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',p2g)$(totFlexLoad ne 0) = c_i_p2g(p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75) ;
@@ -172,8 +172,7 @@ $ENDIF.ACon
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Solar') = remind_realVRECF(yr,reg,"spv");
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_on') = remind_realVRECF(yr,reg,"wind");
    
-***     ^^^ reporting on remind stuff
- 
+***     ^^^ reporting on remind stuff 
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',res) =  (P_RES.l(res) - P_RES.lo(res)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') + N_CON.l('hc') - N_CON.lo('lig') - N_CON.lo('hc')) / 1e3 ;
@@ -296,7 +295,7 @@ $IFTHEN.ACoff %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',grid) = report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',grid);
  
 *       Grid cost (if adj cost for vregrid is not coupled)
-        report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) - c_adj_grid(grid) ) * N_GRID.L(grid) / totLoad;
+        report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid)) * N_GRID.L(grid) / totLoad;
          
 $ENDIF.ACoff
  
