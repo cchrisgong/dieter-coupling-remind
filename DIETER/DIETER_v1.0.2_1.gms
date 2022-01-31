@@ -86,7 +86,7 @@ $setglobal price_shave on
 * softLo2 = 80% of hard lower bound
 * fixed = fix to postInvest cap in REMIND, for speeding up computation. However, this should only be turned on after a few iterations, otherwise REMIND's firm capacities are too low in later years,
 *           result in infes in DIETER
-$setglobal cap_bound validation
+*$setglobal cap_bound validation
 *$setglobal cap_bound softLo
 *$setglobal cap_bound none
 *$setglobal cap_bound dispatch
@@ -445,8 +445,9 @@ loop(reg,
 $ENDIF
 
 
-
-$IFTHEN.CB %cap_bound% == "validation"
+** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
+if ((remind_coupModeSwitch eq 0),
+*$IFTHEN.CB %cap_bound% == "validation"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
@@ -477,8 +478,8 @@ N_CON.lo("bio") = sum(te_remind,
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
 
-$ENDIF.CB
-
+*$ENDIF.CB
+);
 
 $IFTHEN.CBu %cap_bound_up% == "fixVRE"
 P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
@@ -546,7 +547,9 @@ $ENDIF.CB2
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS FIXED BOUNDS ***********
 ******** (after some degree of convergence is reached) ***************
 **********************************************************************
-$IFTHEN.CB %cap_bound% == "dispatch"
+** remind_coupModeSwitch=1 corresponds to dispatch mode, where capacities in DIETER take (post-invest, post-earlyreti) capacities in REMIND
+if ((remind_coupModeSwitch eq 1),
+*$IFTHEN.CB %cap_bound% == "dispatch"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
@@ -578,7 +581,8 @@ N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
 N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
 *N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
 );
-$ENDIF.CB
+*$ENDIF.CB
+);
 
 ** switch off certain technologies
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
