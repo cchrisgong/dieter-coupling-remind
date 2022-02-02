@@ -78,6 +78,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','ror') = preInv_remind_cap(yr, reg, 'hydro', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Solar') = preInv_remind_cap(yr, reg, 'spv', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Wind_on') = preInv_remind_cap(yr, reg, 'wind', '1') * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Wind_off') = preInv_remind_cap(yr, reg, 'windoff', '1') * 1e3;
    
 *       MW -GW
         report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',ct_remind) = RM_postInv_cap_con(yr,reg,ct_remind)/ 1e3;
@@ -147,6 +148,7 @@ $ENDIF.ACoff
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','ror') = earlyRetiCap_reporting(yr, reg, 'hydro') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Solar') = earlyRetiCap_reporting(yr, reg, 'spv') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Wind_on') = earlyRetiCap_reporting(yr, reg, 'wind') * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Wind_off') = earlyRetiCap_reporting(yr, reg, 'windoff') * 1e3;
         
 ***     TW -> GW; coal is split for easy comparison
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','coal') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(COALte(te_remind))) * 1e3;
@@ -159,6 +161,7 @@ $ENDIF.ACoff
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','nuc') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(NUCte(te_remind))) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Solar') = added_remind_cap(yr, reg, 'spv', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Wind_on') = added_remind_cap(yr, reg, 'wind', '1') * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Wind_off') = added_remind_cap(yr, reg, 'windoff', '1') * 1e3;
         
 *                  ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
@@ -171,6 +174,7 @@ $ENDIF.ACoff
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','elh2') = remind_CF(yr,reg,'elh2')*1e2;
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Solar') = remind_realVRECF(yr,reg,"spv");
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_on') = remind_realVRECF(yr,reg,"wind");
+        report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_off') = remind_realVRECF(yr,reg,"windoff");
    
 ***     ^^^ reporting on remind stuff 
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
@@ -202,10 +206,12 @@ $ENDIF.ACoff
 
 * real/post-curtailment and theoretical/pre-curtailment capfac for VRE of marginal grade           
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Wind_on") = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Wind_on") * remind_highest_empty_grade_LF("wind")/remind_average_grade_LF("wind");
+        report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Wind_off") * remind_highest_empty_grade_LF("windoff")/remind_average_grade_LF("windoff");
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Solar") = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Solar") * remind_highest_empty_grade_LF("spv")/remind_average_grade_LF("spv");
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"ror") = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',"ror") * remind_highest_empty_grade_LF("hydro")/remind_average_grade_LF("hydro");
 
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_on") = remind_VRECapFac("Wind_on")*1e2 * remind_highest_empty_grade_LF("wind")/remind_average_grade_LF("wind");
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = remind_VRECapFac("Wind_off")*1e2 * remind_highest_empty_grade_LF("windoff")/remind_average_grade_LF("windoff");
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Solar") = remind_VRECapFac("Solar")*1e2 * remind_highest_empty_grade_LF("spv")/remind_average_grade_LF("spv");
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"ror") = remind_highest_empty_grade_LF("hydro") *1e2;
 
@@ -302,9 +308,14 @@ $ENDIF.ACoff
 *** for simplicity we don't report adj cost separately of grid for "solar" and "wind", it is only report for the tech "grid"
 *       Grid cost for each VRE type
         VRE_grid_ratio(yr,reg,"Solar") = report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")/
-            (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));
+            (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")
+            + 3*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_off"));
         VRE_grid_ratio(yr,reg,"Wind_on") = 1.5* report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")/
-            (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on"));            
+            (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")
+            + 3*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_off"));            
+        VRE_grid_ratio(yr,reg,"Wind_off") = 3.0* report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_off")/
+            (report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar") + 1.5*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_on")
+            + 3*report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Wind_off"));            
 
 *** note: in remind2/R/reportLCOE.R, grid cost is divided by total usable energy not just renewable generation, because it was calculated as system LCOE for grid, here we calculate the tech LCOE for VRE, then
 **  later it can be multiplied with generation share and add up to system LCOE same as other tech LCOE components
@@ -312,7 +323,8 @@ $ENDIF.ACoff
                                                                     * VRE_grid_ratio(yr,reg,"Solar") * dieter_newInvFactor("spv");
         report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_on")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Wind_on") * dieter_newInvFactor("wind");    
-
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_off")$(report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_off")) = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_off")*1e6)
+                                                                    * VRE_grid_ratio(yr,reg,"Wind_off") * dieter_newInvFactor("windoff");    
         
 *       OM cost
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',ct) = cdata('c_fix_con',ct) / 1e3;

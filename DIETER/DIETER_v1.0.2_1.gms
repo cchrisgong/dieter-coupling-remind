@@ -76,9 +76,6 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal price_shave on
 $setglobal price_shave off
 
-*$setglobal wind_shave on
-*$setglobal wind_shave off
-
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
 * hardLo = hard lower bound for all tech
@@ -156,7 +153,7 @@ reg_coal    region with coal phase-out               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-all_te        all dieter techs                   /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
+all_te    all dieter techs                       /ror, nuc, lig, hc, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 te        all dieter techs                      
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
@@ -197,6 +194,19 @@ $include dataload.gms
 *** H2 switch for DIETER standalone
 *remind_h2switch = 0;
 *remind_h2switch = 1;
+
+*** wind offshore switch 
+* there might be situation where input.gdx has no windoff as technology, in which case, skip first iter
+if ((remind_wind_offshore eq 1), 
+    if ((remind_iter eq 0),
+        remind_wind_offshore = 0;
+    );
+    
+    if ((remind_iter gt 0),
+        remind_wind_offshore = 1;
+    );
+);
+
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
 
@@ -323,7 +333,7 @@ Parameter
 remind_VRECapFac(res)   "VRE capacity factors from REMIND"
 remind_HydroCapFac      "Hydro capacity factor from REMIND"
 dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
-share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
+*share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
 dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND - should be equal or larger than 1"
 remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
 remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
@@ -334,6 +344,11 @@ remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
 remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade) / remind_cap("2020", "DEU",te_remind, "1"));
 *AO* Calculate REMIND VRE CFs from grades
 remind_VRECapFac("Wind_on") = remind_CF("2020","DEU","wind") * remind_average_grade_LF("wind");
+
+if ((remind_wind_offshore eq 1),
+remind_VRECapFac("Wind_off") = remind_CF("2020","DEU","windoff") * remind_average_grade_LF("windoff");
+);
+
 remind_VRECapFac("Solar") = remind_CF("2020","DEU","spv") * remind_average_grade_LF("spv");
 remind_HydroCapFac = remind_average_grade_LF("hydro");
 
@@ -369,9 +384,16 @@ dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 *AO* Scale up time series of solar potential to match the CF of REMIND
 phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
 
+*disable this to minimize distortion
 phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
 phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
 phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
+
+if ((remind_wind_offshore eq 1),
+phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
+phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
+);
+
 
 *AO* For hydro simply set CF to that of REMIND
 capfac_ror = remind_HydroCapFac;
@@ -396,6 +418,9 @@ RM_postInv_cap_con(yr,reg,"bio") = sum(te_remind,sum( grade, remind_cap(yr, reg,
 RM_postInv_cap_con(yr,reg,"nuc") = sum(te_remind,sum( grade, remind_cap(yr, reg, te_remind, grade)$(NUCte(te_remind)) )) * 1e6;
 RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grade)) * 1e6;
 RM_postInv_cap_res(yr,reg,"Wind_on") = sum( grade, remind_cap(yr, reg, "wind", grade))* 1e6;
+if ((remind_wind_offshore eq 1),
+RM_postInv_cap_res(yr,reg,"Wind_off") = sum( grade, remind_cap(yr, reg, "windoff", grade))* 1e6;
+);
 RM_postInv_cap_con(yr,reg,"ror") = sum( grade, remind_cap(yr, reg, "hydro", grade)) * 1e6;
 RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grade)) * 1e6;
 RM_postInv_cap_grid(yr,reg,"vregrid") = sum( grade, remind_cap(yr, reg, "gridwind", grade)) * 1e6;
@@ -409,11 +434,21 @@ RM_postInv_prodSe_con(yr,reg,"nuc") = sum(te_remind, remind_prodSe(yr,reg, "peur
 RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Solar") = remind_prodSe_Resxcurt(yr, reg, "seel", "spv")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, "seel", "wind")* sm_TWa_2_MWh ;
+if ((remind_wind_offshore eq 1),
+RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_off") = remind_prodSe_Resxcurt(yr, reg, "seel", "windoff")* sm_TWa_2_MWh ;
+);
 RM_postInv_prodSe_res(yr,reg,"Solar") = remind_prodSe(yr, reg, "pesol", "seel", "spv")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res(yr,reg,"Wind_on") = remind_prodSe(yr, reg, "pewin", "seel", "wind")* sm_TWa_2_MWh;
+if ((remind_wind_offshore eq 1),
+RM_postInv_prodSe_res(yr,reg,"Wind_off") = remind_prodSe(yr, reg, "pewin", "seel", "windoff")* sm_TWa_2_MWh;
+);
 RM_postInv_demSe(yr,reg,"elh2") = totFlexLoad;
 RM_curt_rep(yr,reg,"Solar") = remind_curt(yr,reg,"spv")* sm_TWa_2_MWh ;
 RM_curt_rep(yr,reg,"Wind_on") = remind_curt(yr,reg,"wind")* sm_TWa_2_MWh ;
+if ((remind_wind_offshore eq 1),
+RM_curt_rep(yr,reg,"Wind_off") = remind_curt(yr,reg,"windoff")* sm_TWa_2_MWh ;
+);
+
 **********************************************************************
 
 
@@ -429,6 +464,9 @@ added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_de
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
 P_RES.up("Solar") = sum(grade, remind_gradeMaxCap(grade,"spv"))*1e6;
 P_RES.up("Wind_on") = sum(grade, remind_gradeMaxCap(grade,"wind"))*1e6;
+if ((remind_wind_offshore eq 1),
+P_RES.up("Wind_off") = sum(grade, remind_gradeMaxCap(grade,"windoff"))*1e6;
+);
 N_CON.up("ror") = sum(grade, remind_gradeMaxCap(grade,"hydro"))*1e6;
 
 ** if nuclear phase out then no nuclear should be added in DIETER
@@ -450,6 +488,9 @@ if ((remind_coupModeSwitch eq 0),
 *$IFTHEN.CB %cap_bound% == "validation"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+if ((remind_wind_offshore eq 1),
+P_RES.lo("Wind_off") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1;
+);
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
@@ -484,6 +525,9 @@ N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind"
 $IFTHEN.CBu %cap_bound_up% == "fixVRE"
 P_RES.fx("Wind_on") = remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * 8760) ;
 P_RES.fx("Solar") = remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / (remind_VRECapFac("Solar") * 8760);
+if ((remind_wind_offshore eq 1),
+P_RES.fx("Wind_off") = remind_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * 8760) ;
+);
 $ENDIF.CBu
 
 
@@ -491,6 +535,9 @@ $ENDIF.CBu
 $IFTHEN.CB %cap_bound% == "softLo"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
+if ((remind_wind_offshore eq 1),
+P_RES.lo("Wind_off") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 0.8;
+);
 
 N_CON.lo("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
@@ -517,6 +564,10 @@ $ENDIF.CB
 $IFTHEN.CB2 %cap_bound_up% == "softUp1" 
 P_RES.up("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1.2;
 P_RES.up("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1.2;
+if ((remind_wind_offshore eq 1),
+P_RES.up("Wind_off") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1.2;
+);
+
 N_CON.up("lig") = sum(te_remind,
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(COALte(te_remind))   )
                     ) * 1e6 * 1.2;
@@ -552,6 +603,9 @@ if ((remind_coupModeSwitch eq 1),
 *$IFTHEN.CB %cap_bound% == "dispatch"
 P_RES.lo("Solar") = preInv_remind_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
 P_RES.lo("Wind_on") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+if ((remind_wind_offshore eq 1),
+P_RES.lo("Wind_off") = preInv_remind_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1;
+);
 N_CON.lo("ror") = preInv_remind_prodSe("2020", "DEU", "pehyd", "seel", "hydro") * sm_TWa_2_MWh / (capfac_ror * card(h)) ;
 N_CON.lo("nuc") = sum(te_remind,
                    sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)$(NUCte(te_remind))   )
@@ -585,7 +639,9 @@ N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
 );
 
 ** switch off certain technologies
+if ((remind_wind_offshore eq 0),
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
+);
 N_CON.fx("OCGT_ineff") = 0;
 N_CON.fx("hc") = 0;
 **********************************************************************
@@ -804,6 +860,10 @@ disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+
 disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
 disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
 
+if ((remind_wind_offshore eq 1),
+disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("lifetime", "windoff") / (-1+(1+r) ** remind_lifetime("lifetime", "windoff")) ;
+);
+
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
@@ -854,6 +914,10 @@ c_i_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_CapCost("2020", "DEU", "tnrs") * 1e6 * 1.2;
 c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") * dieter_newInvFactor("spv")* 1e6 * 1.2 ;
 c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * dieter_newInvFactor("wind")* 1e6 * 1.2;
+if ((remind_wind_offshore eq 1),
+c_i_ovnt_res("Wind_off") = remind_CapCost("2020", "DEU", "windoff") * dieter_newInvFactor("windoff")* 1e6 * 1.2;
+);
+
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_i_ovnt_p2g("elh2") = remind_CapCost("2020", "DEU", "elh2") * 1e6 * 1.2 * remind_eta2("2020","DEU","elh2");
@@ -898,6 +962,10 @@ c_adj_ovnt("nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)
 c_adj_ovnt_res("Solar") = remind_adjcost("2020", "DEU", "spv") * 1e6 * 1.2 ;
 c_adj_ovnt_res("Wind_on") = remind_adjcost("2020", "DEU", "wind") * 1e6 * 1.2;
 
+if ((remind_wind_offshore eq 1),
+c_adj_ovnt_res("Wind_off") = remind_adjcost("2020", "DEU", "windoff") * 1e6 * 1.2;
+);
+
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_adj_ovnt_p2g("elh2") = remind_adjcost("2020", "DEU", "elh2") * 1e6 * 1.2 * remind_eta2("2020","DEU","elh2");
 c_adj_ovnt_grid("vregrid") = remind_adjcost("2020", "DEU", "gridwind") * 1e6 * 1.2;
@@ -923,6 +991,9 @@ cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
 
 rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
 rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
+if ((remind_wind_offshore eq 1),
+rdata("c_fix_res","Wind_off") = remind_OMcost("DEU","omf","windoff") * c_i_ovnt_res("Wind_off");
+);
 
 p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
 griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
@@ -978,12 +1049,7 @@ con4j_ending              End level equal to initial level
 con4k_PHS_EtoP            Maximum E to P ratio for PHS
 
 * Minimum restrictions for renewables and biomass
-con5a_spv_share             Gross solar PV share
-con5b_wind_on_share         Gross wind onshore share
-con5c_wind_off_share        Gross wind offshore share
-*con5d_capfacBIO             fix capacity factor of biomass energy
-con5_demand
-con5e_P2Gshare              Gross power to gas share
+*con5e_P2Gshare              Gross power to gas share
 
 * DSM conditions: Load curtailment
 *con6a_DSMcurt_duration_max       Maximum curtailment energy budget per time
@@ -1170,7 +1236,11 @@ eq3_grid(grid)..
         =G=
 *        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
 *       + 3 * P_RES("Wind_off") * ("Wind_off")
-        (sum(h,(G_RES("Solar",h)+CU("Solar",h))) + 1.5 * sum(h,(G_RES("Wind_on",h)+CU("Wind_on",h))))/8760
+        ( sum(h,(G_RES("Solar",h) + CU("Solar",h)))
+        + 1.5 * sum(h,(G_RES("Wind_on",h) + CU("Wind_on",h)))
+        + 3 * sum(h,(G_RES("Wind_off",h) + CU("Wind_off",h))) * remind_wind_offshore
+        )/8760
+
 ;
 
 * ---------------------------------------------------------------------------- *
@@ -1579,9 +1649,13 @@ $offtext
 
 *** inflexible residual demand
 ******excluding VRE and hydro
-*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_On",h) - G_L.l("ror",h);
+*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("ror",h);
 ******only excluding VRE
-residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_On",h); 
+residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h);
+if ((remind_wind_offshore eq 1),
+residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
+);
+
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
 
 p32_report4RM(yr,reg,"all_te",'peakDem') = SMax(h, d(h));
@@ -1670,11 +1744,6 @@ $ENDIF.PriceShave
 *** calculate market value (only in hours where there is no scarcity price)
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
-
-***CG: this allows wind market value to include scarcity price
-$IFTHEN.WindShave %wind_shave% == "off" 
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',"Wind_on")$(sum(h, G_RES.l("Wind_on",h)) ne 0 ) = sum( h, G_RES.l("Wind_on",h)*(- con1a_bal.m(h)))/sum( h , G_RES.l("Wind_on",h) );
-$ENDIF.WindShave
 
 
 report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
