@@ -73,8 +73,8 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal fuel_cost_suppc suppcurve
 *==========
 ****whether to shave off scarcity price
-*$setglobal price_shave on
-$setglobal price_shave off
+$setglobal price_shave on
+*$setglobal price_shave off
 
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
@@ -102,8 +102,8 @@ $setglobal ramping_cost off
 
 *whether adjustment cost is included in capital cost
 *$setglobal adj_cost on
-$setglobal adj_cost on_select
-*$setglobal adj_cost off
+*$setglobal adj_cost on_select
+$setglobal adj_cost off
 
 *consider early retirement for capex or not
 *$setglobal capex_er on
@@ -385,16 +385,16 @@ dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
 
 *disable this to minimize distortion
-phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
-phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
-phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
-
-if ((remind_wind_offshore eq 1),
-phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
-phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
-);
-
-
+*phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
+*phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
+*phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
+*
+*if ((remind_wind_offshore eq 1),
+*phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
+*phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
+*);
+*
+*
 *AO* For hydro simply set CF to that of REMIND
 capfac_ror = remind_HydroCapFac;
 
@@ -403,9 +403,9 @@ capfac_ror = remind_HydroCapFac;
 *(total_generation X gen.share) / (cap.fac. X 8760) = capacity, where (total_generation X gen.share) = generation
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
-* the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_ts(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
+* the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_dt(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
 preInv_remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) = remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
-                                                                       - remind_pm_ts(yr) /2 * remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
+                                                                       - (remind_pm_dt(yr) / 2 + remind_pm_dt(yr) / 2 / 5 ) * remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
                                                                        * remind_deltaCap(yr, "DEU", te_remind, "1")
                                                                        /remind_cap(yr, "DEU", te_remind, "1");
 
@@ -457,9 +457,9 @@ RM_curt_rep(yr,reg,"Wind_off") = remind_curt(yr,reg,"windoff")* sm_TWa_2_MWh ;
 ***   THIS MEANS CAP FROM REMIND IS PASSED AS LOWER BOUNDS ***********
 **********************************************************************
 *****************
-* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_ts(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
-preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
-added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_ts(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade);
+* the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_dt(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
+preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - (remind_pm_dt(yr)/2 + remind_pm_dt(yr) / 2 / 5 ) * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
+added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade);
 
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
 P_RES.up("Solar") = sum(grade, remind_gradeMaxCap(grade,"spv"))*1e6;

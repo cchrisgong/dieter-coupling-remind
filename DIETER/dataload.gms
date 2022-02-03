@@ -90,8 +90,8 @@ remind_adjcost(yr, reg, te_remind)
 o_margAdjCostInv(yr, reg, te_remind)
 *-------------------------------------
 *for the purpose of comparing the decision remind and dieter make, use instead the cap. before remind's investment at the beginning of the year, not the end
-remind_pm_ts(yr)
-pm_ts(yr)
+remind_pm_dt(yr)
+pm_dt(yr)
 remind_deltaCap(yr, reg, te_remind, grade)
 vm_deltaCap(yr, reg, te_remind, grade)
 remind_capEarlyReti(yr, reg, te_remind)
@@ -170,7 +170,7 @@ $load  remind_lifetime = fm_dataglob
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
-$load  remind_pm_ts = pm_ts
+$load  remind_pm_dt = pm_dt
 $load  remind_deltaCap = vm_deltaCap.l
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
