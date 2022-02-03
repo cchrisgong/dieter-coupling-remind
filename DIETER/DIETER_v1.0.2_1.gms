@@ -359,6 +359,7 @@ remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_r
 remind_lowest_grade_LF(te_remind) = smin(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
 *** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
 remind_highest_empty_grade_LF("wind") = max(remind_lowest_grade_LF("wind"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind")));
+remind_highest_empty_grade_LF("windoff") = max(remind_lowest_grade_LF("windoff"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "windoff", grade) < (0.9 * remind_gradeMaxCap(grade,"windoff"))), remind_pm_dataren("DEU", "nur", grade, "windoff")));
 remind_highest_empty_grade_LF("spv") = max(remind_lowest_grade_LF("spv"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv")));
 remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.99 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
 dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
@@ -368,20 +369,6 @@ dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 
-
-**CG: disable because it is not correct for 2020
-**AO* Calculate necessary share of onshore wind to match DIETER wind CF to REMIND values according to:
-** CF_{REMIND}  = x * CF_{DIETER, onshore} + (1 - x) * CF_{DIETER, offshore}
-** ==> x = ( CF_{REMIND} - CF_{DIETER, offshore} ) / ( CF_{DIETER, onshore} - CF_{DIETER, offshore} ) 
-* share_wind_on_CF_match = (remind_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off")) / ( dieter_VRECapFac("Wind_on") - dieter_VRECapFac("Wind_off") );
-*
-** Limit 0<weight<1
-*share_wind_on_CF_match$(share_wind_on_CF_match > 1) = 1;
-*share_wind_on_CF_match$(share_wind_on_CF_match < 0) = 0;
-*
-**AO* Create time series of wind potential by calculating the weighted average of the actual wind onshore and wind offshore time series so that the CF of REMIND is matched
-*phi_res("Wind_on", h) = share_wind_on_CF_match * phi_res_y_reg("2019", "DEU", h, "Wind_on") + (1 - share_wind_on_CF_match) * phi_res_y_reg("2019", "DEU", h, "Wind_off");
-*AO* Scale up time series of solar potential to match the CF of REMIND
 phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
 
 *disable this to minimize distortion
@@ -823,11 +810,13 @@ cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0) = rem
 
 p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
 
+Display cdata;
+
 ***** END of variable O&M from REMIND *****
 ** note: for hydro/ror c_m_reg is 0
 $IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
-c_m_reg(ct,reg) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg)  + cdata("c_var_con",ct) ;
+c_m_reg(ct,reg)$(cdata("eta_con",ct)) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg)  + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
 $ENDIF.FC3
 
