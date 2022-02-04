@@ -674,7 +674,7 @@ STO_L.fx(sto,h) = 0 ;
 **);
 *$ENDIF.FC
 
-*1.2 is the conversion btw twothousandfive$ and twentyfifteen$
+
 *1e12 is the conversion btw Trillion$ to $
 
 $IFTHEN.FC  %fuel_cost_iter% == "cubicFit"
@@ -775,7 +775,7 @@ cdata("carbon_content","hc") = cdata("carbon_content","lig");
 cdata("carbon_content","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0)
     = sum(NonPeakGASte(te_remind),remind_carboncontent("pegas","seel",te_remind,"co2"))/card(NonPeakGASte) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 
-*omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1.2 to T$(2015)/TWa then multiply * 1e12 to get $(2015)/TWa, divides sm_TWa_2_MWh to get $(2015)/MWh
+*omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1e12 to get $(2005)/TWa, divides sm_TWa_2_MWh to get $(2005)/MWh
 
 ***** variable O&M from REMIND ***** 
 cdata("c_var_con","lig")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
