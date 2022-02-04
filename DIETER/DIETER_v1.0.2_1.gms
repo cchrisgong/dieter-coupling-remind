@@ -131,7 +131,7 @@ Sets
 *============== remind sets ==================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-all_yr      for smoothing prices                     /2005,2020,2150/
+*all_yr      for smoothing prices                     /2005,2020,2150/
 t           year from remind to be loaded
 COALte
 NonPeakGASte
@@ -1591,10 +1591,12 @@ p32_report4RM
 hourly_price
 peak_price
 peak_short_term_cost
+annual_load_weighted_price_wscar
 annual_load_weighted_price
-annual_load_weighted_price_shaved
 residual_demand
 p32_reportmk_4RM
+market_value
+market_value_wscar
 report
 report_tech
 report_tech_hours
@@ -1733,83 +1735,79 @@ if (peak_price > 5000,
 $ENDIF.PriceShave
 
 *** calculate market value (only in hours where there is no scarcity price)
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
-
-
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
-        = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*hourly_price(h)) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
+market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
+market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
+market_value('coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 ) = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*hourly_price(h)) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 
 * average price for both flexible and inflexible techs, with scarcity price shaved
-annual_load_weighted_price_shaved = sum(h,hourly_price(h)*d(h)) / totLoad;
+annual_load_weighted_price = sum(h,hourly_price(h)*d(h)) / totLoad;
 %P2G%$ontext
-annual_load_weighted_price_shaved = sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)))) / totLoad;
+annual_load_weighted_price= sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)))) / totLoad;
 $ontext
 $offtext
+
+*****!!! note: all prices in p32_reportmk_4RM are in 2005$ value, to report, one needs to multiply by 1.2
 
 *** if generation is not 0, pass the market value (w/ scarcity price shaved) from DIETER to REMIND, if generation is 0, pass the average annual price to REMIND
-p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) =
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct);
+p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) = market_value(ct);
 
-p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price_shaved;
+p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price;
     
 *** CG: cap market_value of OCGT to be at most 5 times annual power price (especially in the case when price_shave = off, this prevents blow up of OCGT generation in REMIND)
-*p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value')$(p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value') > 4 * annual_load_weighted_price_shaved)
-*    = 4 * annual_load_weighted_price_shaved;
+*p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value')$(p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value') > 4 * annual_load_weighted_price)
+*    = 4 * annual_load_weighted_price;
 
 p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) ne 0 ) =
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal');
-
-p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) eq 0 ) = annual_load_weighted_price_shaved;
+    market_value('coal');
+p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) eq 0 ) = annual_load_weighted_price;
     
 p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = 
-    report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res);
-    
-p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price_shaved;
+    market_value(res);
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
 ******************* without scarcity price shaving ****************************
-annual_load_weighted_price = -sum(h,con1a_bal.m(h)*d(h))/totLoad ;
+annual_load_weighted_price_wscar = -sum(h,con1a_bal.m(h)*d(h))/totLoad ;
 %P2G%$ontext
-annual_load_weighted_price = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/totLoad ;
+annual_load_weighted_price_wscar = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/totLoad ;
 $ontext
 $offtext
 
-report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
-report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
+market_value_wscar(ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
+market_value_wscar('coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*(-con1a_bal.m(h))) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
-report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
+market_value_wscar(res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 
-p32_reportmk_4RM(yr,reg,'all_te','elec_price_shaved') = annual_load_weighted_price_shaved;
+p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 
-p32_reportmk_4RM(yr,reg,'all_te','elec_price_original') = annual_load_weighted_price;
+p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar;
 
 %P2G%$ontext
 ******************** green H2 absolute markup *****************************************
 ***** annual average electricity price that electrolyzer "sees", calculated using shaved off hourly price
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
+market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
                       = sum( h, C_P2G.l("elh2",h) * hourly_price(h))/sum( h , C_P2G.l("elh2",h));
              
 * if no generation at all, take annual electricity price as the market value         
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2')$(sum( h , C_P2G.l("elh2",h)) eq 0)
-                      = annual_load_weighted_price_shaved;
+market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) eq 0)
+                      = annual_load_weighted_price;
 * if there is generation but average price seen is 0 because prices in producing hours are 0, take EPS as the market value
                       
-p32_reportmk_4RM(yr,reg,"elh2",'market_price') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2');
-p32_reportmk_4RM(yr,reg,"elh2",'market_price')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','elh2') eq 0 ) = EPS;
+p32_reportmk_4RM(yr,reg,"elh2",'market_price') = market_value('elh2');
+p32_reportmk_4RM(yr,reg,"elh2",'market_price')$(market_value('elh2') eq 0 ) = EPS;
 
 *in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
-*if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price_shaved),
+*if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price),
 if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 1),
-    p32_reportmk_4RM(yr,reg,"elh2",'market_price') = 0.25 * annual_load_weighted_price_shaved;
+    p32_reportmk_4RM(yr,reg,"elh2",'market_price') = 0.25 * annual_load_weighted_price;
 );
 
 
 ******************* green H2 multiplicative markup *****************************************
-p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = p32_reportmk_4RM(yr,reg,"elh2",'market_price')/annual_load_weighted_price_shaved;
-p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(sum( h , C_P2G.l("elh2",h)) eq 0) = 1;
+p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = p32_reportmk_4RM(yr,reg,"elh2",'market_price')/annual_load_weighted_price;
+p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(p32_reportmk_4RM(yr,reg,"elh2",'market_price') eq 0) = 1;
 
 *in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
-*if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price_shaved),
+*if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price),
 *if ((p32_reportmk_4RM("2020","DEU","elh2","value_factor") < 0.1),
 *    p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = 0.1;
 *);
@@ -1819,23 +1817,23 @@ $ontext
 $offtext
 ******************** inflexible electricity demand markdown *****************************************
 ***** annual average electricity price that inflexible demand "sees", calculated using shaved off hourly price
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el')$(totFixedLoad ne 0)
+market_value('el')$(totFixedLoad ne 0)
                       = sum( h, d(h) * hourly_price(h))/sum( h , d(h));
              
 * if no generation at all, take annual electricity price as the market value         
-report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el')$(totFixedLoad eq 0)
-                      = annual_load_weighted_price_shaved;
+market_value('el')$(totFixedLoad eq 0)
+                      = annual_load_weighted_price;
                       
 * if there is generation but market value is 0 because prices in producing hours are 0, take EPS as the market value
-p32_reportmk_4RM(yr,reg,"el",'market_price') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el');
-p32_reportmk_4RM(yr,reg,"el",'market_price')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el') eq 0 ) = EPS;
+p32_reportmk_4RM(yr,reg,"el",'market_price') = market_value('el');
+p32_reportmk_4RM(yr,reg,"el",'market_price')$(market_value('el') eq 0 ) = EPS;
 
 ******************* inflexible electricity demand markdown value factor *****************************************
 **** annual average electricity price that inflexible demand "sees", calculated using shaved off hourly price
                       
 * if there is generation but market value is 0 because prices in producing hours are 0, take EPS as the market value
-p32_reportmk_4RM(yr,reg,"el",'value_factor') = report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el')/annual_load_weighted_price_shaved;
-p32_reportmk_4RM(yr,reg,"el",'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','el') eq 0 ) = 1;
+p32_reportmk_4RM(yr,reg,"el",'value_factor') = p32_reportmk_4RM(yr,reg,"el",'market_price')/annual_load_weighted_price;
+p32_reportmk_4RM(yr,reg,"el",'value_factor')$(p32_reportmk_4RM(yr,reg,"el",'market_price') eq 0 ) = 1;
 
 
 $include reporting.gms

@@ -37,10 +37,10 @@ $offtext
 *       transform into BillionUSD
         report('DIETER',yr,reg,'obj value (BillionUSD)') = Z.l /1e9;
         report('DIETER',yr,reg,'CO2 price ($/tCO2)') = remind_co2(yr,reg); 
-        report('DIETER',yr,reg,'load-weighted price for fixed demand ($/MWh)') = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h))  * 1.2;
-        report('DIETER',yr,reg,'load-weighted price for total demand ($/MWh)') = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) * 1.2;
-        report('DIETER',yr,reg,'price for fixed demand w/ scarcity price shaved ($/MWh)') = sum(h,hourly_price(h)*d(h))/sum(h,d(h)) * 1.2;
-        report('DIETER',yr,reg,'price for total demand w/ scarcity price shaved ($/MWh)') = sum(h,hourly_price(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) * 1.2 ;        
+        report('DIETER',yr,reg,'price for fixed demand - with scarcity price ($/MWh)') = -sum(h,con1a_bal.m(h)*d(h))/sum(h,d(h)) * 1.2;
+        report('DIETER',yr,reg,'price for total demand - with scarcity price ($/MWh)') = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) * 1.2;
+        report('DIETER',yr,reg,'price for fixed demand ($/MWh)') = sum(h,hourly_price(h)*d(h))/sum(h,d(h)) * 1.2;
+        report('DIETER',yr,reg,'price for total demand ($/MWh)') = sum(h,hourly_price(h)*(d(h)+sum(p2g,C_P2G.l(p2g,h))))/sum(h,(d(h)+sum(p2g,C_P2G.l(p2g,h)))) * 1.2 ;        
             
         report('DIETER',yr,reg,'investment interest rate') = r * 1e2;
 *       Define gross energy demand for reporting, egual to equation 5a      
@@ -163,6 +163,7 @@ $ENDIF.ACoff
         
 *                  ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
+        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','lig') = remind_CF(yr,reg,'pc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'bioigcc')*1e2;
@@ -185,6 +186,17 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
         report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / totLoad  * 1e2;
 
+        report_tech('REMIND',yr,reg,'genshares (%)','coal') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(COALte(te_remind)));
+        report_tech('REMIND',yr,reg,'genshares (%)','lig') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(COALte(te_remind)));
+        report_tech('REMIND',yr,reg,'genshares (%)','CCGT') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(NonPeakGASte(te_remind)));
+        report_tech('REMIND',yr,reg,'genshares (%)','OCGT_eff') = remind_genshare(yr,reg,'ngt');
+        report_tech('REMIND',yr,reg,'genshares (%)','bio') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(BIOte(te_remind)));
+        report_tech('REMIND',yr,reg,'genshares (%)','nuc') = sum(te_remind, remind_genshare(yr,reg,'tnrs')$(NUCte(te_remind)));
+        report_tech('REMIND',yr,reg,'genshares (%)','ror') = remind_genshare(yr,reg,'hydro');
+        report_tech('REMIND',yr,reg,'genshares (%)','Solar') = remind_genshare(yr,reg,'spv');
+        report_tech('REMIND',yr,reg,'genshares (%)','Wind_on') = remind_genshare(yr,reg,'wind');
+        report_tech('REMIND',yr,reg,'genshares (%)','Wind_off') = remind_genshare(yr,reg,'windoff');
+*                
 *                  ========== capacity factors and revenues ============ DIETER ============
 ** capacity factor of average plant in the system 
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
@@ -387,21 +399,31 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad * 1.2;
         report('DIETER',yr,reg,'total system shadow price of capacity bound - marg ($/MWh)') = sum(all_te, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',all_te)* report_tech('DIETER',yr,reg,'genshares (%)',all_te)/1e2) * 1.2;
 
+        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) = market_value(ct) * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) = market_value(res) * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') = market_value('coal') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','elh2') = market_value('elh2') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','el') = market_value('el') * 1.2;
+        
+        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',ct) = market_value_wscar(ct) * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)','coal') = market_value_wscar('coal') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',res) = market_value_wscar(res) * 1.2;
+        
 
 *       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
-        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) ne 0) =
-            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) / annual_load_weighted_price_shaved;
+        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) ne 0) =
+            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) / (annual_load_weighted_price * 1.2);
             
-        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') ne 0) =
-            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') / annual_load_weighted_price_shaved;
+        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') ne 0) =
+            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') / (annual_load_weighted_price * 1.2);
             
-        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) ne 0) = 
-            report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) / annual_load_weighted_price_shaved;
+        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) ne 0) = 
+            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) / (annual_load_weighted_price * 1.2);
         
 *       if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
-        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',ct) = 0) = 1;
-        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)','coal') = 0)  = 1;    
-        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value w/ scarcity price shaved ($/MWh)',res) = 0) = 1;
+        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) = 0) = 1;
+        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') = 0)  = 1;    
+        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) = 0) = 1;
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'value_factor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'value_factor') * 1e2;

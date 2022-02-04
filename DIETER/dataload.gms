@@ -47,11 +47,8 @@ remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 *fuel price
 $IFTHEN.FC %fuel_cost_iter% == "load"
-remind_fuelprice(all_yr,reg,pe_remind)
+remind_fuelprice(yr,reg,pe_remind)
 $ENDIF.FC
-*remind_fuelprice(all_yr,reg,pe_remind)
-*for smoothing costs over 2 iterations
-*p32_fuelprice_avgiter(all_yr,reg,pe_remind)
 *-------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -120,6 +117,9 @@ remind_carboncontent(pe_remind, se_remind, te_remind, gas_remind)
 fm_dataemiglob(pe_remind, se_remind, te_remind, gas_remind)
 sm_c_2_co2 Conversion factor between weight of carbon to weight of CO2 /3.6667/
 sm_Gt_2_t Conversion factor between gigaton to ton /1e9/
+* for comparison
+remind_genshare(yr,reg,te_remind)
+p32_shSeElDisp(yr,reg,te_remind)
 *-------------------------------------
 *iteration from REMIND
 remind_iter
@@ -177,6 +177,7 @@ $load  remind_carboncontent = fm_dataemiglob
 $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
+$load  remind_genshare = p32_shSeElDisp
 $gdxin
 $endIf.duringRun
 
