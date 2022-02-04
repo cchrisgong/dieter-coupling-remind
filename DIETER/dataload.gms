@@ -46,7 +46,7 @@ remind_totseelDem(yr, reg, se_remind)
 remind_totseh2Dem(yr, reg, se_remind)
 *-------------------------
 *fuel price
-$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+$IFTHEN.FC %fuel_cost_iter% == "load"
 remind_fuelprice(all_yr,reg,pe_remind)
 $ENDIF.FC
 *remind_fuelprice(all_yr,reg,pe_remind)
@@ -159,7 +159,6 @@ $load  remind_h2switch = s32_H2switch
 $load  remind_coupModeSwitch = s32_DTcoupModeswitch
 $load  remind_wind_offshore = s32_windoff
 $load  remind_adjcost = o_margAdjCostInv
-*$load  remind_fuelprice = p32_fuelprice_avgiter
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
@@ -182,7 +181,7 @@ $gdxin
 $endIf.duringRun
 
 **** options to load fuel price differently
-$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+$IFTHEN.FC %fuel_cost_iter% == "load"
 $Ifthen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter

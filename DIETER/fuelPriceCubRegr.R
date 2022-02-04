@@ -46,7 +46,7 @@ fitFuelPrice_linear <- function(peType){
     filter(regi %in% cReg) %>% 
     filter(fuel %in% c(peType)) %>% 
     mutate(t = as.numeric(t)) %>% 
-    mutate(value = value * 1e12 / sm_TWa_2_MWh * 1.2) %>%  # unit conversion
+    mutate(value = value * 1e12 / sm_TWa_2_MWh) %>%  # unit conversion
     mutate(label = "raw FP")
   
   rawFuelPrice[rawFuelPrice < 0] <- 0 # ensure positive price

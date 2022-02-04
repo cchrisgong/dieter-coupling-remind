@@ -57,9 +57,9 @@ $offtext
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-*$setglobal fuel_cost_iter smoothed
+$setglobal fuel_cost_iter load
 *$setglobal fuel_cost_iter fixed (deprecated)
-$setglobal fuel_cost_iter cubicFit
+*$setglobal fuel_cost_iter cubicFit
 *-------------
 ****fuel cost option 2:
 *averaged will use 3-year averaged fuel cost (calculated in DIETER)
@@ -194,6 +194,8 @@ $include dataload.gms
 *** H2 switch for DIETER standalone
 *remind_h2switch = 0;
 *remind_h2switch = 1;
+
+*remind_coupModeSwitch = 2;
 
 *** wind offshore switch 
 * there might be situation where input.gdx has no windoff as technology, in which case, skip first iter
@@ -392,7 +394,7 @@ capfac_ror = remind_HydroCapFac;
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_dt(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
 preInv_remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) = remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
-                                                                       - (remind_pm_dt(yr) / 2 + remind_pm_dt(yr) / 2 / 5 ) * remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
+                                                                       - remind_pm_dt(yr) / 2  * remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
                                                                        * remind_deltaCap(yr, "DEU", te_remind, "1")
                                                                        /remind_cap(yr, "DEU", te_remind, "1");
 
@@ -445,7 +447,7 @@ RM_curt_rep(yr,reg,"Wind_off") = remind_curt(yr,reg,"windoff")* sm_TWa_2_MWh ;
 **********************************************************************
 *****************
 * the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_dt(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
-preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - (remind_pm_dt(yr)/2 + remind_pm_dt(yr) / 2 / 5 ) * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
+preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade);
 
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
@@ -660,17 +662,17 @@ STO_L.fx(sto,h) = 0 ;
 
 
 *smooth/manipulate biomass PE price to a linear function
-$IFTHEN.FC %fuel_cost_iter% == "smoothed"
-*t(yr) = yr.val;
-*if (sum(yr,t(yr)) lt 2055,
-**if ((remind_iter eq 0),
-remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
-remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
-remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
-remind_fuelprice("2020",reg,"peur") = (remind_fuelprice("2150",reg,"peur") - remind_fuelprice("2005",reg,"peur"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"peur");
+*$IFTHEN.FC %fuel_cost_iter% == "smoothed"
+**t(yr) = yr.val;
+**if (sum(yr,t(yr)) lt 2055,
+***if ((remind_iter eq 0),
+*remind_fuelprice("2020",reg,"pebiolc") = (remind_fuelprice("2150",reg,"pebiolc") - remind_fuelprice("2005",reg,"pebiolc"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pebiolc");
+*remind_fuelprice("2020",reg,"pegas") = (remind_fuelprice("2150",reg,"pegas") - remind_fuelprice("2005",reg,"pegas"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pegas");
+*remind_fuelprice("2020",reg,"pecoal") = (remind_fuelprice("2150",reg,"pecoal") - remind_fuelprice("2005",reg,"pecoal"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"pecoal");
+*remind_fuelprice("2020",reg,"peur") = (remind_fuelprice("2150",reg,"peur") - remind_fuelprice("2005",reg,"peur"))/(2150 - 2005) * (2020 - 2005) + remind_fuelprice("2005",reg,"peur");
+***);
 **);
-*);
-$ENDIF.FC
+*$ENDIF.FC
 
 *1.2 is the conversion btw twothousandfive$ and twentyfifteen$
 *1e12 is the conversion btw Trillion$ to $
@@ -697,7 +699,7 @@ $ENDIF.FC
 
 
 
-$IFTHEN.FC  %fuel_cost_iter% == "smoothed"
+$IFTHEN.FC  %fuel_cost_iter% == "load"
 *** need unit conversion
 *$IFTHEN.CS %coal_split% == "on"
 ** split fuel cost of pecoal into lignite and hc for rough comparison (not finalized)
