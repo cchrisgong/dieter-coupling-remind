@@ -1642,9 +1642,9 @@ $offtext
 
 *** inflexible residual demand
 ******excluding VRE and hydro
-*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("ror",h);
+residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("ror",h);
 ******only excluding VRE
-residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h);
+*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h);
 if ((remind_wind_offshore eq 1),
 residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
 );
