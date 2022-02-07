@@ -343,7 +343,7 @@ remind_average_grade_LF(te_remind) "average grade load factor - need to multiply
 remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
 ;
 
-remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade) / remind_cap("2020", "DEU",te_remind, "1"));
+remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade)) / remind_cap("2020", "DEU",te_remind, "1");
 *AO* Calculate REMIND VRE CFs from grades
 remind_VRECapFac("Wind_on") = remind_CF("2020","DEU","wind") * remind_average_grade_LF("wind");
 
