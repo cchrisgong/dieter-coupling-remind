@@ -73,7 +73,7 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal fuel_cost_suppc suppcurve
 *==========
 ****whether to shave off scarcity price
-$setglobal price_shave on
+*$setglobal price_shave on
 *$setglobal price_shave off
 
 **** capacity bound options (bound to remind's preInvest cap)
@@ -208,6 +208,10 @@ if ((remind_wind_offshore eq 1),
         remind_wind_offshore = 1;
     );
 );
+
+dieter_vremarg =0;
+*remind_priceShaveSwitch = 1;
+
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
@@ -368,6 +372,9 @@ dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remi
 **CG: sometimes hydro grades are both full, in which case set factor to 1
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
+if((dieter_vremarg eq 0),
+dieter_newInvFactor(te_remind) = 1;
+);
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 
@@ -1726,14 +1733,15 @@ p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 hourly_price(h) = - con1a_bal.m(h);
 peak_price = SMax(h, hourly_price(h));
 
-$IFTHEN.PriceShave %price_shave% == "on"
-if (peak_price > 5000,
-*   peak_short_term_cost is the highest short-term marginal cost
-    peak_short_term_cost = SMax( h$(hourly_price(h) < 5000), hourly_price(h) ); 
-    hourly_price(h)$(hourly_price(h) > 5000)  = peak_short_term_cost;
+*$IFTHEN.PriceShave %price_shave% == "on"
+if ((remind_priceShaveSwitch = 1),
+    if (peak_price > 5000,
+*       peak_short_term_cost is the highest short-term marginal cost
+        peak_short_term_cost = SMax( h$(hourly_price(h) < 5000), hourly_price(h) ); 
+        hourly_price(h)$(hourly_price(h) > 5000)  = peak_short_term_cost;
+    );
+*$ENDIF.PriceShave
 );
-$ENDIF.PriceShave
-
 *** calculate market value (only in hours where there is no scarcity price)
 market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
 market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
@@ -1752,10 +1760,6 @@ $offtext
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) = market_value(ct);
 
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price;
-    
-*** CG: cap market_value of OCGT to be at most 5 times annual power price (especially in the case when price_shave = off, this prevents blow up of OCGT generation in REMIND)
-*p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value')$(p32_reportmk_4RM(yr,reg,"OCGT_eff",'market_value') > 4 * annual_load_weighted_price)
-*    = 4 * annual_load_weighted_price;
 
 p32_reportmk_4RM(yr,reg,'coal','market_value')$(sum(h, G_L.l('lig',h)) ne 0 ) =
     market_value('coal');
@@ -1772,13 +1776,30 @@ annual_load_weighted_price_wscar = -sum(h,con1a_bal.m(h)*(d(h)+sum(p2g,C_P2G.l(p
 $ontext
 $offtext
 
+******************* market values ****************************
 market_value_wscar(ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
 market_value_wscar('coal')$(sum( h, (G_L.l('lig',h) + G_L.l('hc',h)) ) ne 0 )
         = sum( h , (G_L.l('lig',h) + G_L.l('hc',h))*(-con1a_bal.m(h))) / sum( h , (G_L.l('lig',h) + G_L.l('hc',h)) );
 market_value_wscar(res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 
-p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
+*       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
+p32_reportmk_4RM(yr,reg,ct,'value_factor')$(market_value(ct) ne 0) =
+    market_value(ct) / annual_load_weighted_price;
+    
+p32_reportmk_4RM(yr,reg,'coal','value_factor')$(market_value('coal') ne 0) =
+    market_value('coal') / annual_load_weighted_price;
+    
+p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) ne 0) = 
+    market_value(res) / annual_load_weighted_price;
+        
+*       if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
+p32_reportmk_4RM(yr,reg,ct,'value_factor')$(market_value(ct) = 0) = 1;
+p32_reportmk_4RM(yr,reg,'coal','value_factor')$(market_value('coal') = 0)  = 1;    
+p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) = 0) = 1;
 
+******************** demand price *****************************************
+
+p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar;
 
 %P2G%$ontext
@@ -1791,7 +1812,10 @@ market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
 market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) eq 0)
                       = annual_load_weighted_price;
 * if there is generation but average price seen is 0 because prices in producing hours are 0, take EPS as the market value
-                      
+
+market_value_wscar('elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
+                      = sum( h, C_P2G.l("elh2",h) * (-con1a_bal.m(h)))/sum( h , C_P2G.l("elh2",h));
+            
 p32_reportmk_4RM(yr,reg,"elh2",'market_price') = market_value('elh2');
 p32_reportmk_4RM(yr,reg,"elh2",'market_price')$(market_value('elh2') eq 0 ) = EPS;
 
@@ -1823,6 +1847,11 @@ market_value('el')$(totFixedLoad ne 0)
 * if no generation at all, take annual electricity price as the market value         
 market_value('el')$(totFixedLoad eq 0)
                       = annual_load_weighted_price;
+
+
+market_value_wscar('el')$(sum( h , d(h)) ne 0)
+                      = sum( h, d(h) * (-con1a_bal.m(h)))/sum( h , d(h));
+            
                       
 * if there is generation but market value is 0 because prices in producing hours are 0, take EPS as the market value
 p32_reportmk_4RM(yr,reg,"el",'market_price') = market_value('el');

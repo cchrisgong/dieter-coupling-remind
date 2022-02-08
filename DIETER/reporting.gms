@@ -203,6 +203,7 @@ $ENDIF.ACoff
 * real/post-curtailment and theoretical/pre-curtailment capfac for VRE of average grade     
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , (G_RES.l(res,h) + CU.l(res,h))) / (P_RES.l(res) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
+        report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)','ror')$(N_CON.l('ror') ne 0 ) = sum( h , G_L.l('ror',h)) / (N_CON.l('ror') * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)$(totFlexLoad ne 0 ) = sum( h , C_P2G.l(p2g,h)) / ( N_P2G.l(p2g) * card(h)) * 1e2;
 
 *** annual average of VRE hourly capacity factor/potential, this should equal to both "REMIND CapFac (%)" and "DIETER avg CapFac (%)"
@@ -214,12 +215,14 @@ $ENDIF.ACoff
 *        report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)$(P_RES.l(res) ne 0 )
 *          = sum( h$(G_RES.l(res,h) = P_RES.l(res)) , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;        
 
-* real/post-curtailment and theoretical/pre-curtailment capfac for VRE of marginal grade           
+* real/post-curtailment and theoretical/pre-curtailment capfac for VRE of marginal grade
+        report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Wind_on") = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Wind_on") * remind_highest_empty_grade_LF("wind")/remind_average_grade_LF("wind");
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Wind_off") * remind_highest_empty_grade_LF("windoff")/remind_average_grade_LF("windoff");
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"Solar") = report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',"Solar") * remind_highest_empty_grade_LF("spv")/remind_average_grade_LF("spv");
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"ror") = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',"ror") * remind_highest_empty_grade_LF("hydro")/remind_average_grade_LF("hydro");
 
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_on") = remind_VRECapFac("Wind_on")*1e2 * remind_highest_empty_grade_LF("wind")/remind_average_grade_LF("wind");
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = remind_VRECapFac("Wind_off")*1e2 * remind_highest_empty_grade_LF("windoff")/remind_average_grade_LF("windoff");
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Solar") = remind_VRECapFac("Solar")*1e2 * remind_highest_empty_grade_LF("spv")/remind_average_grade_LF("spv");
@@ -394,7 +397,7 @@ $ENDIF.ACoff
         report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)') = sum(all_te, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',all_te)* report_tech('DIETER',yr,reg,'genshares (%)',all_te)/1e2);
 
 *       shadow price of capacity bound from REMIND, calculated using marginal capacity factor
-        report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = N_CON.m(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2) * 1.2;
+        report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = N_CON.m(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',ct)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res) ne 0) = P_RES.m(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad * 1.2;
         report('DIETER',yr,reg,'total system shadow price of capacity bound - marg ($/MWh)') = sum(all_te, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',all_te)* report_tech('DIETER',yr,reg,'genshares (%)',all_te)/1e2);
@@ -409,21 +412,9 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)','coal') = market_value_wscar('coal') * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',res) = market_value_wscar(res) * 1.2;
         
-
-*       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
-        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) ne 0) =
-            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) / (annual_load_weighted_price * 1.2);
-            
-        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') ne 0) =
-            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') / (annual_load_weighted_price * 1.2);
-            
-        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) ne 0) = 
-            report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) / (annual_load_weighted_price * 1.2);
+        report_tech('DIETER',yr,reg,'DIETER Market price with scarcity price ($/MWh)','el') = market_value_wscar('el') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market price with scarcity price ($/MWh)','elh2') = market_value_wscar('elh2') * 1.2;
         
-*       if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
-        p32_reportmk_4RM(yr,reg,ct,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) = 0) = 1;
-        p32_reportmk_4RM(yr,reg,'coal','value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') = 0)  = 1;    
-        p32_reportmk_4RM(yr,reg,res,'value_factor')$(report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) = 0) = 1;
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'value_factor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'value_factor') * 1e2;

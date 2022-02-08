@@ -32,6 +32,9 @@ s32_DTcoupModeswitch
 *binary windoffshore switch
 remind_wind_offshore
 s32_windoff
+* price shave switch (whether shave off scarcity price)
+remind_priceShaveSwitch
+s32_scarPrice
 *------------------------
 *Investment interest rate
 R_4DT(yr, reg)
@@ -130,6 +133,7 @@ cm_DT_dispatch_i1
 remind_dispatch_iter_fix
 cm_DT_dispatch_i2
 
+dieter_vremarg
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
@@ -156,6 +160,7 @@ $load  remind_realVRECF = p32_realCapfacVRE
 $load  remind_totseelDem = p32_usableSeDisp
 $load  remind_totseh2Dem = p32_seh2elh2Dem
 $load  remind_h2switch = s32_H2switch
+$load  remind_priceShaveSwitch = s32_scarPrice
 $load  remind_coupModeSwitch = s32_DTcoupModeswitch
 $load  remind_wind_offshore = s32_windoff
 $load  remind_adjcost = o_margAdjCostInv
@@ -165,7 +170,6 @@ $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = fm_dataglob
-*$load  remind_annuity = p_teAnnuity
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
