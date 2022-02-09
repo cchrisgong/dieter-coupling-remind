@@ -57,9 +57,9 @@ $offtext
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *smoothed will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
-$setglobal fuel_cost_iter load
+*$setglobal fuel_cost_iter load
 *$setglobal fuel_cost_iter fixed (deprecated)
-*$setglobal fuel_cost_iter cubicFit
+$setglobal fuel_cost_iter cubicFit
 *-------------
 ****fuel cost option 2:
 *averaged will use 3-year averaged fuel cost (calculated in DIETER)
