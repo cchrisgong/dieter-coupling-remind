@@ -76,8 +76,6 @@ remind_CapCost(yr, reg, te_remind)
 *plant lifetime and annuity from REMIND
 fm_dataglob(char_remind,te_remind)
 remind_lifetime(char_remind, te_remind)
-remind_annuity(te_remind)
-p_teAnnuity(te_remind)
 *------------------------------------
 *fuel conversion efficiency, pm_dataeta and pm_eta_conv have etas for different te
 pm_dataeta(yr,reg,te_remind)

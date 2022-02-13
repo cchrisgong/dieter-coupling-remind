@@ -114,9 +114,11 @@ $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
 $setglobal nucphaseout on
+*$setglobal nucphaseout off
 
 *choose to have DIETER follow REMIND in coal phase-out
 $setglobal coalphaseout on
+*$setglobal coalphaseout off
 
 * to reduce the size of lst file
 option limcol    = 0;
@@ -1521,8 +1523,8 @@ con2d_flexloadlevelstart
 $ontext
 $offtext
 
-con2c_maxprodannual_conv
-con2c_maxprodannual_conv_nuc
+*con2c_maxprodannual_conv
+*con2c_maxprodannual_conv_nuc
 
 con3a_maxprod_conv
 
