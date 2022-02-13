@@ -121,6 +121,10 @@ $setglobal nucphaseout on
 $setglobal coalphaseout on
 *$setglobal coalphaseout off
 
+*this should be on as long as REMIND's windoff is semi-exogenous (like currently, because it is a share of wind_on)
+$setglobal windoff_fix on
+*$setglobal windoff_fix off
+
 * to reduce the size of lst file
 option limcol    = 0;
 option limrow    = 0;
@@ -643,8 +647,15 @@ if ((remind_iter gt remind_dispatch_iter_fix),
 if ((remind_wind_offshore eq 0),
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
 );
+
 N_CON.fx("OCGT_ineff") = 0;
 N_CON.fx("hc") = 0;
+
+if ((remind_wind_offshore eq 1),
+$IFTHEN.windoff_fix %windoff_fix% == "on"
+P_RES.fx(res)$sameas(res,"Wind_off") = RM_postInv_cap_res("2020", "DEU","Wind_off");
+$ENDIF.windoff_fix
+);
 **********************************************************************
 *********************** END OF COUPLED MODE ***********************
 **********************************************************************
