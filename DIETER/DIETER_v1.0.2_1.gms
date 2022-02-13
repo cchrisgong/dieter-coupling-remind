@@ -110,6 +110,7 @@ $setglobal adj_cost off
 *$setglobal capex_er off
 
 *choose to print solution for debug purpose
+*$setglobal debug on
 $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
@@ -186,6 +187,7 @@ CCGT.CCGT
 OCGT_eff.OCGT_eff
 bio.bio
 /
+
 
 *==========
 *te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
@@ -332,11 +334,6 @@ earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remi
                                                                             / (1 - remind_capEarlyReti(yr, reg, te_remind)) ;
 
 ****************
-*AO* Match VRE CFs of DIETER to REMIND values
-* General idea for wind: Read in 2019 input data for both wind onshore (CF 25%) and offshore (CF 50%).
-*                        Calculate wind time series as a weighted average of onshore and offshore to match the REMIND CF.
-* General idea for solar: Simply scale up or down time series
-****************
 Parameter
 remind_VRECapFac(res)   "VRE capacity factors from REMIND"
 remind_HydroCapFac      "Hydro capacity factor from REMIND"
@@ -456,8 +453,8 @@ RM_curt_rep(yr,reg,"Wind_off") = remind_curt(yr,reg,"windoff")* sm_TWa_2_MWh ;
 **********************************************************************
 *****************
 * the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_dt(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
-preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0,remind_cap(yr, "DEU", te_remind, grade) - remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
-added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade);
+preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0, remind_cap(yr, "DEU", te_remind, grade) - remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
+added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
 
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
 P_RES.up("Solar") = sum(grade, remind_gradeMaxCap(grade,"spv"))*1e6;
@@ -624,13 +621,19 @@ P_RES.fx(res) = RM_postInv_cap_res("2020", "DEU",res);
 );
 
 if ((remind_iter gt remind_dispatch_iter_fix),
-P_RES.fx(res) = RM_postInv_cap_res("2020", "DEU",res);
-N_CON.fx("ror")= RM_postInv_cap_con("2020", "DEU", "ror") ;
-N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
-N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
-N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
-N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
-N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
+*t2(yr) = yr.val;
+*num_yr = sum(yr,t2(yr));
+*Display num_yr;
+*    if (num_yr eq 2150,
+        P_RES.fx(res) = RM_postInv_cap_res("2020", "DEU",res);
+        N_CON.fx("ror")= RM_postInv_cap_con("2020", "DEU", "ror") ;
+        N_CON.fx("nuc")= RM_postInv_cap_con("2020", "DEU", "nuc") ;
+        N_CON.fx("CCGT")= RM_postInv_cap_con("2020", "DEU", "CCGT") ;
+*        N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
+        N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
+*    else
+        N_CON.fx("lig") = RM_postInv_cap_con("2020", "DEU", "coal") ;
+*    );
 *N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
 );
 *$ENDIF.CB
@@ -1523,8 +1526,8 @@ con2d_flexloadlevelstart
 $ontext
 $offtext
 
-*con2c_maxprodannual_conv
-*con2c_maxprodannual_conv_nuc
+con2c_maxprodannual_conv
+con2c_maxprodannual_conv_nuc
 
 con3a_maxprod_conv
 
