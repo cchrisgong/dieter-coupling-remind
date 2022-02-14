@@ -237,6 +237,15 @@ bioigccc.pebiolc
 hydro.pehyd
 /
 
+DT_ct_pe(ct,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
+/
+coal.pecoal
+CCGT.pegas
+OCGT_eff.pegas
+nuc.peur
+bio.pebiolc
+ror.pehyd
+/
 
 ;
 
@@ -307,6 +316,7 @@ Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation fo
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
 Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
 Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
+Parameter dieter_lifetime(ct)  DIETER plant lifetime;
 
 *==========
 
@@ -467,12 +477,7 @@ RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grad
 RM_postInv_cap_grid(yr,reg,"vregrid") = sum( grade, remind_cap(yr, reg, "gridwind", grade)) * 1e6;
 
 * Remind post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
-RM_postInv_prodSe_con(yr,reg,"coal") = sum(te_remind, remind_prodSe(yr,reg, "pecoal", "seel", te_remind)$(COALte(te_remind)) )* sm_TWa_2_MWh;
-RM_postInv_prodSe_con(yr,reg,"CCGT") = sum( te_remind, remind_prodSe(yr,reg, "pegas", "seel", te_remind)$(NonPeakGASte(te_remind)) )* sm_TWa_2_MWh;
-RM_postInv_prodSe_con(yr,reg,"OCGT_eff") = remind_prodSe(yr,reg, "pegas", "seel", "ngt") * sm_TWa_2_MWh;
-RM_postInv_prodSe_con(yr,reg,"bio") = sum(te_remind, remind_prodSe(yr,reg, "pebiolc", "seel", te_remind)$(BIOte(te_remind)) )* sm_TWa_2_MWh;
-RM_postInv_prodSe_con(yr,reg,"nuc") = sum(te_remind, remind_prodSe(yr,reg, "peur", "seel", te_remind)$(NUCte(te_remind)) )* sm_TWa_2_MWh;
-RM_postInv_prodSe_con(yr,reg,"ror") = remind_prodSe(yr, reg, "pehyd", "seel", "hydro")* sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,ct) = sum( DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), remind_prodSe(yr,reg, pe_remind, "seel", te_remind)) ) * sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Solar") = remind_prodSe_Resxcurt(yr, reg, "seel", "spv")* sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, "seel", "wind")* sm_TWa_2_MWh ;
 if ((remind_wind_offshore eq 1),
@@ -649,24 +654,14 @@ STO_L.fx(sto,h) = 0 ;
 
 $IFTHEN.FC  %fuel_cost_iter% == "linFit"
 *** NO need for unit conversion
-con_fuelprice_reg_remind("2020","coal",reg) = remind_fuelprice("2020",reg,"pecoal");
-con_fuelprice_reg_remind("2020","CCGT",reg) = remind_fuelprice("2020",reg,"pegas");
-con_fuelprice_reg_remind("2020","OCGT_eff",reg) = remind_fuelprice("2020",reg,"pegas");
-con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur");
-con_fuelprice_reg_remind("2020","ror",reg) = 0;
-con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc");
+con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,pe_remind), remind_fuelprice("2020",reg,pe_remind)) ;
 $ENDIF.FC
 
 
 
 $IFTHEN.FC  %fuel_cost_iter% == "load"
 *** need unit conversion
-con_fuelprice_reg_remind("2020","coal",reg) = remind_fuelprice("2020",reg,"pecoal") * 1e12 / sm_TWa_2_MWh ;
-con_fuelprice_reg_remind("2020","CCGT",reg) = remind_fuelprice("2020",reg,"pegas") * 1e12 / sm_TWa_2_MWh ;
-con_fuelprice_reg_remind("2020","OCGT_eff",reg) = remind_fuelprice("2020",reg,"pegas") * 1e12 / sm_TWa_2_MWh ;
-con_fuelprice_reg_remind("2020","nuc",reg) = remind_fuelprice("2020",reg,"peur") * 1e12 / sm_TWa_2_MWh ;
-con_fuelprice_reg_remind("2020","ror",reg) = 0;
-con_fuelprice_reg_remind("2020","bio",reg) = remind_fuelprice("2020",reg,"pebiolc") * 1e12 / sm_TWa_2_MWh ;
+con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,pe_remind), remind_fuelprice("2020",reg,pe_remind)) * 1e12 / sm_TWa_2_MWh ;
 $ENDIF.FC
  
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
@@ -757,14 +752,11 @@ r = remind_r("2020","DEU");
 
 *===================== annuitized investment cost (calculated from full lifetime in REMIND, i.e no early retirement) ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
-*note on tech harmonization: ngcc, ngccc, gaschp have the same lifetime in REMIND, 35 years; igcc, igccc, pc, pcc, pco, coalchp all have 40 years; biochp, bioigcc, bioigccc have 40 years
-*fnrs and tnrs have 50 years. So no need to harmonize the multiple techs
-disc_fac_con("coal") = r * (1+r) ** remind_lifetime("lifetime", "pc") / (-1+(1+r) ** remind_lifetime("lifetime", "pc")) ;
-disc_fac_con("CCGT") = r * (1+r) ** remind_lifetime("lifetime", "ngcc") / (-1+(1+r) ** remind_lifetime("lifetime", "ngcc")) ;
-disc_fac_con("OCGT_eff") = r * (1+r) ** remind_lifetime("lifetime", "ngt") / (-1+(1+r) ** remind_lifetime("lifetime", "ngt")) ;
-disc_fac_con("bio") = r * (1+r) ** remind_lifetime("lifetime", "bioigcc") / (-1+(1+r) ** remind_lifetime("lifetime", "bioigcc")) ;
-disc_fac_con("ror") = r * (1+r) ** remind_lifetime("lifetime", "hydro") / (-1+(1+r) ** remind_lifetime("lifetime", "hydro")) ;
-disc_fac_con("nuc") = r * (1+r) ** remind_lifetime("lifetime", "tnrs") / (-1+(1+r) ** remind_lifetime("lifetime", "tnrs")) ;
+
+dieter_lifetime(ct)$(RM_postInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_lifetime("lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),remind_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+     / (RM_postInv_prodSe_con("2020", "DEU",ct)/sm_TWa_2_MWh);
+     
+disc_fac_con(ct)$(dieter_lifetime(ct) ne 0) = r * (1+r) ** dieter_lifetime(ct) / (-1+(1+r) ** dieter_lifetime(ct) ) ;
 
 disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
 disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
@@ -865,13 +857,10 @@ c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 *================================================================
 *=======read in fixed OM cost from REMIND ========
 *note that omf is the proportion from overnight investment cost, NOT annuitized!!!
-** no need to harmonize many to one mapping, since omf are the same for tech in the same category
-cdata("c_fix_con","coal") = remind_OMcost("DEU","omf","pc") * c_i_ovnt("coal");
-cdata("c_fix_con","CCGT") = remind_OMcost("DEU","omf","ngcc") * c_i_ovnt("CCGT");
-cdata("c_fix_con","OCGT_eff") = remind_OMcost("DEU","omf","ngt") * c_i_ovnt("OCGT_eff");
-cdata("c_fix_con","bio") = remind_OMcost("DEU","omf","bioigcc") * c_i_ovnt("bio");
-cdata("c_fix_con","ror") = remind_OMcost("DEU","omf","hydro") * c_i_ovnt("ror");
-cdata("c_fix_con","nuc") = remind_OMcost("DEU","omf","tnrs") * c_i_ovnt("nuc");
+cdata("c_fix_con",ct)$(RM_postInv_prodSe_con("2020", "DEU",ct) ne 0)
+    = sum(DT_RM_ct(ct,te_remind), remind_OMcost("DEU","omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),remind_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+     / (RM_postInv_prodSe_con("2020", "DEU",ct)/sm_TWa_2_MWh)
+     * c_i_ovnt(ct);
 
 rdata("c_fix_res","Solar") = remind_OMcost("DEU","omf","spv") * c_i_ovnt_res("Solar");
 rdata("c_fix_res","Wind_on") = remind_OMcost("DEU","omf","wind") * c_i_ovnt_res("Wind_on");
