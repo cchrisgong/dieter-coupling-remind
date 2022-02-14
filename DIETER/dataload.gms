@@ -406,7 +406,6 @@ $onlisting
 
 $onecho >temp.tmp
 
-par=phi_reserves_call_y          rng=Reserves!b49:lya73  rdim=2 cdim=1
 $offecho
 
 *$ontext
@@ -422,7 +421,6 @@ $offecho
 *$load c_m_sto eta_sto c_fix_sto c_inv_overnight_sto_e c_inv_overnight_sto_p inv_lifetime_sto inv_interest_sto m_sto_e m_sto_p phi_sto_ini etop_max
 *$load c_m_dsm_shift c_fix_dsm_shift c_inv_overnight_dsm_shift inv_recovery_dsm_shift inv_interest_dsm_shift m_dsm_shift t_dur_dsm_shift eta_dsm_shift t_off_dsm_shift
 *$load c_fix_dsm_cu c_inv_overnight_dsm_cu inv_recovery_dsm_cu inv_interest_dsm_cu m_dsm_cu t_dur_dsm_cu t_off_dsm_cu
-*$load phi_reserves_share reserves_intercept reserves_slope phi_reserves_call_y
 ;
 
 Parameters 

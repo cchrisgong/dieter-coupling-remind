@@ -40,7 +40,6 @@ $setglobal write_to_excel ""
 
 * Set star to activate options
 $setglobal DSM ""
-$setglobal Reserves ""
 *P2G is prob superfluous switch
 $setglobal P2G "*"
 
@@ -158,10 +157,8 @@ grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
 all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max/
-all_reserve Data for Reserves                    /reserves_intercept,phi_reserves_share/
 dsm_shift DSM shifting technologies              /DSM_shift1*DSM_shift5/
 dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
-reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR_up, MR_do/
 h         hour                                   /h1*h8760/
 
 
@@ -291,7 +288,6 @@ adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid
 Alias (h,hh) ;
 alias (res,resres) ;
 alias(se_remind,se_remind2);
-alias (reserves,reservesreserves) ;
 
 
 ***********************************************************************************************************************
@@ -335,13 +331,6 @@ DSM_DO_DEMAND(dsm_shift,h)   DSM: Load shifting down active for wholesale demand
 
 N_DSM_CU(dsm_curt)           DSM: Load curtailment capacity in MW
 N_DSM_SHIFT(dsm_shift)       DSM: Load shifting capacity in MWh
-
-RP_CON(reserves,ct,h)                     Reserve provision by conventionals in hour h in MW
-RP_RES(reserves,res,h)                    Reserve provision by renewables in hour h in MW
-RP_STO_IN(reserves,sto,h)                 Reserve provision by storage in in hour h in MW
-RP_STO_OUT(reserves,sto,h)                Reserve provision by storage out in hour h in MW
-RP_DSM_CU(reserves,dsm_curt,h)            Reserve provision by DSM load curtailment in hour h in MW
-RP_DSM_SHIFT(reserves,dsm_shift,h)        Reserve provision by DSM load shifting in hour h in MW
 
 pref_FC(ct)              Fuel cost prefactor (share depenedent)
 ;
@@ -923,8 +912,7 @@ con4b_stolev              Storage Level Dynamics
 con4c_stolev_max          Storage Power Capacity
 con4d_maxin_sto           Storage maximum inflow
 con4e_maxout_sto          Storage maximum outflow
-*con4f_resrv_sto           Constraint on reserves (up)
-*con4g_resrv_sto           Constraint on reserves (down)
+
 
 con4h_maxout_lev          Maximum storage outflow - no more than level of last period
 con4i_maxin_lev           Maximum storage inflow - no more than ebergy capacity minus level of last period
@@ -941,8 +929,6 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 * DSM conditions: Load shifting
 *con7a_DSMshift_upanddown         Equalization of upshifts and downshifts in due time
 *con7b_DSMshift_granular_max      Maximum shifting in either direction per period
-*con7c_DSM_distrib_up             Distribution of upshifts between wholesale and reserves
-*con7d_DSM_distrib_do             Distribution of downshifts between wholesale and reserves
 *con7e_DSMshift_recovery          Recovery times
 *con7f_DSMshift_profile           AC profile to give DSM a time-dependant nature
 *con7g_DSMshift_profile_maxACpower      Maximum AC power limit
@@ -1047,17 +1033,6 @@ $ontext
 $offtext
          =E=
          sum( ct , G_L(ct,hh)) + sum( res , G_RES(res,hh)) + sum( sto , STO_OUT(sto,hh) )
-%reserves%$ontext
-* Balancing Correction Factor
-        + sum( ct ,
-        - RP_CON('PR_up',ct,hh) * phi_reserves_call('PR_up',hh)
-        - RP_CON('SR_up',ct,hh) * phi_reserves_call('SR_up',hh)
-        - RP_CON('MR_up',ct,hh) * phi_reserves_call('MR_up',hh)
-        + RP_CON('PR_do',ct,hh) * phi_reserves_call('PR_do',hh)
-        + RP_CON('SR_do',ct,hh) * phi_reserves_call('SR_do',hh)
-        + RP_CON('MR_do',ct,hh) * phi_reserves_call('MR_do',hh) )
-$ontext
-$offtext
 %DSM%$ontext
 
          + sum(dsm_shift, DSM_DO_DEMAND(dsm_shift,hh))
@@ -1127,7 +1102,7 @@ eq3_grid(grid)..
 ;
 
 * ---------------------------------------------------------------------------- *
-*==========           Hourly maximum generation caps and constraints related to reserves   *==========
+*==========           Hourly maximum generation caps and constraints   *==========
 * ---------------------------------------------------------------------------- *
 
 con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
@@ -1149,12 +1124,6 @@ eq2_capfac_ror_avg("ror")..
 * Constraints on renewables
 con3k_maxprod_res(res,h)..
         G_RES(res,h) + CU(res,h)
-%reserves%$ontext
-        + RP_RES('PR_up',res,h)
-        + RP_RES('SR_up',res,h)
-        + RP_RES('MR_up',res,h)
-$ontext
-$offtext
         =E= phi_res(res,h)*P_RES(res)
 ;
 
@@ -1176,13 +1145,6 @@ con4a_stolev_start(sto,'h1')..
 
 con4b_stolev(sto,h)$( (ord(h)>1) )..
          STO_L(sto,h) =E= STO_L(sto,h-1) + STO_IN(sto,h)*(1+stodata("eta_sto",sto))/2 - STO_OUT(sto,h)/(1+stodata("eta_sto",sto))*2
-%reserves%$ontext
-        + sum( (reserves)$(ord(reserves) = 2 or ord(reserves) = 4 or ord(reserves) = 6) ,(RP_STO_IN(reserves,sto,h) * phi_reserves_call(reserves,h) )*(1+stodata("eta_sto",sto))/2 )
-        - sum( (reserves)$(ord(reserves) = 1 or ord(reserves) = 3 or ord(reserves) = 5) ,(RP_STO_IN(reserves,sto,h) * phi_reserves_call(reserves,h) )*(1+stodata("eta_sto",sto))/2 )
-        - sum( (reserves)$(ord(reserves) = 1 or ord(reserves) = 3 or ord(reserves) = 5) ,(RP_STO_OUT(reserves,sto,h) * phi_reserves_call(reserves,h) )/(1+stodata("eta_sto",sto))*2 )
-        + sum( (reserves)$(ord(reserves) = 2 or ord(reserves) = 4 or ord(reserves) = 6) ,(RP_STO_OUT(reserves,sto,h) * phi_reserves_call(reserves,h) )/(1+stodata("eta_sto",sto))*2 )
-$ontext
-$offtext
 ;
 
 con4c_stolev_max(sto,h)..
@@ -1191,38 +1153,22 @@ con4c_stolev_max(sto,h)..
 
 con4d_maxin_sto(sto,h)..
         STO_IN(sto,h)
-%reserves%$ontext
-        + RP_STO_IN('PR_do',sto,h) + RP_STO_IN('SR_do',sto,h) + RP_STO_IN('MR_do',sto,h)
-$ontext
-$offtext
         =L= N_STO_P(sto)
 ;
 
 con4e_maxout_sto(sto,h)..
         STO_OUT(sto,h)
-%reserves%$ontext
-        + RP_STO_OUT('PR_up',sto,h) + RP_STO_OUT('SR_up',sto,h) + RP_STO_OUT('MR_up',sto,h)
-$ontext
-$offtext
         =L= N_STO_P(sto)
 ;
 
 con4h_maxout_lev(sto,h)..
         ( STO_OUT(sto,h)
-%reserves%$ontext
-        + RP_STO_OUT('PR_up',sto,h) + RP_STO_OUT('SR_up',sto,h) + RP_STO_OUT('MR_up',sto,h)
-$ontext
-$offtext
         ) /(1+stodata("eta_sto",sto))*2
         =L= STO_L(sto,h-1)
 ;
 
 con4i_maxin_lev(sto,h)..
         ( STO_IN(sto,h)
-%reserves%$ontext
-        + RP_STO_IN('PR_do',sto,h) + RP_STO_IN('SR_do',sto,h) + RP_STO_IN('MR_do',sto,h)
-$ontext
-$offtext
         ) * (1+stodata("eta_sto",sto))/2
         =L= N_STO_E(sto) - STO_L(sto,h-1)
 ;
@@ -1256,22 +1202,12 @@ con4k_PHS_EtoP('PSH')..
 
 *con6a_DSMcurt_duration_max(dsm_curt,h)..
 *         sum( hh$( ord(hh) >= ord(h) AND ord(hh) < ord(h) + dsmdata_cu("t_off_dsm_cu",dsm_curt) ) , DSM_CU(dsm_curt,hh)
-*%reserves%$ontext
-*         + RP_DSM_CU('SR_up',dsm_curt,hh) * phi_reserves_call('SR_up',hh)
-*         + RP_DSM_CU('MR_up',dsm_curt,hh) * phi_reserves_call('MR_up',hh)
-*$ontext
-*$offtext
 *         )
 *         =L= N_DSM_CU(dsm_curt) * dsmdata_cu("t_dur_dsm_cu",dsm_curt)
 *;
 *
 *con6b_DSMcurt_max(dsm_curt,h)..
 *        DSM_CU(dsm_curt,h)
-*%reserves%$ontext
-*        + RP_DSM_CU('SR_up',dsm_curt,h)
-*        + RP_DSM_CU('MR_up',dsm_curt,h)
-*$ontext
-*$offtext
 *          =L= N_DSM_CU(dsm_curt)
 *;
 *
@@ -1290,31 +1226,17 @@ con4k_PHS_EtoP('PSH')..
 *
 *con7b_DSMshift_granular_max(dsm_shift,h)..
 *         DSM_UP_DEMAND(dsm_shift,h) + DSM_DO_DEMAND(dsm_shift,h)
-*%reserves%$ontext
-*         + sum( reserves$(ord(reserves) > 2) , RP_DSM_SHIFT(reserves,dsm_shift,h) )
-*$ontext
-*$offtext
 *         =L= N_DSM_SHIFT(dsm_shift)
 *;
 *
 *con7c_DSM_distrib_up(dsm_shift,h)..
 *         DSM_UP(dsm_shift,h) =E= DSM_UP_DEMAND(dsm_shift,h)
-*%reserves%$ontext
-*         + RP_DSM_SHIFT('SR_do',dsm_shift,h) * phi_reserves_call('SR_do',h)
-*         + RP_DSM_SHIFT('MR_do',dsm_shift,h) * phi_reserves_call('MR_do',h)
-*$ontext
-*$offtext
 *;
 *
 *con7d_DSM_distrib_do(dsm_shift,h)..
 *         sum( hh$( ord(hh) >= ord(h) - dsmdata_shift("t_dur_dsm_shift",dsm_shift) AND ord(hh) <= ord(h) + dsmdata_shift("t_dur_dsm_shift",dsm_shift) ) , DSM_DO(dsm_shift,hh,h) )
 *                 =E=
 *         DSM_DO_DEMAND(dsm_shift,h)
-*%reserves%$ontext
-*         + RP_DSM_SHIFT('SR_up',dsm_shift,h) * phi_reserves_call('SR_up',h)
-*         + RP_DSM_SHIFT('MR_up',dsm_shift,h) * phi_reserves_call('MR_up',h)
-*$ontext
-*$offtext
 *;
 *
 *con7e_DSMshift_recovery(dsm_shift,h)..
@@ -1326,9 +1248,7 @@ con4k_PHS_EtoP('PSH')..
 *con7f_DSMshift_profile(dsm_shift,h)..
 *
 *        DSM_DO_DEMAND(dsm_shift,h)
-*
 *           =L=
-*
 *phi_AC('2013','IND',h)* N_DSM_SHIFT(dsm_shift)
 *
 *;
@@ -1498,10 +1418,6 @@ report
 report_tech
 report_tech_hours
 report_hours
-report_reserves
-report_reserves_hours
-report_reserves_tech
-report_reserves_tech_hours
 res_min
 ;
 
