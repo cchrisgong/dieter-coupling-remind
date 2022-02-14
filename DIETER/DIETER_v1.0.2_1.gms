@@ -279,12 +279,13 @@ if ((remind_wind_offshore eq 1),
 
 dieter_vremarg =0;
 
-****************************************
+********************************** adjustment cost ******
 
 Sets
 adjte_remind(te_remind)                              /wind, spv, gridwind, ngcc, ngccc/
 adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid,CCGT/
 
+********************************** alias ******
 Alias (h,hh) ;
 alias (res,resres) ;
 alias(se_remind,se_remind2);
@@ -515,7 +516,7 @@ $ENDIF
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
 *$IFTHEN.CB %cap_bound% == "validation"
-P_RES.lo(res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h));
+P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h));
 
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), 
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade))
@@ -534,7 +535,7 @@ N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind"
 
 
 $IFTHEN.CB %cap_bound% == "softLo"
-P_RES.lo(res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h))* 0.8;
+P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h))* 0.8;
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)) ) * 1e6 * 0.8;
 $ENDIF.CB
 
@@ -549,7 +550,7 @@ $ENDIF.CB
 **********************************************************************
 ** remind_coupModeSwitch=1 corresponds to dispatch mode, where capacities in DIETER take (post-invest, post-earlyreti) capacities in REMIND
 if ((remind_coupModeSwitch eq 1),
-P_RES.lo(res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h));
+P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh / (remind_VRECapFac(res) * card(h));
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade))) * 1e6;                    
 
 if ((remind_iter gt remind_dispatch_iter_vrefix),
