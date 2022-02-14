@@ -60,11 +60,9 @@ $offtext
 
         report_tech('DIETER',yr,reg,'DIETER pre-investment capacities (GW)',ct) = N_CON.lo(ct) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER pre-investment capacities (GW)',res) = P_RES.lo(res) / 1e3 ;
-        report_tech('DIETER',yr,reg,'DIETER pre-investment capacities (GW)','coal') = (N_CON.lo('lig') + N_CON.lo('hc'))/ 1e3 ;
         
         report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)',ct) =  N_CON.l(ct) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)',res) =  P_RES.l(res) / 1e3 ;
-        report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)','coal') = (N_CON.l('lig') + N_CON.l('hc'))/ 1e3 ;
         
 ***     reporting on remind run (can be used as a check to reporting in R or as validation)
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','coal') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(COALte(te_remind))) ) * 1e3;
@@ -72,9 +70,7 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','CCGT') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(NonPeakGASte(te_remind)))  ) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','OCGT_eff') = sum(grade, preInv_remind_cap(yr,reg,'ngt', grade)) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','bio') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(BIOte(te_remind))   )  ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','hc') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(COALte(te_remind))) ) * 1e3/2;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','lig') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(COALte(te_remind))) ) * 1e3/2;
-        
+
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','ror') = preInv_remind_cap(yr, reg, 'hydro', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Solar') = preInv_remind_cap(yr, reg, 'spv', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Wind_on') = preInv_remind_cap(yr, reg, 'wind', '1') * 1e3;
@@ -97,9 +93,7 @@ $offtext
 
 *                  ========== report cost ============ REMIND ============
 **note: only report when there is (post-investment) capacity in REMIND
-**coal
-*        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = c_i('lig')  *  RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
-*        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)','coal')$(RM_postInv_prodSe_con(yr,reg,'coal') ne 0) = cdata('c_fix_con','lig') * RM_postInv_cap_con(yr,reg,'coal') / RM_postInv_prodSe_con(yr,reg,'coal');
+
 $IFTHEN.ACon not %adj_cost% == "off"
 *conventional 
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = ( sum(DT_RM(ct,ct_remind),(c_i(ct)-c_adj(ct)))) * RM_postInv_cap_con(yr,reg,ct_remind) / RM_postInv_prodSe_con(yr,reg,ct_remind)  * 1.2;
@@ -127,7 +121,7 @@ $ENDIF.ACoff
          
         report_tech('REMIND',yr,reg,'primary energy price ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = sum(DT_RM(ct,ct_remind), con_fuelprice_reg_remind_reporting(ct,reg)) * 1.2;
         
-***     LCOE (for investment c_i 'lig' is the same as 'coal' ) LCOE = (IC+OM) * cap /gen + CO2 + FC
+***     LCOE = (IC+OM) * cap /gen + CO2 + FC
 *       IC cost: $/MW, CAP: MW, PRODSE: MWh
 ***     This is LCOE for REMIND iteration before (so if this outputs to report_DIETER_i5.gdx, it reports REMIND_LCOE of fulldata_5.gdx run, even though fulldata_5 is produced after DIETER gdxes)
         report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',ct_remind)$(RM_postInv_prodSe_con(yr,reg,ct_remind) ne 0) = ( sum(DT_RM(ct,ct_remind),c_i(ct)) + sum(DT_RM(ct,ct_remind),cdata('c_fix_con',ct)) )
@@ -138,7 +132,6 @@ $ENDIF.ACoff
 
 *                  ========== divestment and investment capacities ============ REMIND ============
 ***     TW -> GW
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','lig') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 ;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','coal') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 ;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','CCGT') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(NonPeakGASte(te_remind)) ) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)','OCGT_eff') = earlyRetiCap_reporting(yr, reg, 'ngt') * 1e3;
@@ -151,7 +144,6 @@ $ENDIF.ACoff
         
 ***     TW -> GW; coal is split for easy comparison
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','coal') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(COALte(te_remind))) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','lig') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(COALte(te_remind))) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','CCGT') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(NonPeakGASte(te_remind))) * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','OCGT_eff') = added_remind_cap(yr, reg, 'ngt', '1') * 1e3;
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','bio') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(BIOte(te_remind))) * 1e3;
@@ -163,7 +155,6 @@ $ENDIF.ACoff
         
 *                  ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
-        report_tech('REMIND',yr,reg,'REMIND CapFac (%)','lig') = remind_CF(yr,reg,'pc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','OCGT_eff') = remind_CF(yr,reg,'ngt')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','bio') = remind_CF(yr,reg,'bioigcc')*1e2;
@@ -178,16 +169,13 @@ $ENDIF.ACoff
 ***     ^^^ reporting on remind stuff 
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',res) =  (P_RES.l(res) - P_RES.lo(res)) / 1e3 ;
-        report_tech('DIETER',yr,reg,'DIETER added capacities (GW)','coal') =  (N_CON.l('lig') + N_CON.l('hc') - N_CON.lo('lig') - N_CON.lo('hc')) / 1e3 ;
-        
+    
         report_tech('DIETER',yr,reg,'capacities storage (GW)',sto) =  N_STO_P.l(sto) / 1e3 ;
         report_tech('DIETER',yr,reg,'capacities storage (TWh)',sto) =  N_STO_E.l(sto) /1e6;
         report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / totLoad  * 1e2;
         report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
-        report_tech('DIETER',yr,reg,'genshares (%)','coal') = sum( h, (G_L.l('hc',h) + G_L.l('lig',h)) ) / totLoad  * 1e2;
 
         report_tech('REMIND',yr,reg,'genshares (%)','coal') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(COALte(te_remind)));
-        report_tech('REMIND',yr,reg,'genshares (%)','lig') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(COALte(te_remind)));
         report_tech('REMIND',yr,reg,'genshares (%)','CCGT') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(NonPeakGASte(te_remind)));
         report_tech('REMIND',yr,reg,'genshares (%)','OCGT_eff') = remind_genshare(yr,reg,'ngt');
         report_tech('REMIND',yr,reg,'genshares (%)','bio') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(BIOte(te_remind)));
@@ -404,12 +392,10 @@ $ENDIF.ACoff
 
         report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',ct) = market_value(ct) * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)',res) = market_value(res) * 1.2;
-        report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','coal') = market_value('coal') * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','elh2') = market_value('elh2') * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value ($/MWh)','el') = market_value('el') * 1.2;
         
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',ct) = market_value_wscar(ct) * 1.2;
-        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)','coal') = market_value_wscar('coal') * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',res) = market_value_wscar(res) * 1.2;
         
         report_tech('DIETER',yr,reg,'DIETER Market price with scarcity price ($/MWh)','el') = market_value_wscar('el') * 1.2;
@@ -418,7 +404,6 @@ $ENDIF.ACoff
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'value_factor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'value_factor') * 1e2;
-        report_tech('DIETER',yr,reg,'DIETER Value factor (%)','coal') = p32_reportmk_4RM(yr,reg,'coal','value_factor') * 1e2;
 
         report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) )   /1e6 ;
         report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) )   /1e6;
