@@ -143,14 +143,14 @@ BIOte
 NUCte
 
 te_remind
-* remind technology					                 /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, omv, lifetime/
 char_remind_dataren "remind character for renewable" /nur,maxprod/
-grade 	    remind grade level for technology	     /1*12/
+grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
 reg_nuc     region with nuclear phase-out            /DEU/
 reg_coal    region with coal phase-out               /DEU/
@@ -164,11 +164,10 @@ all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_m
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
 ct(all_te)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
-ct_remind Conventional Technologies mapped from REMIND /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
 res(all_te)       Renewable technologies         /Wind_on, Wind_off, Solar/
-p2g(all_te)       Sector Coupling P2G Technologies       /elh2/
+p2g(all_te)       Sector Coupling P2G Technologies /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -179,16 +178,16 @@ dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR_up, MR_do/
 h         hour                                   /h1*h8760/
 
-DT_RM(ct,ct_remind)   "mapping DIETER and REMIND technologies for reporting"
-/
-coal.coal
-ror.ror
-nuc.nuc
-CCGT.CCGT
-OCGT_eff.OCGT_eff
-bio.bio
-/
-
+*DT_RM(ct,te_remind)   "mapping DIETER and REMIND technologies for reporting"
+*/
+*coal.coal
+*ror.ror
+*nuc.nuc
+*CCGT.CCGT
+*OCGT_eff.OCGT_eff
+*bio.bio
+*/
+*
 
 *==========
 *te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
@@ -249,11 +248,11 @@ Parameter disc_fac_grid(grid) Discount factor for overnight investment;
 Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
 Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
 Parameter preInv_remind_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
-Parameter RM_postInv_cap_con(yr,reg,ct_remind) Post-investment REMIND capacity for conventional;
+Parameter RM_postInv_cap_con(yr,reg,ct) Post-investment REMIND capacity for conventional;
 Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable;
 Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable;
 Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable;
-Parameter RM_postInv_prodSe_con(yr,reg,ct_remind) Post-investment REMIND generation for conventional;
+Parameter RM_postInv_prodSe_con(yr,reg,ct) Post-investment REMIND generation for conventional;
 Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment;
 Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment;
 Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
@@ -1455,7 +1454,7 @@ $IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve"
 ***CG: if sum(h, G_L(ct,h)) = generation_DIETER_currentIter is larger than REMIND's last iteration gen share RM_postInv_prodSe_con for "ct" conventional tech,
 ***then pref_FC > 1, making the FC more expensive in current iteration DIETER, lowering its current share
 eq4_pref(ct)..
-          pref_FC(ct) =E=  1 + ( sum(h, G_L(ct,h)) / totLoad - sum(DT_RM(ct,ct_remind), RM_postInv_prodSe_con("2020","DEU",ct_remind))/ totLoad)
+          pref_FC(ct) =E=  1 + ( sum(h, G_L(ct,h)) / totLoad - RM_postInv_prodSe_con("2020","DEU",ct)/ totLoad)
 ;
 $ENDIF.FC3
 
