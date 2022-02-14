@@ -22,6 +22,11 @@ $offtext
 
 * Define net energy demand
 
+***********************************************************************************************************************
+************************************  1. SWITCHES *********************************************************************
+***********************************************************************************************************************
+
+*************************** SWITCHES FROM STANDALONE DIETER  **********************************************************
 
 *==========
 *==========           GLOBAL OPTIONS *==========
@@ -35,25 +40,12 @@ $setglobal write_to_excel ""
 
 * Set star to activate options
 $setglobal DSM ""
+$setglobal Reserves ""
 *P2G is prob superfluous switch
 $setglobal P2G "*"
-$setglobal reserves ""
 
+*************************** SWITCHES FOR COUPLING, BUT NOT CONTROLLED FROM REMIND SIDE YET *****************************
 
-* Set star to run test variant with each second hour
-$setglobal second_hour ""
-
-* Definition of strings for report parameters and sanity checks
-* (Do not change settings below)
-$setglobal em_share ""
-$setglobal sec_hour "1"
-
-%second_hour%$ontext
-$setglobal sec_hour "8760/2208"
-$ontext
-$offtext
-
-*** ================== coupling switches =======================
 ****fuel cost option (averaged over iteration or not, averaged over years or not):
 *load will load averaged fuel cost over 3 iterations
 *fixed will load fuel cost from the last uncoupled iteration of REMIND
@@ -79,10 +71,9 @@ $setglobal fuel_cost_suppc no_suppcurve
 
 **** capacity bound options (bound to remind's preInvest cap)
 * none = no bound
-* hardLo = hard lower bound for all tech
-* softLo1 = soft lower bound (maximum of 20% peak capacity and remind preInvest cap) for dispatchables, hard lower bound for VRE
-* softLo2 = 80% of hard lower bound
-* fixed = fix to postInvest cap in REMIND, for speeding up computation. However, this should only be turned on after a few iterations, otherwise REMIND's firm capacities are too low in later years,
+* validation = hard lower bound for all tech
+* softLo = 80% of hard lower bound
+* dispatch = fix to postInvest cap in REMIND, for speeding up computation. However, this should only be turned on after a few iterations, otherwise REMIND's firm capacities are too low in later years,
 *           result in infes in DIETER
 *$setglobal cap_bound validation
 *$setglobal cap_bound softLo
@@ -123,25 +114,23 @@ option limcol    = 0;
 option limrow    = 0;
 
 
-
-*==========
-*==========
-
+***********************************************************************************************************************
+************************************  2. SETS *************************************************************************
+***********************************************************************************************************************
 Sets
-*============== remind sets ==================
+* ================================ REMIND sets ====================================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 *all_yr      for smoothing prices                     /2005,2020,2150/
 t           year from remind to be loaded
+te_remind   tech from remind to be loaded
+COALte      coal tech from remind to be loaded
+NonPeakGASte non peaking gas type gas plants from remind to be loaded
+BIOte       biomass tech from remind to be loaded
+NUCte       nuclear tech from remind to be loaded
 
-
-te_remind
-COALte
-NonPeakGASte
-BIOte
-NUCte
-
-* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+*** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
+* remind technology					                  /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
@@ -153,7 +142,7 @@ reg         region set                               /DEU/
 reg_nuc     region with nuclear phase-out            /DEU/
 reg_coal    region with coal phase-out               /DEU/
 
-*============== DIETER sets ==================
+* ================================ DIETER sets ====================================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
 te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
@@ -176,11 +165,11 @@ reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR
 h         hour                                   /h1*h8760/
 
 
-*==========
-*te(te_dieter) = ct(te_dieter) + res(te_dieter) + p2g(te_dieter);
 
+* ================================ lOAD REMIND SETS AND PARAMETERS ====================================
 $include dataload.gms
 
+* ================================ TECH MAPPING BETWEEN THE TWO MODELS ================================
 Sets
 
 DT_RM(te_dieter,te_remind)   "mapping DIETER and REMIND technologies for reporting"
@@ -197,10 +186,10 @@ nuc.tnrs
 nuc.fnrs
 bio.bioigcc
 bio.bioigccc
+ror.hydro
 Solar.spv
 Wind_on.wind
 Wind_off.windoff
-ror.hydro
 /
 
 DT_RM_ct(te_dieter,te_remind)   "mapping DIETER and REMIND conventional technologies"
@@ -220,6 +209,14 @@ bio.bioigccc
 ror.hydro
 /
 
+DT_RM_res(te_dieter,te_remind)   "mapping DIETER and REMIND renewable technologies"
+/
+Solar.spv
+Wind_on.wind
+Wind_off.windoff
+/
+
+
 RM_ct_pe(te_remind,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
 /
 pc.pecoal
@@ -237,6 +234,14 @@ bioigccc.pebiolc
 hydro.pehyd
 /
 
+RM_res_pe(te_remind,pe_remind)   "mapping DIETER and REMIND renewable technologies and primary energy in remind"
+/
+spv.pesol
+wind.pewin
+windoff.pewin
+/
+
+
 DT_ct_pe(ct,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
 /
 coal.pecoal
@@ -249,16 +254,20 @@ ror.pehyd
 
 ;
 
-********** COUPLED SWITCH **************
+************************************** COUPLING SWITCH FOR TESTING STANDALONE DIETER *******************************************
 *** H2 switch for DIETER standalone testing
 *remind_h2switch = 0;
 *remind_h2switch = 1;
 
-*remind_coupModeSwitch = 0;
+* 0 = validation, 1 = dispatch, 2= none
+*remind_coupModeSwitch = 0; 
 *remind_coupModeSwitch = 1;
 *remind_coupModeSwitch = 2;
 
+*remind_priceShaveSwitch = 0;
+*remind_priceShaveSwitch = 1;
 
+************************************** FUTHER CUSTOMIZING COUPLING SWITCH ******************************************************
 *** wind offshore switch 
 * there might be situation where input.gdx has no windoff as technology, in which case, skip first iter
 if ((remind_wind_offshore eq 1), 
@@ -272,16 +281,10 @@ if ((remind_wind_offshore eq 1),
 );
 
 dieter_vremarg =0;
-*remind_priceShaveSwitch = 1;
 
-
-*** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 ****************************************
 
 Sets
-*adjte_remind(te_remind)                              /wind, spv, gridwind,hydro, ngcc, ngccc, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco/
-*adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid, ror, CCGT, bio, coal/
-*
 adjte_remind(te_remind)                              /wind, spv, gridwind, ngcc, ngccc/
 adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid,CCGT/
 
@@ -290,35 +293,10 @@ alias (res,resres) ;
 alias(se_remind,se_remind2);
 alias (reserves,reservesreserves) ;
 
-*$stop
-Parameter sm_eps small number: 1e-9 /1e-9/;
-Parameter totLoad total secondary electricity load;
-Parameter totFixedLoad total fixed load;
-Parameter totFlexLoad total flexible load;
-Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
-Parameter capfac_ror constant cap. factor of hydro power;
-Parameter remind_gridfac_reg  grid factor per region;
-Parameter r Investment interest rate;
-Parameter disc_fac_con(ct) Discount factor for overnight investment;
-Parameter disc_fac_res(res) Discount factor for overnight investment;
-Parameter disc_fac_p2g(p2g) Discount factor for overnight investment;
-Parameter disc_fac_grid(grid) Discount factor for overnight investment;
-Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
-Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
-Parameter RM_preInv_prodSe_con(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
-Parameter RM_postInv_cap_con(yr,reg,ct) Post-investment REMIND capacity for conventional;
-Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable;
-Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable;
-Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable;
-Parameter RM_postInv_prodSe_con(yr,reg,ct) Post-investment REMIND generation for conventional;
-Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment;
-Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment;
-Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
-Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
-Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
-Parameter dieter_lifetime(ct)  DIETER plant lifetime;
 
-*==========
+***********************************************************************************************************************
+************************************  3. VARIABLES ********************************************************************
+***********************************************************************************************************************
 
 Variables
 Z                Value objective function
@@ -368,8 +346,98 @@ RP_DSM_SHIFT(reserves,dsm_shift,h)        Reserve provision by DSM load shifting
 pref_FC(ct)              Fuel cost prefactor (share depenedent)
 ;
 
-*================================================================
-*================ scale up demand ===============================
+
+****************
+
+Parameter sm_eps small number: 1e-9 /1e-9/;
+Parameter totLoad total secondary electricity load;
+Parameter totFixedLoad total fixed load;
+Parameter totFlexLoad total flexible load;
+Parameter capfac_const(res) constant capacity factor as average of hourly RES potential;
+Parameter capfac_ror constant cap. factor of hydro power;
+Parameter remind_gridfac_reg  grid factor per region;
+Parameter r Investment interest rate;
+Parameter disc_fac_con(ct) Discount factor for overnight investment;
+Parameter disc_fac_res(res) Discount factor for overnight investment;
+Parameter disc_fac_p2g(p2g) Discount factor for overnight investment;
+Parameter disc_fac_grid(grid) Discount factor for overnight investment;
+Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
+Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
+Parameter RM_preInv_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
+Parameter RM_postInv_cap_con(yr,reg,ct) Post-investment REMIND capacity for conventional;
+Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_cap_p2g(yr,reg,p2g) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_cap_grid(yr,reg,grid) Post-investment REMIND capacity for renewable;
+Parameter RM_postInv_prodSe_con(yr,reg,ct) Post-investment REMIND generation for conventional;
+Parameter RM_postInv_prodSe_res_xcurt(yr,reg,res) Post-investment REMIND generation for renewables excluding curtailment;
+Parameter RM_postInv_prodSe_res(yr,reg,res) Post-investment REMIND generation for renewables including curtailment;
+Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
+Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
+Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
+Parameter dieter_lifetime(ct)  DIETER plant lifetime;
+
+Parameter
+remind_VRECapFac(res)   "VRE capacity factors from REMIND"
+remind_HydroCapFac      "Hydro capacity factor from REMIND"
+dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
+*share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
+dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND - should be equal or larger than 1"
+remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
+remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
+remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
+remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
+;
+
+
+*================================================================================
+*================ process capacity factors of VRE ===============================
+
+remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade)) / remind_cap("2020", "DEU",te_remind, "1");
+*AO* Calculate REMIND VRE CFs from grades
+remind_VRECapFac(res) = sum(DT_RM_res(res,te_remind), remind_CF("2020","DEU",te_remind) * remind_average_grade_LF(te_remind));
+remind_HydroCapFac = remind_average_grade_LF("hydro");
+
+*CG*: for VRE, calculate an investment CAPEX factor for added cap in DIETER which is
+* dieter_newInvFactor = (average capfac over all remind grades) /
+* (capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
+remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
+remind_lowest_grade_LF(te_remind) = smin(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
+*** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
+remind_highest_empty_grade_LF("wind") = max(remind_lowest_grade_LF("wind"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind")));
+remind_highest_empty_grade_LF("windoff") = max(remind_lowest_grade_LF("windoff"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "windoff", grade) < (0.9 * remind_gradeMaxCap(grade,"windoff"))), remind_pm_dataren("DEU", "nur", grade, "windoff")));
+remind_highest_empty_grade_LF("spv") = max(remind_lowest_grade_LF("spv"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv")));
+remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.99 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
+dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
+**CG: sometimes hydro grades are both full, in which case set factor to 1
+dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
+
+if((dieter_vremarg eq 0),
+dieter_newInvFactor(te_remind) = 1;
+);
+
+
+*AO* Calculate DIETER VRE CFs as given by the input data
+dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
+
+phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
+
+*disable this to minimize distortion
+*phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
+*phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
+*phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
+*
+*if ((remind_wind_offshore eq 1),
+*phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
+*phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
+*);
+*
+*
+*AO* For hydro simply set CF to that of REMIND
+capfac_ror = remind_HydroCapFac;
+
+*================================================================================
+*================ scale up demand ===============================================
+
 DIETER_OLDtotdem = sum( h , d_y_reg('2019',"DEU",h));
 
 totLoad = remind_totseelDem("2020", "DEU", "seel") * sm_TWa_2_MWh;
@@ -392,65 +460,6 @@ d(h) = d_y_reg('2019',"DEU",h) * totFixedLoad / DIETER_OLDtotdem;
 earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = (remind_capEarlyReti(yr, reg, te_remind) - remind_capEarlyReti2("2015", reg, te_remind) ) * remind_cap(yr, reg, te_remind, "1")
                                                                             / (1 - remind_capEarlyReti(yr, reg, te_remind)) ;
 
-****************
-Parameter
-remind_VRECapFac(res)   "VRE capacity factors from REMIND"
-remind_HydroCapFac      "Hydro capacity factor from REMIND"
-dieter_VRECapFac(res)   "VRE capacity factors from time series input to DIETER"
-*share_wind_on_CF_match  "Share of required wind onshore power to match DIETER wind CF to REMIND values"
-dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIETER that corresponds to potential of the still empty rlf grades in REMIND - should be equal or larger than 1"
-remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
-remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
-remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
-remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
-;
-
-remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade)) / remind_cap("2020", "DEU",te_remind, "1");
-*AO* Calculate REMIND VRE CFs from grades
-remind_VRECapFac("Wind_on") = remind_CF("2020","DEU","wind") * remind_average_grade_LF("wind");
-
-if ((remind_wind_offshore eq 1),
-remind_VRECapFac("Wind_off") = remind_CF("2020","DEU","windoff") * remind_average_grade_LF("windoff");
-);
-
-remind_VRECapFac("Solar") = remind_CF("2020","DEU","spv") * remind_average_grade_LF("spv");
-remind_HydroCapFac = remind_average_grade_LF("hydro");
-
-*CG*: for VRE, calculate an investment CAPEX factor for added cap in DIETER which is
-* dieter_newInvFactor = (average capfac over all remind grades) /
-* (capfac of the highest rlf grade that is still empty, > 1e-8, < 0.9x maxcap = maxprod * s_twa2mwh / 8760 / nur * 1e-6)
-remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
-remind_lowest_grade_LF(te_remind) = smin(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
-*** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
-remind_highest_empty_grade_LF("wind") = max(remind_lowest_grade_LF("wind"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "wind", grade) < (0.9 * remind_gradeMaxCap(grade,"wind"))), remind_pm_dataren("DEU", "nur", grade, "wind")));
-remind_highest_empty_grade_LF("windoff") = max(remind_lowest_grade_LF("windoff"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "windoff", grade) < (0.9 * remind_gradeMaxCap(grade,"windoff"))), remind_pm_dataren("DEU", "nur", grade, "windoff")));
-remind_highest_empty_grade_LF("spv") = max(remind_lowest_grade_LF("spv"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "spv", grade) < (0.9 * remind_gradeMaxCap(grade,"spv"))), remind_pm_dataren("DEU", "nur", grade, "spv")));
-remind_highest_empty_grade_LF("hydro") = max(remind_lowest_grade_LF("hydro"), SMax(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) < (0.99 * remind_gradeMaxCap(grade,"hydro"))), remind_pm_dataren("DEU", "nur", grade, "hydro")));
-dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
-**CG: sometimes hydro grades are both full, in which case set factor to 1
-dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
-
-if((dieter_vremarg eq 0),
-dieter_newInvFactor(te_remind) = 1;
-);
-*AO* Calculate DIETER VRE CFs as given by the input data
-dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
-
-phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
-
-*disable this to minimize distortion
-*phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
-*phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
-*phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
-*
-*if ((remind_wind_offshore eq 1),
-*phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
-*phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
-*);
-*
-*
-*AO* For hydro simply set CF to that of REMIND
-capfac_ror = remind_HydroCapFac;
 
 ****************
 *pass on VRE gen share from RM to DT instead of capacities, using the following transformation
@@ -458,45 +467,34 @@ capfac_ror = remind_HydroCapFac;
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_dt(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
-RM_preInv_prodSe_con(yr, "DEU", pe_remind, se_remind, te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) = remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
+RM_preInv_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) = remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
                                                                        - remind_pm_dt(yr) / 2  * remind_prodSe(yr, "DEU", pe_remind, se_remind, te_remind)
                                                                        * remind_deltaCap(yr, "DEU", te_remind, "1")
                                                                        /remind_cap(yr, "DEU", te_remind, "1");
 
 **********************************************************************
-*Remind post-investment cap ( TW-> MW )
+*REMIND post-investment cap ( TW-> MW )
 RM_postInv_cap_con(yr,reg,ct) = sum(DT_RM_ct(ct,te_remind), sum( grade, remind_cap(yr, reg, te_remind, grade))) *1e6;
-RM_postInv_cap_res(yr,reg,"Solar") = sum( grade, remind_cap(yr, reg, "spv", grade)) * 1e6;
-RM_postInv_cap_res(yr,reg,"Wind_on") = sum( grade, remind_cap(yr, reg, "wind", grade))* 1e6;
-
-if ((remind_wind_offshore eq 1),
-RM_postInv_cap_res(yr,reg,"Wind_off") = sum( grade, remind_cap(yr, reg, "windoff", grade))* 1e6;
-);
-RM_postInv_cap_con(yr,reg,"ror") = sum( grade, remind_cap(yr, reg, "hydro", grade)) * 1e6;
+RM_postInv_cap_res(yr,reg,res) = sum(DT_RM_res(res,te_remind), sum( grade, remind_cap(yr, reg, te_remind, grade))) *1e6;
 RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grade)) * 1e6;
 RM_postInv_cap_grid(yr,reg,"vregrid") = sum( grade, remind_cap(yr, reg, "gridwind", grade)) * 1e6;
 
-* Remind post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
+* REMIND post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
 RM_postInv_prodSe_con(yr,reg,ct) = sum( DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), remind_prodSe(yr,reg, pe_remind, "seel", te_remind)) ) * sm_TWa_2_MWh;
-RM_postInv_prodSe_res_xcurt(yr,reg,"Solar") = remind_prodSe_Resxcurt(yr, reg, "seel", "spv")* sm_TWa_2_MWh;
-RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_on") = remind_prodSe_Resxcurt(yr, reg, "seel", "wind")* sm_TWa_2_MWh ;
-if ((remind_wind_offshore eq 1),
-RM_postInv_prodSe_res_xcurt(yr,reg,"Wind_off") = remind_prodSe_Resxcurt(yr, reg, "seel", "windoff")* sm_TWa_2_MWh ;
-);
-RM_postInv_prodSe_res(yr,reg,"Solar") = remind_prodSe(yr, reg, "pesol", "seel", "spv")* sm_TWa_2_MWh;
-RM_postInv_prodSe_res(yr,reg,"Wind_on") = remind_prodSe(yr, reg, "pewin", "seel", "wind")* sm_TWa_2_MWh;
-if ((remind_wind_offshore eq 1),
-RM_postInv_prodSe_res(yr,reg,"Wind_off") = remind_prodSe(yr, reg, "pewin", "seel", "windoff")* sm_TWa_2_MWh;
-);
+RM_postInv_prodSe_res_xcurt(yr,reg,res) = sum(DT_RM_res(res,te_remind), remind_prodSe_Resxcurt(yr, reg, "seel", te_remind)) * sm_TWa_2_MWh;
+RM_postInv_prodSe_res(yr,reg,res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), remind_prodSe(yr, reg, pe_remind, "seel", te_remind))) * sm_TWa_2_MWh;
+
+* REMIND flexible demand 
 RM_postInv_demSe(yr,reg,"elh2") = totFlexLoad;
-RM_curt_rep(yr,reg,"Solar") = remind_curt(yr,reg,"spv")* sm_TWa_2_MWh ;
-RM_curt_rep(yr,reg,"Wind_on") = remind_curt(yr,reg,"wind")* sm_TWa_2_MWh ;
-if ((remind_wind_offshore eq 1),
-RM_curt_rep(yr,reg,"Wind_off") = remind_curt(yr,reg,"windoff")* sm_TWa_2_MWh ;
-);
 
-**********************************************************************
+* REMIND curtailment
+RM_curt_rep(yr,reg,res) = sum(DT_RM_res(res,te_remind), remind_curt(yr, reg, te_remind)) *1e6;
 
+
+****************************************************************************************************************
+****************************************************************************************************************
+**************************************** 4. BEGIN OF COUPLED CAPACITY FIXING  *************************************
+****************************************************************************************************************
 
 **********************************************************************
 *********************** VALIDATION MODE ******************************
@@ -508,11 +506,7 @@ preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0, remind_cap(yr, "DEU", te
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
 
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
-P_RES.up("Solar") = sum(grade, remind_gradeMaxCap(grade,"spv"))*1e6;
-P_RES.up("Wind_on") = sum(grade, remind_gradeMaxCap(grade,"wind"))*1e6;
-if ((remind_wind_offshore eq 1),
-P_RES.up("Wind_off") = sum(grade, remind_gradeMaxCap(grade,"windoff"))*1e6;
-);
+P_RES.up(res) = sum(DT_RM_res(res,te_remind), sum(grade, remind_gradeMaxCap(grade,te_remind)) ) * 1e6;
 N_CON.up("ror") = sum(grade, remind_gradeMaxCap(grade,"hydro"))*1e6;
 
 ** if nuclear phase out then no nuclear should be added in DIETER
@@ -530,13 +524,9 @@ $ENDIF
 
 
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
-if ((remind_coupModeSwitch eq 0),
+if ((remind_coupModeSwitch eq 0), 
 *$IFTHEN.CB %cap_bound% == "validation"
-P_RES.lo("Solar") = RM_preInv_prodSe_con("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
-P_RES.lo("Wind_on") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
-if ((remind_wind_offshore eq 1),
-P_RES.lo("Wind_off") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1;
-);
+P_RES.lo(res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) * sm_TWa_2_MWh  * 1e6;
 
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), 
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade))
@@ -555,10 +545,10 @@ N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind"
 
 
 $IFTHEN.CB %cap_bound% == "softLo"
-P_RES.lo("Solar") = RM_preInv_prodSe_con("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
-P_RES.lo("Wind_on") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
+P_RES.lo("Solar") = RM_preInv_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 0.8;
+P_RES.lo("Wind_on") = RM_preInv_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 0.8;
 if ((remind_wind_offshore eq 1),
-P_RES.lo("Wind_off") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 0.8;
+P_RES.lo("Wind_off") = RM_preInv_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 0.8;
 );
 
 
@@ -580,10 +570,10 @@ $ENDIF.CB
 ** remind_coupModeSwitch=1 corresponds to dispatch mode, where capacities in DIETER take (post-invest, post-earlyreti) capacities in REMIND
 if ((remind_coupModeSwitch eq 1),
 *$IFTHEN.CB %cap_bound% == "dispatch"
-P_RES.lo("Solar") = RM_preInv_prodSe_con("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
-P_RES.lo("Wind_on") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
+P_RES.lo("Solar") = RM_preInv_prodSe("2020", "DEU", "pesol", "seel", "spv") * sm_TWa_2_MWh / ( remind_VRECapFac("Solar") * card(h)) * 1;
+P_RES.lo("Wind_on") = RM_preInv_prodSe("2020", "DEU", "pewin", "seel", "wind") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_on") * card(h)) * 1;
 if ((remind_wind_offshore eq 1),
-P_RES.lo("Wind_off") = RM_preInv_prodSe_con("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1;
+P_RES.lo("Wind_off") = RM_preInv_prodSe("2020", "DEU", "pewin", "seel", "windoff") * sm_TWa_2_MWh / (remind_VRECapFac("Wind_off") * card(h)) * 1;
 );
 
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), 
@@ -622,9 +612,10 @@ $IFTHEN.windoff_fix %windoff_fix% == "on"
 P_RES.fx(res)$sameas(res,"Wind_off") = RM_postInv_cap_res("2020", "DEU","Wind_off");
 $ENDIF.windoff_fix
 );
-**********************************************************************
-*********************** END OF COUPLED MODE ***********************
-**********************************************************************
+***********************************************************************************************
+*********************** END OF COUPLED CAPACITY FIXING  ***************************************
+***********************************************************************************************
+* STORAGE FIXINGS
 *
 *N_STO_P.fx("PbS") = 0 ;
 *N_STO_P.fx("caes") = 0 ;
@@ -644,9 +635,14 @@ STO_IN.fx(sto,h) = 0 ;
 STO_OUT.fx(sto,h) = 0 ;
 STO_L.fx(sto,h) = 0 ;
 
-*================================================================
+**************************************************************************************************
+*********************** 5. READING IN COST FROM REMIND WITH UPSCALING  ***************************
+**************************************************************************************************
+
+*===================================================================
 *======================= VARIABLE COST =============================
-*================================================================
+*===================================================================
+
 *================ read in fuel price from remind ================
 
 
@@ -691,6 +687,9 @@ cdata("eta_con","bio")$(RM_postInv_prodSe_con("2020", "DEU","bio") eq 0)=sum(BIO
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("eta_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0)=remind_eta2("2020","DEU","tnrs");
 
+*================ read in carbon content from remind ================
+
+
 ***** carbon content from REMIND (average over REMIND te since CCS plants have lower carbon content) ***** 
 *dieter value (tCO2/MWh) = REMIND value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = REMIND value * (44/12 * 1e9) / (8760000000) 
 cdata("carbon_content","coal")$(RM_postInv_prodSe_con("2020", "DEU","coal") ne 0)
@@ -709,7 +708,7 @@ cdata("carbon_content","CCGT")$(RM_postInv_prodSe_con("2020", "DEU","CCGT") eq 0
 
 *omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1e12 to get $(2005)/TWa, divides sm_TWa_2_MWh to get $(2005)/MWh
 
-***** variable O&M from REMIND *****
+*================ read in variable O&M from remind ================
 cdata("c_var_con",ct)$(RM_postInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_OMcost("DEU","omv",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),remind_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / (RM_postInv_prodSe_con("2020", "DEU",ct)/sm_TWa_2_MWh)
@@ -726,9 +725,8 @@ cdata("c_var_con","nuc")$(RM_postInv_prodSe_con("2020", "DEU","nuc") eq 0) = rem
 
 p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
 
-Display cdata;
 
-***** END of variable O&M from REMIND *****
+*================ summing variable costs ================================
 ** note: for hydro/ror c_m_reg is 0
 $IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
@@ -747,7 +745,7 @@ $ENDIF.FC3
 
 *================================================================
 *======================= FIXED COST =============================
-*once REMIND starts, read in the interest rate from REMIND
+* REMIND endogenous interest rate
 r = remind_r("2020","DEU");
 
 *===================== annuitized investment cost (calculated from full lifetime in REMIND, i.e no early retirement) ==================
@@ -783,7 +781,7 @@ $IFTHEN.AC %adj_cost% == "on_select"
 remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC
 
-*======= read in investment cost from remind ========
+*======= read in overnight investment cost from remind ==========================
 *overnight investment cost
 *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** weighted average of many techs in REMIND
@@ -820,7 +818,7 @@ c_i_res(res) = c_i_ovnt_res(res) * disc_fac_res(res);
 c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 
-*======= adjustment cost from remind (for disaggregated reportin)========
+*=============== adjustment cost from remind (for disaggregated reportin) ================
 *""overnight" adjustment cost
 *# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** weighted average of many techs in REMIND
@@ -854,8 +852,8 @@ c_adj_res(res) = c_adj_ovnt_res(res) * disc_fac_res(res);
 c_adj_p2g(p2g) = c_adj_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 
-*================================================================
-*=======read in fixed OM cost from REMIND ========
+
+*=============== read in fixed OM cost from REMIND ================
 *note that omf is the proportion from overnight investment cost, NOT annuitized!!!
 cdata("c_fix_con",ct)$(RM_postInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_OMcost("DEU","omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),remind_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
@@ -872,6 +870,18 @@ p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("
 griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
 
 remind_gridfac_reg = remind_gridfac("DEU");
+
+
+***********************************************************************************************
+*********************** END OF READING IN COST FROM REMIND WITH UPSCALING  ********************
+***********************************************************************************************
+
+**************************************************************************************************
+*********************** 6. EQUATIONS  AND MODEL **************************************************
+**************************************************************************************************
+
+
+*==============================================================================================
 
 Equations
 * Objective
@@ -1460,6 +1470,11 @@ $offtext
 option lp = cplex;
 option nlp = conopt;
 option threads = 6;
+
+
+**************************************************************************************************
+*********************** 7. REPORT TO REMIND ******************************************************
+**************************************************************************************************
 
 parameter
 corr_fac_con

@@ -1,5 +1,9 @@
 ***!!!! reporting variable name should obey the format ''NAME (UNIT)'. ANYTHING IN THE PARENTHESIS WILL BE TREATED AS UNIT
 *******************************************************************************************************
+**************************************************************************************************
+*********************** 8. REPORT TO POST-PROCESSING *********************************************
+**************************************************************************************************
+
 ********************************* reporting for hourly data *******************************************
 *     generation MWh -> TWh
         report_tech_hours('DIETER',yr,reg,'generation (GWh)',ct,h) =  ( G_L.l(ct,h) + corr_fac_con(ct,h) )/1e3;
@@ -15,8 +19,6 @@
         report_tech_hours('DIETER',yr,reg,'consumption (GWh)','elh2',h) = C_P2G.l("elh2",h) /1e3;
 $ontext
 $offtext
-        
-*        report_hours('DIETER',yr,reg,'fixed demand (MWh)',h) = d(h) ;
         
 *model's unit is in $(2005), multiply by 1.2 to $(2015)
         report_hours('DIETER',yr,reg,'hourly wholesale price ($/MWh)',h) = -con1a_bal.m(h) * 1.2;

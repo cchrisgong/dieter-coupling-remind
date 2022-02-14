@@ -20,8 +20,9 @@ $offtext
 
 
 Parameters
-* check in the future: remind variables probably do not need to be declared in dieter below
-*=========== for loading remind output ===========
+* NOTE: remind variables do not need to be declared in dieter below
+
+*************************** 1. SWITCHES FOR COUPLING, BUT CONTROLLED FROM REMIND SIDE YET *****************************
 *------------------------
 *binary H2 coupling switch
 remind_h2switch
@@ -35,6 +36,8 @@ s32_windoff
 * price shave switch (whether shave off scarcity price)
 remind_priceShaveSwitch
 s32_scarPrice
+
+*************************** 2. PARAMETERS AND SETS FROM REMIND  **********************************************************
 *------------------------
 *Investment interest rate
 R_4DT(yr, reg)
@@ -134,7 +137,6 @@ cm_DT_dispatch_i2
 dieter_vremarg
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
-demConvR       Remind to Dieter Demand Conversion Ratio which is the ratio between remind_totdem and dieter total net demand sum_h dem_h
 ;
 
 ********
@@ -259,21 +261,12 @@ c_adj_ovnt(ct)             Investment costs: Overnight
 c_adj_ovnt_res(res)        Investment costs: Overnight
 c_adj_ovnt_p2g(p2g)        Investment costs: Overnight
 c_adj_ovnt_grid(grid)      Investment costs: Overnight
-*====== Time Data ======
 
-*d_y(year,h)              Demand hour h for cost minimization for different years
-*d_y_reg(year,reg,h)      Demand hour h for cost minimization for different years and specific regions
+*====== Time Series Data ======
 d(h)                      Demand hour h for cost minimization
-*price_data(h)            Spot market prices 2012
-*phi_res_y(year,res,h)    Renewables availability technology res in hour h for different years
 phi_res_y_reg(year,reg,h,res)
 phi_res(res,h)            Renewables availability technology res in hour h
 *phi_ror(h)               Run-of-river availability in hour h
-
-elasticity_upload         Upload parameter for demand elasticity
-elasticity                Demand elasticity
-*alpha(h)                 Reservation price hour h for elastic demand
-*beta(h)                  Slope on linear demand curve hour h
 
 
 *====== Storage ======
@@ -324,18 +317,6 @@ elasticity                Demand elasticity
 *m_dsm_shift(dsm_shift)                   DSM: Maximum installable capacity load shifting
 
 
-
-*====== Reserves ======
-*%reserves%$ontext
-phi_reserves_share(reserves)             Shares of SRL and MRL up and down
-*reserves_intercept(reserves)
-reserves_slope(reserves,res)
-phi_reserves_call_y(year,h,reserves)     Hourly share of reserve provision that is actually activated
-phi_reserves_call(reserves,h)            Hourly share of reserve provision that is actually activated
-phi_reserves_pr                          ??? /0.05/
-;
-*$ontext
-*$offtext
 
 *repress printing out all the input data
 $offlisting
