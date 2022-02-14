@@ -64,18 +64,9 @@ $offtext
         report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)',ct) =  N_CON.l(ct) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)',res) =  P_RES.l(res) / 1e3 ;
         
-***     reporting on remind run (can be used as a check to reporting in R or as validation)
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','coal') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(COALte(te_remind))) ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','nuc') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(NUCte(te_remind))) ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','CCGT') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(NonPeakGASte(te_remind)))  ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','OCGT_eff') = sum(grade, preInv_remind_cap(yr,reg,'ngt', grade)) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','bio') = sum(te_remind, sum(grade, preInv_remind_cap(yr,reg,te_remind, grade)$(BIOte(te_remind))   )  ) * 1e3;
-
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','ror') = preInv_remind_cap(yr, reg, 'hydro', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Solar') = preInv_remind_cap(yr, reg, 'spv', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Wind_on') = preInv_remind_cap(yr, reg, 'wind', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)','Wind_off') = preInv_remind_cap(yr, reg, 'windoff', '1') * 1e3;
-   
+***     reporting on remind run (can be used as a check against reporting in R or as validation)
+        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)',te_dieter) =  sum(DT_RM(te_dieter,te_remind), sum(grade, preInv_remind_cap(yr,reg,te_remind, grade))) * 1e3;
+        
 *       MW -GW
         report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',ct) = RM_postInv_cap_con(yr,reg,ct)/ 1e3;
         report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',res) = RM_postInv_cap_res(yr,reg,res)/ 1e3;
@@ -86,7 +77,6 @@ $offtext
         report_tech('REMIND',yr,reg,'REMIND post-investment generation (TWh)',res) = RM_postInv_prodSe_res_xcurt(yr,reg,res) /1e6;
 ***     generation from VRE including curtailment   
         report_tech('REMIND',yr,reg,'REMIND post-investment generation including curt (TWh)',res) = RM_postInv_prodSe_res(yr,reg,res) /1e6;
-
 
 
 *-------------------------------- reporting for costs, added capacities and capacity factor  --------------------------------------------
@@ -132,26 +122,11 @@ $ENDIF.ACoff
 
 *                  ========== divestment and investment capacities ============ REMIND ============
 ***     TW -> GW
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','coal') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(COALte(te_remind)) ) * 1e3 ;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','CCGT') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(NonPeakGASte(te_remind)) ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','OCGT_eff') = earlyRetiCap_reporting(yr, reg, 'ngt') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','bio') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(BIOte(te_remind)) ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','nuc') = sum(te_remind, earlyRetiCap_reporting(yr, reg, te_remind)$(NUCte(te_remind)) ) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','ror') = earlyRetiCap_reporting(yr, reg, 'hydro') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Solar') = earlyRetiCap_reporting(yr, reg, 'spv') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Wind_on') = earlyRetiCap_reporting(yr, reg, 'wind') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND divestment (GW)','Wind_off') = earlyRetiCap_reporting(yr, reg, 'windoff') * 1e3;
-        
+        report_tech('REMIND',yr,reg,'REMIND divestment (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), earlyRetiCap_reporting(yr, reg, te_remind)) * 1e3;
+                
 ***     TW -> GW; coal is split for easy comparison
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','coal') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(COALte(te_remind))) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','CCGT') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(NonPeakGASte(te_remind))) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','OCGT_eff') = added_remind_cap(yr, reg, 'ngt', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','bio') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(BIOte(te_remind))) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','ror') = added_remind_cap(yr, reg, 'hydro', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','nuc') = sum(te_remind, added_remind_cap(yr, reg, te_remind, '1')$(NUCte(te_remind))) * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Solar') = added_remind_cap(yr, reg, 'spv', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Wind_on') = added_remind_cap(yr, reg, 'wind', '1') * 1e3;
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)','Wind_off') = added_remind_cap(yr, reg, 'windoff', '1') * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), added_remind_cap(yr, reg, te_remind, '1')) * 1e3;
+
         
 *                  ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
@@ -175,16 +150,8 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / totLoad  * 1e2;
         report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
 
-        report_tech('REMIND',yr,reg,'genshares (%)','coal') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(COALte(te_remind)));
-        report_tech('REMIND',yr,reg,'genshares (%)','CCGT') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(NonPeakGASte(te_remind)));
-        report_tech('REMIND',yr,reg,'genshares (%)','OCGT_eff') = remind_genshare(yr,reg,'ngt');
-        report_tech('REMIND',yr,reg,'genshares (%)','bio') = sum(te_remind, remind_genshare(yr,reg,te_remind)$(BIOte(te_remind)));
-        report_tech('REMIND',yr,reg,'genshares (%)','nuc') = sum(te_remind, remind_genshare(yr,reg,'tnrs')$(NUCte(te_remind)));
-        report_tech('REMIND',yr,reg,'genshares (%)','ror') = remind_genshare(yr,reg,'hydro');
-        report_tech('REMIND',yr,reg,'genshares (%)','Solar') = remind_genshare(yr,reg,'spv');
-        report_tech('REMIND',yr,reg,'genshares (%)','Wind_on') = remind_genshare(yr,reg,'wind');
-        report_tech('REMIND',yr,reg,'genshares (%)','Wind_off') = remind_genshare(yr,reg,'windoff');
-*                
+        report_tech('REMIND',yr,reg,'genshares (%)',te_dieter) = sum(DT_RM(te_dieter,te_remind), remind_genshare(yr, reg, te_remind));
+          
 *                  ========== capacity factors and revenues ============ DIETER ============
 ** capacity factor of average plant in the system 
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;

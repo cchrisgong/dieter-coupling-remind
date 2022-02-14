@@ -386,8 +386,6 @@ $include "VRE_potential_DEU_2019.csv"
 $offdelim
 ;
 
-
-
 phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 
 *parameter phi_ror(year,reg,h)      "Run-of-river availability in hour h"
@@ -412,21 +410,6 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 */;
 
 
-*parameter AC_demand(year,reg,h)      "AC Demand hour h for cost minimization for different years and specific regions"
-*/
-*$ondelim
-*$include "AC_demand.csv"
-*$offdelim
-*/;
-*
-
-*parameter phi_AC(year,reg,h)      "AC Demand profile hour h for cost minimization for different years and specific regions"
-*/
-*$ondelim
-*$include "phi_AC.csv"
-*$offdelim
-*/;
-
 
 parameter stodata(all_storage,sto)      "Various Data for storage"
 /
@@ -436,29 +419,6 @@ $include "Storage_new.csv"
 $offdelim
 /;
 
-*%reserves%$ontext
-*parameter reservedata(all_reserve,reserves)      "Various Data for storage"
-*/
-*$ondelim
-*$include "Reserves.csv"
-*$offdelim
-*/;
-*
-*Table t_reserves_slope(reserves,res)      ""
-*$ondelim
-*$include "Reserves2.csv"
-*$offdelim
-*;
-*reserves_slope(reserves,res) = t_reserves_slope(reserves,res);
-*
-*
-*Table t_phi_reserves_call_y(year,h,reserves)      "Hourly share of reserve provision that is actually activated"
-*$ondelim
-*$include "Reserves_hourly.csv"
-*$offdelim
-*;
-*
-*phi_reserves_call_y(year,h,reserves) = t_phi_reserves_call_y(year,h,reserves);
 
 $onlisting
 
@@ -508,9 +468,6 @@ c_i_dsm_cu(dsm_curt)     DSM: Investment costs load curtailment
 c_i_dsm_shift(dsm_shift) DSM: Investment costs load shifting
 ;
 
-
-;
-
 *c_i_dsm_cu(dsm_curt) = dsmdata_cu("c_inv_overnight_dsm_cu",dsm_curt)*( dsmdata_cu("inv_interest_dsm_cu",dsm_curt) * (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt)) )
 *                 / ( (1+dsmdata_cu("inv_interest_dsm_cu",dsm_curt))**(dsmdata_cu("inv_recovery_dsm_cu",dsm_curt))-1 )       ;
 *c_i_dsm_shift(dsm_shift) = dsmdata_shift("c_inv_overnight_dsm_shift",dsm_shift)*( dsmdata_shift("inv_interest_dsm_shift",dsm_shift) * (1+dsmdata_shift("inv_recovery_dsm_shift",dsm_shift))**(dsmdata_shift("inv_recovery_dsm_shift",dsm_shift)) )
@@ -520,24 +477,3 @@ rdata("c_cu",res)= 0;
 p2gdata("p2g_do","elh2") = 10;
 p2gdata("p2g_up","elh2") = 10;
 
-
-%second_hour%$ontext
-c_i_sto_e(sto) = c_i_sto_e(sto)*card(h)/8760 * 2 ;
-dsmdata_cu("t_dur_dsm_cu",dsm_curt) = dsmdata_cu("t_dur_dsm_cu",dsm_curt) / 2 ;
-dsmdata_cu("t_off_dsm_cu",dsm_curt) = dsmdata_cu("t_off_dsm_cu",dsm_curt) / 2 ;
-dsmdata_shift("t_dur_dsm_shift",dsm_shift)$(ord(dsm_shift)=2 or ord(dsm_shift)=4 or ord(dsm_shift)=5) = dsmdata_shift("t_dur_dsm_shift",dsm_shift) / 2 ;
-dsmdata_shift("t_dur_dsm_shift",dsm_shift)$(ord(dsm_shift)=1 or ord(dsm_shift)=3) = 2 ;
-$ontext
-$offtext
-
-*cdata("c_fix_con",ct) = cdata("c_fix_con",ct)*card(h)/8760 ;
-*rdata("c_fix_res",res) = rdata("c_fix_res",res)*card(h)/8760 ;
-*stodata("c_fix_sto",sto) = stodata("c_fix_sto",sto)*card(h)/8760 ;
-*dsmdata_cu("c_fix_dsm_cu",dsm_curt) = dsmdata_cu("c_fix_dsm_cu",dsm_curt)*card(h)/8760 ;
-*dsmdata_shift("c_fix_dsm_shift",dsm_shift) = dsmdata_shift("c_fix_dsm_shift",dsm_shift)*card(h)/8760 ;
-*
-*cdata("m_con_e",'bio') = cdata("m_con_e",'bio')*card(h)/8760 ;
-*
-
-*parameter phi_mean_reserves_call, phi_mean_reserves_call_y ;
-*phi_mean_reserves_call_y(year,reserves) = sum(h, phi_reserves_call_y(year,h,reserves) ) / card(h) + eps ;
