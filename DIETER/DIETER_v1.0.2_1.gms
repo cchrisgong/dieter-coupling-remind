@@ -157,17 +157,16 @@ reg_coal    region with coal phase-out               /DEU/
 
 *============== DIETER sets ==================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-all_te    all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
-te        all dieter techs                      
+te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct(all_te)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct(te_dieter)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
 sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
-res(all_te)       Renewable technologies         /Wind_on, Wind_off, Solar/
-p2g(all_te)       Sector Coupling P2G Technologies /elh2/
+res(te_dieter)       Renewable technologies         /Wind_on, Wind_off, Solar/
+p2g(te_dieter)       Sector Coupling P2G Technologies /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -178,21 +177,33 @@ dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 reserves  Set of reserve qualities               /PR_up, PR_do, SR_up, SR_do, MR_up, MR_do/
 h         hour                                   /h1*h8760/
 
-*DT_RM(ct,te_remind)   "mapping DIETER and REMIND technologies for reporting"
-*/
-*coal.coal
-*ror.ror
-*nuc.nuc
-*CCGT.CCGT
-*OCGT_eff.OCGT_eff
-*bio.bio
-*/
-*
 
 *==========
-*te(all_te) = ct(all_te) + res(all_te) + p2g(all_te);
+*te(te_dieter) = ct(te_dieter) + res(te_dieter) + p2g(te_dieter);
 
 $include dataload.gms
+
+Sets
+DT_RM(te_dieter,te_remind)   "mapping DIETER and REMIND technologies for reporting"
+/
+coal.pc
+coal.pcc
+coal.pco
+coal.igcc
+coal.igccc
+CCGT.ngcc
+CCGT.ngccc
+OCGT_eff.ngt
+nuc.tnrs
+nuc.fnrs
+bio.bioigcc
+bio.bioigccc
+Solar.spv
+Wind_on.wind
+Wind_off.windoff
+ror.hydro
+/
+
 
 ********** COUPLED SWITCH **************
 *** H2 switch for DIETER standalone
@@ -222,10 +233,10 @@ dieter_vremarg =0;
 
 Sets
 *adjte_remind(te_remind)                              /wind, spv, gridwind,hydro, ngcc, ngccc, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco/
-*adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid, ror, CCGT, bio, coal/
+*adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid, ror, CCGT, bio, coal/
 *
 adjte_remind(te_remind)                              /wind, spv, gridwind, ngcc, ngccc/
-adjte_dieter(all_te)                                 /Wind_on, Solar, vregrid,CCGT/
+adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid,CCGT/
 
 Alias (h,hh) ;
 alias (res,resres) ;
