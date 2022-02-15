@@ -233,19 +233,6 @@ $IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res) ne 0) = c_adj_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',p2g) = report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g) * 1.2;
         report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',grid) = report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) * 1.2;
-        
-** adjustment cost (avg) for REMIND (so one sees how much influence this can have on DIETER if techX is coupled): 
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('REMIND',yr,reg,'REMIND CapFac (%)',ct) ne 0) = c_adj(ct) / (card(h) * report_tech('REMIND',yr,reg,'REMIND CapFac (%)',ct)/1e2) * 1.2;
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(report_tech('REMIND',yr,reg,'REMIND real CapFac (%)',res) ne 0) = c_adj_res(res) / (card(h) * report_tech('REMIND',yr,reg,'REMIND real CapFac (%)',res)/1e2) * 1.2;
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('REMIND',yr,reg,'REMIND CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g) / (card(h) * report_tech('REMIND',yr,reg,'REMIND CapFac (%)',p2g)/1e2) * 1.2;
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * RM_postInv_cap_grid(yr,reg,grid) / totLoad * 1.2;
-
-** adjustment cost (marg) for REMIND (use DIETER's marg capfac, which should be the same as REMIND marg capfac): 
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',ct) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct) * 1.2;
-*** DIETER real marg CapFac is the same as REMIND real marg CapFac
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res) ne 0) = c_adj_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)/1e2) * 1.2;
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',p2g) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g) * 1.2;
-        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',grid) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) * 1.2;
 
 *       Grid cost (if adj cost for vregrid is coupled)
         report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) ) * N_GRID.L(grid) / totLoad  * 1.2;
@@ -275,6 +262,20 @@ $IFTHEN.ACoff %adj_cost% == "off"
          
 $ENDIF.ACoff
  
+*** regardless whether adjustment cost coupling is on or not, report REMIND adjustment costs        
+** adjustment cost (avg) for REMIND (so one sees how much influence this can have on DIETER if techX is coupled): 
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('REMIND',yr,reg,'REMIND CapFac (%)',ct) ne 0) = c_adj(ct) / (card(h) * report_tech('REMIND',yr,reg,'REMIND CapFac (%)',ct)/1e2) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',res)$(report_tech('REMIND',yr,reg,'REMIND real CapFac (%)',res) ne 0) = c_adj_res(res) / (card(h) * report_tech('REMIND',yr,reg,'REMIND real CapFac (%)',res)/1e2) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g)$(report_tech('REMIND',yr,reg,'REMIND CapFac (%)',p2g) ne 0) = c_adj_p2g(p2g) / (card(h) * report_tech('REMIND',yr,reg,'REMIND CapFac (%)',p2g)/1e2) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) = c_adj_grid(grid) * RM_postInv_cap_grid(yr,reg,grid) / totLoad * 1.2;
+
+** adjustment cost (marg) for REMIND (use DIETER's marg capfac, which should be the same as REMIND marg capfac): 
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',ct) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct) * 1.2;
+*** DIETER real marg CapFac is the same as REMIND real marg CapFac
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res) ne 0) = c_adj_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)/1e2) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',p2g) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',p2g) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized adjustment cost - marg ($/MWh)',grid) = report_tech('REMIND',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid) * 1.2;
+
 *** for simplicity we don't report adj cost separately of grid for "solar" and "wind", it is only report for the tech "grid"
 *       Grid cost for each VRE type
         VRE_grid_ratio(yr,reg,"Solar") = report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',"Solar")/
