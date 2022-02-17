@@ -84,9 +84,9 @@ $setglobal fuel_cost_suppc no_suppcurve
 $setglobal ramping_cost off
 
 *whether adjustment cost is included in capital cost
-*$setglobal adj_cost on
+$setglobal adj_cost on
 *$setglobal adj_cost on_select
-$setglobal adj_cost off
+*$setglobal adj_cost off
 
 *consider early retirement for capex or not
 *$setglobal capex_er on
@@ -277,7 +277,7 @@ if ((remind_wind_offshore eq 1),
     );
 );
 
-dieter_vremarg =0;
+dieter_vremarg =1;
 
 ********************************** adjustment cost ******
 
@@ -741,7 +741,10 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 
 *======= add adjustment cost from REMIND for medium and long term periods ========
-*only couple adjustment cost for >=2030 due to earlier years volatility?
+*only couple adjustment cost for <2130 due to earlier years volatility
+*remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
+remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind);
+
 $IFTHEN.AC %adj_cost% == "on"
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC

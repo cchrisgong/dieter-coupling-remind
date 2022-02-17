@@ -142,7 +142,8 @@ $ENDIF.ACoff
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Solar') = remind_realVRECF(yr,reg,"spv");
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_on') = remind_realVRECF(yr,reg,"wind");
         report_tech('REMIND',yr,reg,'REMIND real CapFac (%)','Wind_off') = remind_realVRECF(yr,reg,"windoff");
-   
+        report_tech('REMIND',yr,reg,'REMIND real CapFac (%)',ct) = report_tech('REMIND',yr,reg,'REMIND CapFac (%)', ct);
+        
 ***     ^^^ reporting on remind stuff 
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',ct) =  (N_CON.l(ct) - N_CON.lo(ct)) / 1e3 ;
         report_tech('DIETER',yr,reg,'DIETER added capacities (GW)',res) =  (P_RES.l(res) - P_RES.lo(res)) / 1e3 ;
@@ -160,7 +161,10 @@ $ENDIF.ACoff
 * real/post-curtailment and theoretical/pre-curtailment capfac for VRE of average grade     
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , (G_RES.l(res,h) + CU.l(res,h))) / (P_RES.l(res) * card(h)) * 1e2;
         report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
+        report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
+        
         report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)','ror')$(N_CON.l('ror') ne 0 ) = sum( h , G_L.l('ror',h)) / (N_CON.l('ror') * card(h)) * 1e2;
+        
         report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)$(totFlexLoad ne 0 ) = sum( h , C_P2G.l(p2g,h)) / ( N_P2G.l(p2g) * card(h)) * 1e2;
 
 *** annual average of VRE hourly capacity factor/potential, this should equal to both "REMIND CapFac (%)" and "DIETER avg CapFac (%)"
@@ -368,8 +372,8 @@ $ENDIF.ACoff
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',ct) = market_value_wscar(ct) * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)',res) = market_value_wscar(res) * 1.2;
         
-        report_tech('DIETER',yr,reg,'DIETER Market price with scarcity price ($/MWh)','el') = market_value_wscar('el') * 1.2;
-        report_tech('DIETER',yr,reg,'DIETER Market price with scarcity price ($/MWh)','elh2') = market_value_wscar('elh2') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)','el') = market_value_wscar('el') * 1.2;
+        report_tech('DIETER',yr,reg,'DIETER Market value with scarcity price ($/MWh)','elh2') = market_value_wscar('elh2') * 1.2;
         
 
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'value_factor') * 1e2;
