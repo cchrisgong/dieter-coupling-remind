@@ -83,6 +83,9 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
+$setglobal earlyReti_IC on
+*$setglobal earlyReti_IC off
+
 *whether adjustment cost is included in capital cost
 $setglobal adj_cost on
 *$setglobal adj_cost on_select
@@ -741,17 +744,22 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 
 *======= add adjustment cost from REMIND for medium and long term periods ========
-*only couple adjustment cost for <2130 due to earlier years volatility
-*remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
-remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind);
 
 $IFTHEN.AC %adj_cost% == "on"
+*only couple adjustment cost for <2130 due to earlier years volatility
+*remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC
 
 $IFTHEN.AC %adj_cost% == "on_select"
 remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 $ENDIF.AC
+
+*** turn on the effect of early retirement in REMIND have on investment cost
+$IFTHEN.AC %earlyReti_IC% == "on"
+remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_CapCost(yr,reg,te_remind)/(1-remind_capEarlyReti(yr, reg, te_remind));
+$ENDIF.AC
+
 
 *======= read in overnight investment cost from remind ==========================
 *overnight investment cost
