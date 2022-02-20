@@ -53,8 +53,8 @@ $offtext
 ********************************* reporting for annual technology data ************************************
 
 *-------------------------------- reporting for generation and capacities ---------------------------------
-        report_tech('DIETER',yr,reg,'Total generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
-        report_tech('DIETER',yr,reg,'Total generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
+        report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
+        report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',res) = sum( h , (G_RES.l(res,h)+CU.l(res,h))) /1e6 ;        
         report_tech('DIETER',yr,reg,'Total renewable curtailment (TWh)',res) = sum( h , CU.l(res,h)) /1e6 ;
         
@@ -86,23 +86,27 @@ $offtext
 *                  ========== report cost ============ REMIND ============
 **note: only report when there is (post-investment) capacity in REMIND
 
-$IFTHEN.ACon not %adj_cost% == "off"
+*$IFTHEN.ACon not %adj_cost% == "off"
+if ((remind_adjCostSwitch eq 1),
 *conventional 
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct)-c_adj(ct)) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
 *renewable
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = (c_i_res(res)-c_adj_res(res))*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
-$ENDIF.ACon
+*$ENDIF.ACon
+);
 
-$IFTHEN.ACoff %adj_cost% == "off"
+*$IFTHEN.ACoff %adj_cost% == "off"
+if ((remind_adjCostSwitch eq 0),
 *conventional 
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = c_i(ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
 *renewable
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = c_i_res(res)*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
         report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
-$ENDIF.ACoff
+*$ENDIF.ACoff
+);
 
 *P2G
         report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',p2g)$(totFlexLoad ne 0) = c_i_p2g(p2g)/0.75 * RM_postInv_cap_p2g(yr,reg,p2g) / (RM_postInv_demSe(yr,reg,p2g)*0.75)  * 1.2;
@@ -209,7 +213,8 @@ $ENDIF.ACoff
 * for VRE investment cost here is divided by theoretical capfac (pre-curtailment)
 
 * report IC in DIETER and adjustment costs in both models
-$IFTHEN.ACon not %adj_cost% == "off"
+*$IFTHEN.ACon not %adj_cost% == "off"
+if ((remind_adjCostSwitch eq 1),
 ** investment cost (avg and marginal) for DIETER: avg and marginal IC for non-VRE are the same, theoretical capfac (pre-curtailment) are used in each cases
 ** only for plants that are dispatched
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = (c_i(ct)-c_adj(ct)) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2) * 1.2;
@@ -242,15 +247,17 @@ $IFTHEN.ACon not %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) ) * N_GRID.L(grid) / totLoad  * 1.2;
                                                         
 *only report those adjustment costs that are coupled
-$IFTHEN.ACon2 %adj_cost% == "on_select"
-        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',te_dieter)$(not adjte_dieter(te_dieter)) = 0;
-        report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',te_dieter)$(not adjte_dieter(te_dieter)) = 0;
-        
-$ENDIF.ACon2
+*$IFTHEN.ACon2 %adj_cost% == "on_select"
+*        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',te_dieter)$(not adjte_dieter(te_dieter)) = 0;
+*        report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',te_dieter)$(not adjte_dieter(te_dieter)) = 0;
+*        
+*$ENDIF.ACon2
 
-$ENDIF.ACon
+*$ENDIF.ACon
+);
 
-$IFTHEN.ACoff %adj_cost% == "off"
+if ((remind_adjCostSwitch eq 0),
+*$IFTHEN.ACoff %adj_cost% == "off"
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_i(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res) ne 0) = c_i_res(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g) ne 0) = c_i_p2g(p2g) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',p2g)/1e2) * 1.2 ;   
@@ -264,7 +271,8 @@ $IFTHEN.ACoff %adj_cost% == "off"
 *       Grid cost (if adj cost for vregrid is not coupled)
         report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid)) * N_GRID.L(grid) / totLoad * 1.2;
          
-$ENDIF.ACoff
+*$ENDIF.ACoff
+);
  
 *** regardless whether adjustment cost coupling is on or not, report REMIND adjustment costs        
 ** adjustment cost (avg) for REMIND (so one sees how much influence this can have on DIETER if techX is coupled): 

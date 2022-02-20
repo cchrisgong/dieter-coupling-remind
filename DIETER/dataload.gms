@@ -36,7 +36,12 @@ s32_windoff
 * price shave switch (whether shave off scarcity price)
 remind_priceShaveSwitch
 s32_scarPrice
-
+* remind adjustment cost coupling switch (whether DIETER sees adj cost in REMIND)
+remind_adjCostSwitch
+s32_adjCost
+* remind marginal VRE cost switch (whether DIETER's investment cost for VRE sees the lowest grade potential capacity factors)
+remind_margVRECostSwitch
+s32_margVRE
 *************************** 2. PARAMETERS AND SETS FROM REMIND  **********************************************************
 *------------------------
 *Investment interest rate
@@ -133,8 +138,6 @@ remind_dispatch_iter_vrefix
 cm_DT_dispatch_i1
 remind_dispatch_iter_fix
 cm_DT_dispatch_i2
-
-dieter_vremarg
 *=========== for scaling dieter demand ===========
 dieter_OLDtotdem   Old DIETER total demand
 ;
@@ -163,6 +166,8 @@ $load  remind_h2switch = s32_H2switch
 $load  remind_priceShaveSwitch = s32_scarPrice
 $load  remind_coupModeSwitch = s32_DTcoupModeswitch
 $load  remind_wind_offshore = s32_windoff
+$load  remind_adjCostSwitch = s32_adjCost
+$load  remind_margVRECostSwitch = s32_margVRE
 $load  remind_adjcost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data

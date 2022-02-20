@@ -87,7 +87,7 @@ $setglobal earlyReti_IC on
 *$setglobal earlyReti_IC off
 
 *whether adjustment cost is included in capital cost
-$setglobal adj_cost on
+*$setglobal adj_cost on
 *$setglobal adj_cost on_select
 *$setglobal adj_cost off
 
@@ -280,8 +280,8 @@ if ((remind_wind_offshore eq 1),
     );
 );
 
-dieter_vremarg =1;
 
+ 
 ********************************** adjustment cost ******
 
 Sets
@@ -405,24 +405,21 @@ dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remi
 **CG: sometimes hydro grades are both full, in which case set factor to 1
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
-if((dieter_vremarg eq 0),
+if((remind_margVRECostSwitch eq 0),
 dieter_newInvFactor(te_remind) = 1;
 );
-
 
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
 
 phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) / ( sum(hh, phi_res_y_reg("2019", "DEU", hh, res)) / card(hh));
 
-*disable this to minimize distortion
-*phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 1;
-*phi_res("Solar", h)$(phi_res("Solar", h) > 1)  = 1;
-*phi_res("Wind_on", h)$(phi_res("Wind_on", h) < 0)  = 0;
+*disable this to minimize distortion?
+phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 0.99;
+
 *
 *if ((remind_wind_offshore eq 1),
 *phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
-*phi_res("Wind_off", h)$(phi_res("Wind_off", h) < 0)  = 0;
 *);
 *
 *
@@ -745,15 +742,17 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
 
 *======= add adjustment cost from REMIND for medium and long term periods ========
 
-$IFTHEN.AC %adj_cost% == "on"
+*$IFTHEN.AC %adj_cost% == "on"
+if ((remind_adjCostSwitch eq 1),
 *only couple adjustment cost for <2130 due to earlier years volatility
 *remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
-$ENDIF.AC
+);
+*$ENDIF.AC
 
-$IFTHEN.AC %adj_cost% == "on_select"
-remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
-$ENDIF.AC
+*$IFTHEN.AC %adj_cost% == "on_select"
+*remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
+*$ENDIF.AC
 
 *** turn on the effect of early retirement in REMIND have on investment cost
 $IFTHEN.AC %earlyReti_IC% == "on"
@@ -800,7 +799,7 @@ c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 
 *=============== adjustment cost from remind (for disaggregated reportin) ================
 *""overnight" adjustment cost
-*# *# conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
+* conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** weighted average of many techs in REMIND
 c_adj_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_adjcost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
@@ -1058,7 +1057,6 @@ con2c_maxprodannual_conv_nuc("nuc")..
 * Constraints for capfac of electrolyzers (at least 30%, in line with current data)
 eq2_minprod_elh2('elh2')..
         sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2') *8760
-*        sum(h, C_P2G('elh2',h)) =G= 0.3 * N_P2G('elh2')
 ;
 
 $ontext
@@ -1100,7 +1098,7 @@ eq2_capfac_ror_avg("ror")..
 * Constraints on renewables
 con3k_maxprod_res(res,h)..
         G_RES(res,h) + CU(res,h)
-        =E= phi_res(res,h)*P_RES(res)
+        =E= phi_res(res,h) * P_RES(res)
 ;
 
 %P2G%$ontext
