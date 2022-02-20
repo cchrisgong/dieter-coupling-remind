@@ -302,11 +302,11 @@ if ((remind_adjCostSwitch eq 0),
 
 *** note: in remind2/R/reportLCOE.R, grid cost is divided by total usable energy not just renewable generation, because it was calculated as system LCOE for grid, here we calculate the tech LCOE for VRE, then
 **  later it can be multiplied with generation share and add up to system LCOE same as other tech LCOE components
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Solar")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid) ) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation',"Solar")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Solar") * dieter_newInvFactor("spv") * 1.2;
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_on")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation',"Wind_on")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Wind_on") * dieter_newInvFactor("wind") * 1.2;    
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_off")$(report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_off")) = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'Total generation (TWh)',"Wind_off")*1e6)
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_off")$(report_tech('DIETER',yr,reg,'DIETER post-investment generation',"Wind_off")) = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid("vregrid")) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation',"Wind_off")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Wind_off") * dieter_newInvFactor("windoff") * 1.2;    
         
 *       OM cost
