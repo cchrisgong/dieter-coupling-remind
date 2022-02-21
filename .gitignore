@@ -10,6 +10,7 @@
 *.png
 test*
 *.lxi
+*.out
 !input_DIETER.gdx
 ~$DIETER_v1.0.2_*.gms
 ~$reporting.gms
