@@ -1490,7 +1490,7 @@ $offtext
 ** check which tech are producing at scarcity price hours, if a tech is not, p32_reportmk_4RM(yr,reg,ct,'peak_gen_bin_4RM') = eps
 if ((annual_load_weighted_price > 0),
 ** generation in peak price hour
-peak_gen(ct,h) = G_L.l(ct,h)$(peak_price > 5000);
+peak_gen(ct,h) = G_L.l(ct,h)$(-con1a_bal.m(h) > 5000);
     if ((peak_price > 5000),
     p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1$(sum(h,peak_gen(ct,h)) ge 1);
 ** exclude ror from peak demand constraint
