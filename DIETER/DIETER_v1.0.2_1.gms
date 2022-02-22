@@ -418,10 +418,10 @@ phi_res(res, h) = phi_res_y_reg("2019", "DEU", h, res) * remind_VRECapFac(res) /
 phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 0.99;
 
 *
-*if ((remind_wind_offshore eq 1),
-*phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
-*);
-*
+if ((remind_wind_offshore eq 1),
+phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
+);
+
 *
 *AO* For hydro simply set CF to that of REMIND
 capfac_ror = remind_HydroCapFac;
@@ -568,7 +568,6 @@ if ((remind_iter gt remind_dispatch_iter_fix),
 *   N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
     N_CON.fx("bio")= RM_postInv_cap_con("2020", "DEU", "bio") ;
     N_CON.fx("coal") = RM_postInv_cap_con("2020", "DEU", "coal") ;
-
 *   N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
 );
 );
@@ -1083,10 +1082,10 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
         =L= N_CON(ct)
 ;
 
-*** hourly generation is constrained by theoretical capfac (since we do not have a hydro time series and want to stay realistic)
+*** hourly generation is constrained by theoretical capfac 
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-        =L= 0.4 * N_CON('ror')
+        =L= N_CON('ror')
 ;
 
 * annual average capfac on run of river to be constrained by remind theoretical capfac
@@ -1395,10 +1394,8 @@ residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("r
 if ((remind_wind_offshore eq 1),
 residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
 );
-
+** peak residual hourly demand as a fraction of total demand
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
-
-p32_report4RM(yr,reg,"all_te",'peakDem') = SMax(h, d(h));
 
 p32_report4RM(yr,reg,ct,'capfac')$( N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h) );
 p32_report4RM(yr,reg,res,'capfac')$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h));
@@ -1465,15 +1462,8 @@ p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 
 ******************* with scarcity price shaving ****************************
 *** calculate hourly price with scarcity price thrown out, i.e. setting the highest price hour prices to the price of the hour with the highest short term cost
-hourly_price(h) = - con1a_bal.m(h);
+hourly_price(h) = -con1a_bal.m(h);
 peak_price = SMax(h, hourly_price(h));
-
-** check which tech are producing at scarcity price hours, if a tech is not, p32_reportmk_4RM(yr,reg,ct,'peak_gen_bin_4RM') = eps
-peak_gen(ct,h) = G_L.l(ct,h)$(hourly_price(h) > 5000);
-p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1$(sum(h,peak_gen(ct,h)) ge 1);
-** exclude ror from peak demand constraint
-p32_report4RM(yr,reg,ct,'peak_gen_bin')$(not p32_report4RM(yr,reg,ct,'peak_gen_bin'))= EPS; 
-p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
 
 *$IFTHEN.PriceShave %price_shave% == "on"
 if ((remind_priceShaveSwitch = 1),
@@ -1495,15 +1485,37 @@ annual_load_weighted_price = sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)
 $ontext
 $offtext
 
+
+** check which tech are producing at scarcity price hours, if a tech is not, p32_reportmk_4RM(yr,reg,ct,'peak_gen_bin_4RM') = eps
+if ((annual_load_weighted_price > 0),
+** generation in peak price hour
+peak_gen(ct,h) = G_L.l(ct,h)$(hourly_price(h) > 5000);
+    if ((peak_price > 5000),
+    p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1$(sum(h,peak_gen(ct,h)) ge 1);
+** exclude ror from peak demand constraint
+    p32_report4RM(yr,reg,ct,'peak_gen_bin')$(not p32_report4RM(yr,reg,ct,'peak_gen_bin'))= EPS; 
+    p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
+    );
+    if ((peak_price < 5000),
+    p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1; 
+    p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
+    );
+);
+
+* during early iterations it can be that the price is 0 for >2130 years, so to ensure there is *some* capacities that should satisfy constraint pick all dispatchables
+if ((annual_load_weighted_price = 0),
+p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1; 
+p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
+);
+
+
 *****!!! note: all prices in p32_reportmk_4RM are in 2005$ value, to report, one needs to multiply by 1.2
 
 *** if generation is not 0, pass the market value (w/ scarcity price shaved) from DIETER to REMIND, if generation is 0, pass the average annual price to REMIND
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) = market_value(ct);
-
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price;
 
-p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = 
-    market_value(res);
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
 p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
 ******************* without scarcity price shaving ****************************
