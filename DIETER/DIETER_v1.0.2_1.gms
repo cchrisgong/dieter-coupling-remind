@@ -83,7 +83,7 @@ $setglobal fuel_cost_suppc no_suppcurve
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
-$setglobal earlyReti_IC on
+*$setglobal earlyReti_IC on
 *$setglobal earlyReti_IC off
 
 *whether adjustment cost is included in capital cost
@@ -100,12 +100,12 @@ $setglobal earlyReti_IC on
 $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
-$setglobal nucphaseout on
-*$setglobal nucphaseout off
+*$setglobal nucphaseout on
+$setglobal nucphaseout off
 
 *choose to have DIETER follow REMIND in coal phase-out
-$setglobal coalphaseout on
-*$setglobal coalphaseout off
+*$setglobal coalphaseout on
+$setglobal coalphaseout off
 
 *this should be on as long as REMIND's windoff is semi-exogenous (like currently, because it is a share of wind_on)
 $setglobal windoff_fix on
@@ -751,11 +751,12 @@ remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adj
 *remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
 *$ENDIF.AC
 
-*** turn on the effect of early retirement in REMIND have on investment cost
-$IFTHEN.AC %earlyReti_IC% == "on"
+*** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
+*$IFTHEN.ER %earlyReti_IC% == "on"
+if ((remind_earlyRetiSwitch eq 0),
 remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_CapCost(yr,reg,te_remind) / (1 - remind_capEarlyReti(yr, reg, te_remind));
-$ENDIF.AC
-
+*$ENDIF.ER
+);
 
 *======= read in overnight investment cost from remind ==========================
 *overnight investment cost

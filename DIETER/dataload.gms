@@ -42,6 +42,9 @@ s32_adjCost
 * remind marginal VRE cost switch (whether DIETER's investment cost for VRE sees the lowest grade potential capacity factors)
 remind_margVRECostSwitch
 s32_margVRE
+* remind early retirement switch (whether early retirement is allowed or not), 1 is if no early retirement
+remind_earlyRetiSwitch
+s32_noER
 *************************** 2. PARAMETERS AND SETS FROM REMIND  **********************************************************
 *------------------------
 *Investment interest rate
@@ -168,6 +171,7 @@ $load  remind_coupModeSwitch = s32_DTcoupModeswitch
 $load  remind_wind_offshore = s32_windoff
 $load  remind_adjCostSwitch = s32_adjCost
 $load  remind_margVRECostSwitch = s32_margVRE
+$load  remind_earlyRetiSwitch = s32_noER
 $load  remind_adjcost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
