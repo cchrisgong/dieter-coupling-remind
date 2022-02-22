@@ -146,13 +146,13 @@ reg_coal    region with coal phase-out               /DEU/
 
 * ================================ DIETER sets ====================================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
+te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct(te_dieter)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
-non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, OCGT_ineff, bio/
+ct(te_dieter)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, bio/
+non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, bio/
 sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
 res(te_dieter)       Renewable technologies         /Wind_on, Wind_off, Solar/
 p2g(te_dieter)       Sector Coupling P2G Technologies /elh2/
@@ -578,8 +578,6 @@ if ((remind_wind_offshore eq 0),
 P_RES.fx(res)$sameas(res,"Wind_off") = 0; 
 );
 
-N_CON.fx("OCGT_ineff") = 0;
-
 if ((remind_wind_offshore eq 1),
 $IFTHEN.windoff_fix %windoff_fix% == "on"
 P_RES.fx(res)$sameas(res,"Wind_off") = RM_postInv_cap_res("2020", "DEU","Wind_off");
@@ -756,7 +754,7 @@ remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adj
 
 *** turn on the effect of early retirement in REMIND have on investment cost
 $IFTHEN.AC %earlyReti_IC% == "on"
-remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_CapCost(yr,reg,te_remind)/(1-remind_capEarlyReti(yr, reg, te_remind));
+remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_CapCost(yr,reg,te_remind) / (1 - remind_capEarlyReti(yr, reg, te_remind));
 $ENDIF.AC
 
 
@@ -1069,7 +1067,8 @@ eq3_grid(grid)..
 *        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
 *       + 3 * P_RES("Wind_off") * ("Wind_off")
         ( sum(h,(G_RES("Solar",h) + CU("Solar",h)))
-        + 1.5 * sum(h,(G_RES("Wind_on",h) + CU("Wind_on",h)))
+        + 1.5 * sum(h
+        ,(G_RES("Wind_on",h) + CU("Wind_on",h)))
         + 3 * sum(h,(G_RES("Wind_off",h) + CU("Wind_off",h))) * remind_wind_offshore
         )/8760
 
@@ -1341,6 +1340,7 @@ calc_minprice
 p32_report4RM
 hourly_price
 peak_price
+peak_gen
 peak_short_term_cost
 annual_load_weighted_price_wscar
 annual_load_weighted_price
@@ -1468,6 +1468,13 @@ p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 hourly_price(h) = - con1a_bal.m(h);
 peak_price = SMax(h, hourly_price(h));
 
+** check which tech are producing at scarcity price hours, if a tech is not, p32_reportmk_4RM(yr,reg,ct,'peak_gen_bin_4RM') = eps
+peak_gen(ct,h) = G_L.l(ct,h)$(hourly_price(h) > 5000);
+p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1$(sum(h,peak_gen(ct,h)) ge 1);
+** exclude ror from peak demand constraint
+p32_report4RM(yr,reg,ct,'peak_gen_bin')$(not p32_report4RM(yr,reg,ct,'peak_gen_bin'))= EPS; 
+p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
+
 *$IFTHEN.PriceShave %price_shave% == "on"
 if ((remind_priceShaveSwitch = 1),
     if (peak_price > 5000,
@@ -1484,7 +1491,7 @@ market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly
 * average price for both flexible and inflexible techs, with scarcity price shaved
 annual_load_weighted_price = sum(h,hourly_price(h)*d(h)) / totLoad;
 %P2G%$ontext
-annual_load_weighted_price= sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)))) / totLoad;
+annual_load_weighted_price = sum(h,hourly_price(h)*(d(h)+ sum(p2g,C_P2G.l(p2g,h)))) / totLoad;
 $ontext
 $offtext
 
