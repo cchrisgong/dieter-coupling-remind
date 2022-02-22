@@ -254,7 +254,7 @@ ror.pehyd
 
 ;
 
-************************************** COUPLING SWITCH FOR TESTING STANDALONE DIETER *******************************************
+************************************** COUPLING SWITCH FOR TESTING STANDALONE DIETER (overwrites dataload.gms)*******************************************
 *** H2 switch for DIETER standalone testing
 *remind_h2switch = 0;
 *remind_h2switch = 1;
@@ -266,6 +266,9 @@ ror.pehyd
 
 *remind_priceShaveSwitch = 0;
 *remind_priceShaveSwitch = 1;
+
+* always account for earlyReti in DIETER's IC
+remind_earlyRetiSwitch = 0;
 
 ************************************** FUTHER CUSTOMIZING COUPLING SWITCH ******************************************************
 *** wind offshore switch 
@@ -1475,6 +1478,7 @@ if ((remind_priceShaveSwitch = 1),
     );
 *$ENDIF.PriceShave
 );
+
 *** calculate market value (only in hours where there is no scarcity price)
 market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
 market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
