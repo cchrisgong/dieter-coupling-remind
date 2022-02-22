@@ -762,7 +762,7 @@ $ENDIF.AC
 * conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
 ** weighted average of many techs in REMIND
 c_i_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_CapCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), remind_CapCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * 1e6;
      
@@ -1489,7 +1489,7 @@ $offtext
 ** check which tech are producing at scarcity price hours, if a tech is not, p32_reportmk_4RM(yr,reg,ct,'peak_gen_bin_4RM') = eps
 if ((annual_load_weighted_price > 0),
 ** generation in peak price hour
-peak_gen(ct,h) = G_L.l(ct,h)$(hourly_price(h) > 5000);
+peak_gen(ct,h) = G_L.l(ct,h)$(peak_price > 5000);
     if ((peak_price > 5000),
     p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1$(sum(h,peak_gen(ct,h)) ge 1);
 ** exclude ror from peak demand constraint
