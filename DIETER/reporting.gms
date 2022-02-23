@@ -117,14 +117,14 @@ if ((remind_adjCostSwitch eq 0),
          
         report_tech('REMIND',yr,reg,'primary energy price ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = con_fuelprice_reg_remind_reporting(ct,reg) * 1.2;
         
-***     LCOE = (IC+OM) * cap /gen + CO2 + FC
+***     LCOE = (IC+OM) * cap /gen + CO2 + FC (not yet including grid cost)
 *       IC cost: $/MW, CAP: MW, PRODSE: MWh
 ***     This is LCOE for REMIND iteration before (so if this outputs to report_DIETER_i5.gdx, it reports REMIND_LCOE of fulldata_5.gdx run, even though fulldata_5 is produced after DIETER gdxes)
-        report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct) + cdata('c_fix_con',ct))
+        report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct) + cdata('c_fix_con',ct))
                                                                                     *  RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)
                                                                                     + con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg)  * 1.2;
-        report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
-        report_tech('REMIND',yr,reg,'REMIND LCOE ($/MWh)',p2g)$(totFlexLoad ne 0) = ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * RM_postInv_cap_p2g(yr,reg,p2g) / RM_postInv_demSe(yr,reg,p2g) * 1.2;
+        report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',p2g)$(totFlexLoad ne 0) = ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * RM_postInv_cap_p2g(yr,reg,p2g) / RM_postInv_demSe(yr,reg,p2g) * 1.2;
 
 *                  ========== divestment and investment capacities ============ REMIND ============
 ***     TW -> GW
@@ -336,22 +336,41 @@ if ((remind_adjCostSwitch eq 0),
 *       CO2 cost
         report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg) * 1.2;
         
-
-        report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct) + report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',ct) 
-                                                                                + (con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg) ) * 1.2;
-        report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res) + report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',res);
+*       LCOE_avg $/MWh
+        report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) =
+            report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct);
+            
+        report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) =
+            report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',res) +
+            report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',res) +
+            report_tech('DIETER',yr,reg,'grid cost ($/MWh)',res);
 
 *       convert capacity elh2 to remind unit by multiplying eta
         report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',p2g)$(totFlexLoad ne 0 ) =
-            (report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',p2g) + report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',p2g)) * remind_eta2(yr,reg,"elh2");
+            (report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',p2g) +
+            report_tech('DIETER',yr,reg,'O&M fixed cost - avg ($/MWh)',p2g)) * remind_eta2(yr,reg,"elh2") +
+            report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',p2g);
                                                                                 
 *       LCOE_marg $/MWh
-        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) = report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct) + report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',ct) 
-                                                                                + (con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg)) * 1.2 ;
+        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',ct)$(sum(h, G_L.l(ct,h) ne 0 )) =
+            report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'O&M var cost ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct) +
+            report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct);
+            
+        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) =
+            report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res) +
+            report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',res) +
+            report_tech('DIETER',yr,reg,'grid cost ($/MWh)',res);
 
-        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',res)$(sum(h, G_RES.l(res,h) ne 0 )) = report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',res) + report_tech('DIETER',yr,reg,'O&M fixed cost - marg ($/MWh)',res);
-
-
+        report_tech('DIETER',yr,reg,'DIETER LCOE_marg ($/MWh)',p2g)$(totFlexLoad ne 0 ) =
+            report_tech('DIETER',yr,reg,'DIETER LCOE_avg ($/MWh)',p2g);
+            
 *                  ========== market values and prices ============ DIETER ============
 *        report_tech('DIETER',yr,reg,'DIETER Marginal market value ($/MWh)',ct)$(sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)) ne 0 )
 *            = sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h)*(-con1a_bal.m(h))) / sum( h$(G_L.l(ct,h) = N_CON.l(ct)), G_L.l(ct,h));

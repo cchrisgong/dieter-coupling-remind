@@ -275,7 +275,7 @@ remind_earlyRetiSwitch = 0;
 ************************************** FUTHER CUSTOMIZING COUPLING SWITCH ******************************************************
 *** wind offshore switch 
 * there might be situation where input.gdx has no windoff as technology, in which case, skip first iter
-if ((remind_wind_offshore eq 1), 
+if (( (remind_wind_offshore eq 1) AND (sum(yr,remind_cap(yr, "DEU", "windoff", "1")) eq 0) ), 
     if ((remind_iter eq 0),
         remind_wind_offshore = 0;
     );
