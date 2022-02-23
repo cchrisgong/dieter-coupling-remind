@@ -101,11 +101,13 @@ $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
 *$setglobal nucphaseout on
-$setglobal nucphaseout off
+*$setglobal nucphaseout off
+$setglobal nucphaseout softupper
 
 *choose to have DIETER follow REMIND in coal phase-out
 *$setglobal coalphaseout on
-$setglobal coalphaseout off
+*$setglobal coalphaseout off
+$setglobal coalphaseout softupper
 
 *this should be on as long as REMIND's windoff is semi-exogenous (like currently, because it is a share of wind_on)
 $setglobal windoff_fix on
@@ -517,6 +519,17 @@ loop(reg,
     );
 $ENDIF
 
+$IFTHEN %nucphaseout% == "softupper"
+loop(reg,
+    N_CON.up("nuc")$(reg_nuc(reg)) = RM_postInv_cap_con("2020", reg, "nuc") *1.2; 
+    );
+$ENDIF
+
+$IFTHEN %coalphaseout% == "softupper"
+loop(reg,
+    N_CON.up("coal")$(reg_coal(reg)) = RM_postInv_cap_con("2020", reg, "coal") *1.2; 
+    );
+$ENDIF
 
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
