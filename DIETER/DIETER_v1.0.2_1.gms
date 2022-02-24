@@ -100,14 +100,14 @@ $setglobal ramping_cost off
 $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
-*$setglobal nucphaseout on
+$setglobal nucphaseout on
 *$setglobal nucphaseout off
-$setglobal nucphaseout softupper
+*$setglobal nucphaseout softupper
 
 *choose to have DIETER follow REMIND in coal phase-out
-*$setglobal coalphaseout on
+$setglobal coalphaseout on
 *$setglobal coalphaseout off
-$setglobal coalphaseout softupper
+*$setglobal coalphaseout softupper
 
 *this should be on as long as REMIND's windoff is semi-exogenous (like currently, because it is a share of wind_on)
 $setglobal windoff_fix on
