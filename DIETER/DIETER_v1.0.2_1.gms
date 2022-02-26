@@ -891,8 +891,9 @@ con2c_flexloadlevel      Load change costs: Level
 con2d_flexloadlevelstart Load change costs: Level for first period
 
 *full-load hours
-con2c_maxprodannual_conv Full load hour constraint (for non-nuclear conventional)
-con2c_maxprodannual_conv_nuc Full load hour constraint (for nuclear)
+con2c_maxprodannual_conv Maximum full load hour constraint (for non-nuclear conventional)
+con2c_maxprodannual_conv_nuc Maximum full load hour constraint (for nuclear)
+con2c_minprodannual_conv Minimum full load hour constraint (for converntional)
 
 * Capacity contraints and flexibility constraints
 con3a_maxprod_conv       Capacity Constraint conventionals
@@ -1059,11 +1060,16 @@ $offtext
 *==========           CONSTRAINING ANNUAL FULL/LOAD HOURS FOR CONVENTIONAL TECHNOLOGIES   *==========
 * ---------------------------------------------------------------------------- *
 con2c_maxprodannual_conv(ct)$(non_nuc_ct(ct))..
-       sum(h, G_L(ct,h) ) =L= 0.8*8760*N_CON(ct)
+       sum(h, G_L(ct,h) ) =L= 0.8 * 8760 * N_CON(ct)
 ;
 
 con2c_maxprodannual_conv_nuc("nuc")..
-       sum(h, G_L("nuc",h) ) =L= 0.85*8760*N_CON("nuc")
+       sum(h, G_L("nuc",h) ) =L= 0.85 * 8760 * N_CON("nuc")
+;
+
+** at least 0.1% avg capfac
+con2c_minprodannual_conv(ct)..
+       sum(h, G_L(ct,h) ) =G= 0.001 * 8760 * N_CON("nuc")
 ;
 
 %P2G%$ontext
@@ -1099,10 +1105,10 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
         =L= N_CON(ct)
 ;
 
-*** hourly generation is constrained by theoretical capfac 
+*** hourly generation is constrained by ad hoc theoretical capfac 
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-        =L= N_CON('ror')
+        =L= 0.5 * N_CON('ror')
 ;
 
 * annual average capfac on run of river to be constrained by remind theoretical capfac
@@ -1285,6 +1291,7 @@ $offtext
 
 con2c_maxprodannual_conv
 con2c_maxprodannual_conv_nuc
+con2c_minprodannual_conv
 
 con3a_maxprod_conv
 
