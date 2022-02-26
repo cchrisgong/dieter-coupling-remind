@@ -531,6 +531,9 @@ loop(reg,
     );
 $ENDIF
 
+* for stability
+ N_CON.up("bio") = RM_postInv_cap_con("2020", "DEU", "bio") * 1.2;
+ 
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
 *$IFTHEN.CB %cap_bound% == "validation"
@@ -1059,17 +1062,22 @@ $offtext
 * ---------------------------------------------------------------------------- *
 *==========           CONSTRAINING ANNUAL FULL/LOAD HOURS FOR CONVENTIONAL TECHNOLOGIES   *==========
 * ---------------------------------------------------------------------------- *
+*** capacity should not be higher than 80%, non nuclear
+*, only apply to capacity larger than 1MW
+*con2c_maxprodannual_conv(ct)$(non_nuc_ct(ct) AND (N_CON.up(ct) gt 1))..
 con2c_maxprodannual_conv(ct)$(non_nuc_ct(ct))..
        sum(h, G_L(ct,h) ) =L= 0.8 * 8760 * N_CON(ct)
 ;
 
+*** capacity should not be higher than 85%, nuclear
+*con2c_maxprodannual_conv_nuc("nuc")$(N_CON.up("nuc") gt 1)..
 con2c_maxprodannual_conv_nuc("nuc")..
        sum(h, G_L("nuc",h) ) =L= 0.85 * 8760 * N_CON("nuc")
 ;
 
 ** at least 0.1% avg capfac
 con2c_minprodannual_conv(ct)..
-       sum(h, G_L(ct,h) ) =G= 0.001 * 8760 * N_CON("nuc")
+       sum(h, G_L(ct,h) ) =G= 0.001 * 8760 * N_CON(ct)
 ;
 
 %P2G%$ontext
