@@ -737,17 +737,29 @@ r = remind_r("2020","DEU");
 *===================== annuitized investment cost (calculated from full lifetime in REMIND, i.e no early retirement) ==================
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 
+**weighted average life time
 dieter_lifetime(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_lifetime("lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct);
-     
+
+**when there is no generation in remind
+dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = remind_lifetime("lifetime", "ngcc");
+dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_lifetime("lifetime", "ngt");
+dieter_lifetime("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_lifetime("lifetime", "tnrs");
+dieter_lifetime("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = remind_lifetime("lifetime", "bioigcc");
+dieter_lifetime("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = remind_lifetime("lifetime", "igcc");
+dieter_lifetime("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_lifetime("lifetime", "hydro");
+
+*discount factor for conventional
 disc_fac_con(ct)$(dieter_lifetime(ct) ne 0) = r * (1+r) ** dieter_lifetime(ct) / (-1+(1+r) ** dieter_lifetime(ct) ) ;
 
+*discount factor for renewable
 disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
 disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
 if ((remind_wind_offshore eq 1),
 disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("lifetime", "windoff") / (-1+(1+r) ** remind_lifetime("lifetime", "windoff")) ;
 );
 
+*discount factor for P2G and grid
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
 
@@ -761,8 +773,9 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
 *$IFTHEN.AC %adj_cost% == "on"
 if ((remind_adjCostSwitch eq 1),
 *only couple adjustment cost for <2130 due to earlier years volatility
+* adjustment cost don't have to multiply the new investment marginal factor dieter_newInvFactor since it is already calculated in marginal terms in REMIND
 *remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
-remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
+remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind) + remind_adjcost(yr,reg,te_remind);
 );
 *$ENDIF.AC
 
@@ -785,8 +798,6 @@ c_i_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_CapCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * 1e6;
-     
-c_i_ovnt("ror") = c_i_ovnt("ror") * dieter_newInvFactor("hydro");
 
 *in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
 c_i_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
@@ -797,10 +808,10 @@ c_i_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
 c_i_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_CapCost("2020", "DEU", "tnrs") * 1e6 ;
 
-c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv") * dieter_newInvFactor("spv")* 1e6  ;
-c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind") * dieter_newInvFactor("wind")* 1e6 ;
+c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv")* 1e6  ;
+c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind")* 1e6 ;
 if ((remind_wind_offshore eq 1),
-c_i_ovnt_res("Wind_off") = remind_CapCost("2020", "DEU", "windoff") * dieter_newInvFactor("windoff")* 1e6 ;
+c_i_ovnt_res("Wind_off") = remind_CapCost("2020", "DEU", "windoff") * 1e6 ;
 );
 
 
