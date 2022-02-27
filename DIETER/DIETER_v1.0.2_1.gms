@@ -807,6 +807,11 @@ c_i_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
             = sum(BIOte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
 c_i_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_CapCost("2020", "DEU", "tnrs") * 1e6 ;
+c_i_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
+            = remind_CapCost("2020", "DEU", "ngt") * 1e6 ;
+c_i_ovnt("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)
+            = remind_CapCost("2020", "DEU", "hydro") * 1e6 ;
+            
 
 c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv")* 1e6  ;
 c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind")* 1e6 ;
