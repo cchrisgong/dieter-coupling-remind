@@ -85,8 +85,7 @@ vm_costTeCapital(yr, reg, te_remind)
 remind_CapCost(yr, reg, te_remind)
 *------------------------------------
 *plant lifetime and annuity from REMIND
-fm_dataglob(char_remind,te_remind)
-remind_lifetime(char_remind, te_remind)
+remind_lifetime(reg,char_remind, te_remind)
 *------------------------------------
 *fuel conversion efficiency, pm_dataeta and pm_eta_conv have etas for different te
 pm_dataeta(yr,reg,te_remind)
@@ -147,7 +146,7 @@ dieter_OLDtotdem   Old DIETER total demand
 
 ********
 **** during REMIND run, load special data before fulldata.gdx drops for the REMIND iteration
-**remember to load sets first
+** remember to load sets first
 $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 $load  te_remind= REMINDte4DT32
@@ -178,7 +177,7 @@ $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
-$load  remind_lifetime = fm_dataglob
+$load  remind_lifetime = pm_data
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
@@ -223,25 +222,6 @@ $ENDIF.FC
 Parameters
 
 *====== Conventionals ======
-
-*--- Generation and fixed ---*
-*eta_con(ct)              Efficiency of conventional technologies
-*carbon_content(ct)       CO2 emissions per fuel unit used
-*c_up(ct)                 Load change costs UP in EUR per MW
-*c_do(ct)                 Load change costs DOWN in EUR per MW
-*c_fix_con(ct)            Annual fixed costs per MW
-*c_var_con(ct)            Variable O&M costs per MWh
-
-*--- Investment ---*
-*c_inv_overnight_con(ct)  Investment costs: Overnight
-*inv_lifetime_con(ct)     Investment costs: technical lifetime
-*inv_recovery_con(ct)     Investment costs: Recovery period according to depreciation tables
-*inv_interest_con(ct)     Investment costs: Interest rate
-*m_con(ct)                Investment: maximum installable capacity per technology
-*m_con_e(ct)              Investment: maximum installable energy in TWh per a
-
-*--- Flexibility ---*
-*grad_per_min(ct)         Maximum load change per minute relative to installed capacity
 
 *====== Fuel and CO2 costs ======
 *""fuel price" means without dividing by efficiency eta
@@ -339,35 +319,9 @@ $offdelim
 /;
 
 parameter cdata(all_cdata,ct)      "Various Data for Conventional Technologies"
-*/
-*$ondelim
-*$include "Conventionals.csv"
-*$offdelim
-*/;
-
 parameter p2gdata(all_p2gdata,p2g)      "Various Data for P2G Technologies"
-*/
-*$ondelim
-*$include "P2G.csv"
-*$offdelim
-*/;
-
-
 parameter rdata(all_rdata,res)      "Various Data for Renewable Technologies"
-*/
-*$ondelim
-*$include "Renewables.csv"
-*$offdelim
-*/;
-*
 parameter griddata(all_griddata,grid);
-
-*parameter con_fuelprice_reg(ct,reg)      "Fuel price conventionals in Euro per MWth for different regions"
-*/
-*$ondelim
-*$include "FuelPrice.csv"
-*$offdelim
-*/;
 
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
@@ -398,8 +352,6 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 *$include "DSM_shift.csv"
 *$offdelim
 */;
-
-
 
 parameter stodata(all_storage,sto)      "Various Data for storage"
 /

@@ -675,6 +675,8 @@ cdata("eta_con","CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0)=sum(No
 cdata("eta_con","bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)=sum(BIOte(te_remind), (remind_eta1("2020","DEU", te_remind) + remind_eta2("2020","DEU", te_remind)))/card(BIOte);
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("eta_con","nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)=remind_eta2("2020","DEU","tnrs");
+cdata("eta_con","OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)=remind_eta1("2020","DEU","ngt");
+cdata("eta_con","ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)=remind_eta2("2020","DEU","hydro");
 
 *================ read in carbon content from remind ================
 
@@ -708,6 +710,8 @@ cdata("c_var_con","CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = su
 cdata("c_var_con","bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = sum(BIOte(te_remind), remind_OMcost("DEU","omv",te_remind))/card(BIOte)*1e12/sm_TWa_2_MWh;
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
 cdata("c_var_con","nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_OMcost("DEU","omv","tnrs")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_OMcost("DEU","omv","ngt")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_OMcost("DEU","omv","hydro")*1e12/sm_TWa_2_MWh;
 
 ** there is no var OM cost for VRE or VREgrid in REMIND
 p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
@@ -738,30 +742,30 @@ r = remind_r("2020","DEU");
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 
 **weighted average life time
-dieter_lifetime(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_lifetime("lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+dieter_lifetime(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_lifetime("DEU","lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct);
 
 **when there is no generation in remind
-dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = remind_lifetime("lifetime", "ngcc");
-dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_lifetime("lifetime", "ngt");
-dieter_lifetime("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_lifetime("lifetime", "tnrs");
-dieter_lifetime("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = remind_lifetime("lifetime", "bioigcc");
-dieter_lifetime("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = remind_lifetime("lifetime", "igcc");
-dieter_lifetime("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_lifetime("lifetime", "hydro");
+dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = remind_lifetime("DEU","lifetime", "ngcc");
+dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_lifetime("DEU","lifetime", "ngt");
+dieter_lifetime("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_lifetime("DEU","lifetime", "tnrs");
+dieter_lifetime("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = remind_lifetime("DEU","lifetime", "bioigcc");
+dieter_lifetime("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = remind_lifetime("DEU","lifetime", "igcc");
+dieter_lifetime("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_lifetime("DEU","lifetime", "hydro");
 
 *discount factor for conventional
 disc_fac_con(ct)$(dieter_lifetime(ct) ne 0) = r * (1+r) ** dieter_lifetime(ct) / (-1+(1+r) ** dieter_lifetime(ct) ) ;
 
 *discount factor for renewable
-disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("lifetime", "spv") / (-1+(1+r) ** remind_lifetime("lifetime", "spv")) ;
-disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("lifetime", "wind") / (-1+(1+r) ** remind_lifetime("lifetime", "wind")) ;
+disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("DEU","lifetime", "spv") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "spv")) ;
+disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("DEU","lifetime", "wind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "wind")) ;
 if ((remind_wind_offshore eq 1),
-disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("lifetime", "windoff") / (-1+(1+r) ** remind_lifetime("lifetime", "windoff")) ;
+disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("DEU","lifetime", "windoff") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "windoff")) ;
 );
 
 *discount factor for P2G and grid
-disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("lifetime", "elh2")) ;
-disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("lifetime", "gridwind")) ;
+disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("DEU","lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "elh2")) ;
+disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "gridwind")) ;
 
 c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
@@ -792,7 +796,7 @@ remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) 
 
 *======= read in overnight investment cost from remind ==========================
 *overnight investment cost
-* conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
+* conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_i_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_CapCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
@@ -832,7 +836,7 @@ c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 
 *=============== adjustment cost from remind (for disaggregated reportin) ================
 *""overnight" adjustment cost
-* conversion from tr USD_twothousandfive/TW to USD_twentyfifteen/MW
+* conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_adj_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
     = sum(DT_RM_ct(ct,te_remind), remind_adjcost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
@@ -847,7 +851,11 @@ c_adj_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
             = sum(BIOte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
 c_adj_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_adjcost("2020", "DEU", "tnrs") * 1e6 ;
-            
+c_adj_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
+            = remind_adjcost("2020", "DEU", "ngt") * 1e6 ;
+c_adj_ovnt("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)
+            = remind_adjcost("2020", "DEU", "hydro") * 1e6 ;
+
 c_adj_ovnt_res(res) = sum(DT_RM_res(res,te_remind), remind_adjcost("2020","DEU",te_remind)) * 1e6;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
@@ -1181,14 +1189,12 @@ con4e_maxout_sto(sto,h)..
 ;
 
 con4h_maxout_lev(sto,h)..
-        ( STO_OUT(sto,h)
-        ) /(1+stodata("eta_sto",sto))*2
+        STO_OUT(sto,h) / (1+stodata("eta_sto",sto)) * 2
         =L= STO_L(sto,h-1)
 ;
 
 con4i_maxin_lev(sto,h)..
-        ( STO_IN(sto,h)
-        ) * (1+stodata("eta_sto",sto))/2
+        STO_IN(sto,h) * (1+stodata("eta_sto",sto)) / 2
         =L= N_STO_E(sto) - STO_L(sto,h-1)
 ;
 
