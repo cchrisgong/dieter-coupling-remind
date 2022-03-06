@@ -45,6 +45,9 @@ s32_margVRE
 * remind early retirement switch (whether early retirement is allowed or not), 1 is if no early retirement
 remind_earlyRetiSwitch
 s32_noER
+* storage coupling switch
+remind_storageSwitch
+s32_DTstor
 *************************** 2. PARAMETERS AND SETS FROM REMIND  **********************************************************
 *------------------------
 *Investment interest rate
@@ -79,6 +82,7 @@ remind_prodSe_Resxcurt(yr, reg, se_remind, te_remind)
 *fraction of OM cost over investment cost
 pm_data(reg,char_remind,te_remind)
 remind_OMcost(reg,char_remind,te_remind)
+remind_storCost(reg,char_remind,te_remind)
 *------------------------------------
 *investment cost in REMIND already annualized
 vm_costTeCapital(yr, reg, te_remind)
@@ -154,6 +158,7 @@ $load  COALte = COALte32
 $load  NonPeakGASte = NonPeakGASte32
 $load  BIOte = BIOte32
 $load  NUCte = NUCte32
+$load  STOte = STOte32
 $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter
@@ -171,10 +176,12 @@ $load  remind_wind_offshore = s32_windoff
 $load  remind_adjCostSwitch = s32_adjCost
 $load  remind_margVRECostSwitch = s32_margVRE
 $load  remind_earlyRetiSwitch = s32_noER
+$load  remind_storageSwitch = s32_DTstor
 $load  remind_adjcost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
+$load  remind_storCost = pm_data
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = pm_data
@@ -353,14 +360,14 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 *$offdelim
 */;
 
-parameter stodata(all_storage,sto)      "Various Data for storage"
-/
-$ondelim
-$include "Storage_new.csv"
-*$include "Storage.csv"
-$offdelim
-/;
-
+*parameter stodata(all_storage,sto)      "Various Data for storage"
+*/
+*$ondelim
+*$include "Storage_new.csv"
+**$include "Storage.csv"
+*$offdelim
+*/;
+*
 
 $onlisting
 

@@ -132,6 +132,7 @@ COALte      coal tech from remind to be loaded
 NonPeakGASte non peaking gas type gas plants from remind to be loaded
 BIOte       biomass tech from remind to be loaded
 NUCte       nuclear tech from remind to be loaded
+STOte       storage tech from remind to be loaded
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 * remind technology					                  /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
@@ -155,7 +156,7 @@ all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_life
 all_griddata                                     /c_fix_grid, inv_lifetime_grid/
 ct(te_dieter)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, bio/
-sto       Storage technolgies                    /lith,PbS,flow,PSH,caes/
+sto       Storage technolgies                    /lith,PSH,H2,caes/
 res(te_dieter)       Renewable technologies         /Wind_on, Wind_off, Solar/
 p2g(te_dieter)       Sector Coupling P2G Technologies /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
@@ -285,7 +286,17 @@ if (( (remind_wind_offshore eq 1) AND (sum(yr,remind_cap(yr, "DEU", "windoff", "
     );
 );
 
+* switch off storage in iteration 0, because capital cost due to learning is only calculated after 1st iteration
+if ( (remind_storageSwitch eq 1),
+    if ((remind_iter eq 0),
+        remind_storageSwitch = 0;
+    );
+    
+    if ((remind_iter gt 0),
+        remind_storageSwitch = 1;
+    );
 
+);
  
 ********************************** adjustment cost ******
 
@@ -776,16 +787,17 @@ c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv
 
 *$IFTHEN.AC %adj_cost% == "on"
 if ((remind_adjCostSwitch eq 1),
-*only couple adjustment cost for <2130 due to earlier years volatility
 * adjustment cost don't have to multiply the new investment marginal factor dieter_newInvFactor since it is already calculated in marginal terms in REMIND
-*remind_adjcost(yr,reg,te_remind) = remind_adjcost(yr,reg,te_remind)$(yr.val lt 2130);
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind) + remind_adjcost(yr,reg,te_remind);
 );
 *$ENDIF.AC
 
-*$IFTHEN.AC %adj_cost% == "on_select"
-*remind_CapCost(yr,reg,te_remind)$(adjte_remind(te_remind)) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
-*$ENDIF.AC
+
+if ((remind_storageSwitch eq 1),
+stodata("c_inv_overnight_sto_e",sto) = remind_storCost("DEU","inco0",te_remind)$(STOte(te_remind));
+stodata("inv_lifetime_sto",sto))
+
+);
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
 *$IFTHEN.ER %earlyReti_IC% == "on"
