@@ -58,11 +58,6 @@ $setglobal fuel_cost_iter linFit
 *noavg will use non year-averaged fuel cost (but iteration averaged, done in remind)
 *$setglobal fuel_cost_yr avg
 $setglobal fuel_cost_yr no_avg
-*-------------
-****fuel cost option 3:
-*with a supply curve
-$setglobal fuel_cost_suppc no_suppcurve
-*$setglobal fuel_cost_suppc suppcurve
 *==========
 ****whether to shave off scarcity price
 *$setglobal price_shave on
@@ -125,7 +120,7 @@ Sets
 * ================================ REMIND sets ====================================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-*all_yr      for smoothing prices                     /2005,2020,2150/
+*all_yr      for smoothing prices                    /2005,2020,2150/
 t           year from remind to be loaded
 te_remind   tech from remind to be loaded
 COALte      coal tech from remind to be loaded
@@ -135,13 +130,13 @@ NUCte       nuclear tech from remind to be loaded
 STOte       storage tech from remind to be loaded
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
-* remind technology					                  /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
 char_remind remind character                         /omf, omv, lifetime/
-char_remind_dataren "remind character for renewable" /nur,maxprod/
+char_remind_dataren remind character for renewable /nur,maxprod/
 grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
 reg_nuc     region with nuclear phase-out            /DEU/
@@ -152,13 +147,13 @@ year      yearly time data                       /2011, 2012, 2013, 2013_windons
 te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
-all_p2gdata                                      /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
-all_griddata                                     /c_fix_grid, inv_lifetime_grid/
-ct(te_dieter)        Conventional Technologies      /ror, nuc, coal, CCGT, OCGT_eff, bio/
+all_p2gdata  Data for P2G Technologies           /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
+all_griddata Data for grid Technologies          /c_fix_grid, inv_lifetime_grid/
+ct(te_dieter)        Conventional Technologies   /ror, nuc, coal, CCGT, OCGT_eff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, bio/
-sto       Storage technolgies                    /lith,PSH,H2,caes/
-res(te_dieter)       Renewable technologies         /Wind_on, Wind_off, Solar/
-p2g(te_dieter)       Sector Coupling P2G Technologies /elh2/
+sto       Storage technolgies                    /lith,PSH,hydrogen,caes/
+res(te_dieter)       Renewable technologies      /Wind_on, Wind_off, Solar/
+p2g(te_dieter)       P2G Technologies            /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
@@ -729,20 +724,9 @@ p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  * 1e12 / sm_TWa
 
 *================ summing variable costs ================================
 ** note: for hydro/ror c_m_reg is 0
-$IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"
 ***** summing variable cost components
 c_m_reg(ct,reg)$(cdata("eta_con",ct)) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg)  + cdata("c_var_con",ct) ;
 c_m(ct) = c_m_reg(ct,"DEU");
-$ENDIF.FC3
-
-** CG: currently, suppcurve turns DIETER from LP to NLP
-$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
-** with supply curve response in DIETER: building linear demand/price relation to help with convergence
-** CG: non reactive part of the marginal cost
-c_m_reg_nrp(ct,reg) = cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg)  + cdata("c_var_con",ct) ;
-c_m_nrp(ct) = c_m_reg_nrp(ct,"DEU");
-c_m_FC(ct) = con_fuelprice_reg_yr_avg(ct,"DEU")/cdata("eta_con",ct);
-$ENDIF.FC3
 
 *================================================================
 *======================= FIXED COST =============================
@@ -793,11 +777,11 @@ remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) * dieter_new
 *$ENDIF.AC
 
 
-if ((remind_storageSwitch eq 1),
-stodata("c_inv_overnight_sto_e",sto) = remind_storCost("DEU","inco0",te_remind)$(STOte(te_remind));
-stodata("inv_lifetime_sto",sto))
+*if ((remind_storageSwitch eq 1),
+*stodata("c_inv_overnight_sto_e",sto) = remind_storCost("DEU","inco0",te_remind)$(STOte(te_remind));
+*stodata("inv_lifetime_sto",sto))
 
-);
+*);
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
 *$IFTHEN.ER %earlyReti_IC% == "on"
@@ -968,9 +952,6 @@ con4k_PHS_EtoP            Maximum E to P ratio for PHS
 
 *con8e_max_I_dsm_cu              Maximum installable capacity: DSM load curtailment
 *con8f_max_I_dsm_shift_pos       Maximum installable capacity: DSM load shifting
-$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve"     
-eq4_pref                     Calculate generation-share dependent prefactor for fuel cost supply curve
-$ENDIF.FC3
 ;
 
 
@@ -981,14 +962,7 @@ $ENDIF.FC3
 * ---------------------------------------------------------------------------- *
 
 obj..
-         Z =E=
-
-$IFTHEN.FC3 %fuel_cost_suppc% == "no_suppcurve"        
-                   sum( (ct,h) , c_m(ct)*G_L(ct,h) )
-$ENDIF.FC3
-$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve"        
-                   sum( (ct,h) , (c_m_nrp(ct) + c_m_FC(ct) * pref_FC(ct)) * G_L(ct,h) )
-$ENDIF.FC3
+         Z =E=  sum( (ct,h) , c_m(ct)*G_L(ct,h) )
 *** ramping cost
 $IFTHEN %ramping_cost% == "on"
                  + sum( (ct,h)$(ord(h)>1) , cdata("c_up",ct)*G_UP(ct,h) )
@@ -1297,13 +1271,6 @@ con4k_PHS_EtoP('PSH')..
 *;
 *
 
-$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
-***CG: if sum(h, G_L(ct,h)) = generation_DIETER_currentIter is larger than REMIND's last iteration gen share RM_preInv_prodSe_con for "ct" conventional tech,
-***then pref_FC > 1, making the FC more expensive in current iteration DIETER, lowering its current share
-eq4_pref(ct)..
-          pref_FC(ct) =E=  1 + ( sum(h, G_L(ct,h)) / totLoad - RM_preInv_prodSe_con("2020","DEU",ct)/ totLoad)
-;
-$ENDIF.FC3
 
 ********************************************************************************
 *==========           MODEL *==========
@@ -1352,10 +1319,6 @@ con4h_maxout_lev
 con4i_maxin_lev
 con4j_ending
 con4k_PHS_EtoP
-
-$IFTHEN.FC3 %fuel_cost_suppc% == "suppcurve" 
-eq4_pref
-$ENDIF.FC3
 
 %DSM%$ontext
 *con6a_DSMcurt_duration_max

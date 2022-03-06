@@ -360,14 +360,14 @@ phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
 *$offdelim
 */;
 
-*parameter stodata(all_storage,sto)      "Various Data for storage"
-*/
-*$ondelim
-*$include "Storage_new.csv"
-**$include "Storage.csv"
-*$offdelim
-*/;
-*
+parameter stodata(all_storage,sto)      "Various Data for storage"
+/
+$ondelim
+$include "Storage_new.csv"
+*$include "Storage.csv"
+$offdelim
+/;
+
 
 $onlisting
 
