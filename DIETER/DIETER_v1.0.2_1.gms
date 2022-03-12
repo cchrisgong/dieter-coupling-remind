@@ -120,7 +120,6 @@ Sets
 * ================================ REMIND sets ====================================
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
-*all_yr      for smoothing prices                    /2005,2020,2150/
 t           year from remind to be loaded
 te_remind   tech from remind to be loaded
 COALte      coal tech from remind to be loaded
@@ -130,12 +129,12 @@ NUCte       nuclear tech from remind to be loaded
 STOte       storage tech from remind to be loaded
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
-* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storwind, tnrs, fnrs, gridwind/
+* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
-char_remind remind character                         /omf, omv, lifetime/
+char_remind remind character                         /omf, omv, lifetime,eta/
 char_remind_dataren remind character for renewable /nur,maxprod/
 grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
@@ -144,20 +143,20 @@ reg_coal    region with coal phase-out               /DEU/
 
 * ================================ DIETER sets ====================================
 year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
-te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid/
+te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid, lith,PSH,hydrogen,caes/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
 all_p2gdata  Data for P2G Technologies           /c_fix_p2g, c_var_p2g, inv_lifetime_p2g,p2g_up,p2g_do/
 all_griddata Data for grid Technologies          /c_fix_grid, inv_lifetime_grid/
 ct(te_dieter)        Conventional Technologies   /ror, nuc, coal, CCGT, OCGT_eff, bio/
 non_nuc_ct(ct) Conv. Technologies except nuclear /ror, coal, CCGT, OCGT_eff, bio/
-sto       Storage technolgies                    /lith,PSH,hydrogen,caes/
+sto(te_dieter)       Storage technolgies         /lith,PSH,hydrogen,caes/
 res(te_dieter)       Renewable technologies      /Wind_on, Wind_off, Solar/
 p2g(te_dieter)       P2G Technologies            /elh2/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
-all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max/
+all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max,e_to_p/
 dsm_shift DSM shifting technologies              /DSM_shift1*DSM_shift5/
 dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 h         hour                                   /h1*h8760/
@@ -214,6 +213,13 @@ Wind_on.wind
 Wind_off.windoff
 /
 
+DT_RM_sto(te_dieter,te_remind)   "mapping DIETER and REMIND storage technologies"
+/
+lith.storspv
+PSH.storwind
+hydrogen.storcsp
+caes.storwindoff
+/
 
 RM_ct_pe(te_remind,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
 /
@@ -538,7 +544,7 @@ loop(reg,
 $ENDIF
 
 * for stability
- N_CON.up("bio") = RM_postInv_cap_con("2020", "DEU", "bio") * 1.2;
+N_CON.up("bio") = RM_postInv_cap_con("2020", "DEU", "bio") * 1.2;
  
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
@@ -612,23 +618,19 @@ $ENDIF.windoff_fix
 ***********************************************************************************************
 * STORAGE FIXINGS
 *
-*N_STO_P.fx("PbS") = 0 ;
 *N_STO_P.fx("caes") = 0 ;
-*N_STO_E.fx("PbS") = 0 ;
 *N_STO_E.fx("caes") = 0 ;
 *STO_IN.fx("caes",h) = 0 ;
 *STO_OUT.fx("caes",h) = 0 ;
 *STO_L.fx("caes",h) = 0 ;
-*STO_IN.fx("PbS",h) = 0 ;
-*STO_OUT.fx("PbS",h) = 0 ;
-*STO_L.fx("PbS",h) = 0 ;
 
-
+if ((remind_storageSwitch eq 0),
 N_STO_P.fx(sto) = 0 ;
 N_STO_E.fx(sto) = 0 ;
 STO_IN.fx(sto,h) = 0 ;
 STO_OUT.fx(sto,h) = 0 ;
 STO_L.fx(sto,h) = 0 ;
+);
 
 **************************************************************************************************
 *********************** 5. READING IN COST FROM REMIND WITH UPSCALING  ***************************
@@ -762,11 +764,19 @@ disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("DEU","lifetime", "windo
 disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("DEU","lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "elh2")) ;
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "gridwind")) ;
 
+
+*storage cost
+if ((remind_storageSwitch eq 1),
+stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
+stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh * stodata("e_to_p",sto);
+stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
+stodata("eta_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind));
+
 c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
-
+);
 *======= add adjustment cost from REMIND for medium and long term periods ========
 
 *$IFTHEN.AC %adj_cost% == "on"
@@ -775,13 +785,6 @@ if ((remind_adjCostSwitch eq 1),
 remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind) + remind_adjcost(yr,reg,te_remind);
 );
 *$ENDIF.AC
-
-
-*if ((remind_storageSwitch eq 1),
-*stodata("c_inv_overnight_sto_e",sto) = remind_storCost("DEU","inco0",te_remind)$(STOte(te_remind));
-*stodata("inv_lifetime_sto",sto))
-
-*);
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
 *$IFTHEN.ER %earlyReti_IC% == "on"

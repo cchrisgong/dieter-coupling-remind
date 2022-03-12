@@ -1,6 +1,6 @@
 c_m_sto,lith,0.3
 c_m_sto,PSH,0.0025
-c_m_sto,hydrogen,0.0025
+c_m_sto,hydrogen,100
 c_m_sto,caes,2
 eta_sto,lith,0.86
 eta_sto,PSH,0.79
@@ -26,11 +26,15 @@ phi_sto_ini,lith,0.5
 phi_sto_ini,PSH,0.5
 phi_sto_ini,hydrogen,0.5
 phi_sto_ini,caes,0.5
+e_to_p,lith,4
+e_to_p,PSH,16
+e_to_p,hydrogen,32
+e_to_p,caes,16
 etop_max,lith,
 etop_max,PSH,1000
 etop_max,hydrogen,
 etop_max,caes,
-*Sources: Zerrahn,A greenfield model to evaluate long-run power storage requirements for high shares of renewables. DIW Discussion Paper 1457,2015
+*Sources:,A greenfield model to evaluate long-run power storage requirements for high shares of renewables. DIW Discussion Paper 1457,2015
 *,EIA round trip effiency for battery and pumped hydro from real data 2018-2019,
 *,"DOE report: Energy Storage Technology and Cost Characterization Report (2019) (variable O&M c_fix_sto, RTE, invCost,lifetime; PSH table 4.23,4.24)",
 * ,NREL report: Cost Projections for Utility-Scale Battery Storage (li-ion battery life time),

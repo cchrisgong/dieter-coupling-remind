@@ -10,9 +10,9 @@
         report_tech_hours('DIETER',yr,reg,'generation (GWh)',res,h) = G_RES.l(res,h) /1e3;
         report_tech_hours('DIETER',yr,reg,'curtailment renewable (GWh)',res,h) =  CU.l(res,h)/1e3 ;
 *     generation MWh -> TWh
-        report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) =  STO_OUT.l(sto,h) ;
-        report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) =  STO_IN.l(sto,h) ;
-        report_tech_hours('DIETER',yr,reg,'storage level (MWh)',sto,h) =  STO_L.l(sto,h) ;
+        report_tech_hours('DIETER',yr,reg,'storage generation (GWh)',sto,h) =  STO_OUT.l(sto,h)  /1e3;
+        report_tech_hours('DIETER',yr,reg,'storage loading (GWh)',sto,h) =  STO_IN.l(sto,h)  /1e3;
+        report_tech_hours('DIETER',yr,reg,'storage level (GWh)',sto,h) =  STO_L.l(sto,h)  /1e3;
         report_tech_hours('DIETER',yr,reg,'consumption (GWh)','el',h) = d(h) /1e3;
 
 %P2G%$ontext
@@ -411,5 +411,5 @@ if ((remind_adjCostSwitch eq 0),
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',ct) = p32_reportmk_4RM(yr,reg,ct,'value_factor') * 1e2;
         report_tech('DIETER',yr,reg,'DIETER Value factor (%)',res) = p32_reportmk_4RM(yr,reg,res,'value_factor') * 1e2;
 
-        report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage generation (MWh)',sto,h) )   /1e6 ;
-        report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (MWh)',sto,h) )   /1e6;
+        report_tech('DIETER',yr,reg,'Storage out total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage generation (GWh)',sto,h) )   /1e6 ;
+        report_tech('DIETER',yr,reg,'Storage in total wholesale (TWh)',sto) = sum(h, report_tech_hours('DIETER',yr,reg,'storage loading (GWh)',sto,h) )   /1e6;

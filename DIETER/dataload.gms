@@ -82,11 +82,12 @@ remind_prodSe_Resxcurt(yr, reg, se_remind, te_remind)
 *fraction of OM cost over investment cost
 pm_data(reg,char_remind,te_remind)
 remind_OMcost(reg,char_remind,te_remind)
-remind_storCost(reg,char_remind,te_remind)
+remind_etasto(reg,char_remind,te_remind)
 *------------------------------------
 *investment cost in REMIND already annualized
 vm_costTeCapital(yr, reg, te_remind)
 remind_CapCost(yr, reg, te_remind)
+remind_storCost(yr,reg,te_remind)
 *------------------------------------
 *plant lifetime and annuity from REMIND
 remind_lifetime(reg,char_remind, te_remind)
@@ -181,10 +182,11 @@ $load  remind_adjcost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
 $load  remind_CapCost = vm_costTeCapital.l
-$load  remind_storCost = pm_data
+$load  remind_storCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
 $load  remind_lifetime = pm_data
+$load  remind_etasto = pm_data
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
