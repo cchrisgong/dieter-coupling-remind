@@ -66,6 +66,9 @@ remind_totseh2Dem(yr, reg, se_remind)
 $IFTHEN.FC %fuel_cost_iter% == "load"
 remind_fuelprice(yr,reg,pe_remind)
 $ENDIF.FC
+*h2 price
+remind_h2price(yr, reg, se_remind)
+pm_SEPrice(yr, reg, se_remind)
 *-------------------------
 * REMIND energy generated from all tech (including curtailment)
 vm_prodSe(yr, reg, pe_remind, se_remind, te_remind)
@@ -199,6 +202,7 @@ $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $load  remind_genshare = p32_shSeElDisp
+$load  remind_h2price = pm_SEPrice
 $gdxin
 $endIf.duringRun
 

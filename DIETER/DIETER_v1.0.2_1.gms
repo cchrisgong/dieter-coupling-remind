@@ -271,6 +271,7 @@ ror.pehyd
 *remind_priceShaveSwitch = 0;
 *remind_priceShaveSwitch = 1;
 
+
 * always account for earlyReti in DIETER's IC
 remind_earlyRetiSwitch = 0;
 
@@ -299,6 +300,8 @@ if ( (remind_storageSwitch eq 1),
 
 );
  
+
+*remind_storageSwitch = 1;
 ********************************** adjustment cost ******
 
 Sets
@@ -618,11 +621,17 @@ $ENDIF.windoff_fix
 ***********************************************************************************************
 * STORAGE FIXINGS
 *
-*N_STO_P.fx("caes") = 0 ;
-*N_STO_E.fx("caes") = 0 ;
-*STO_IN.fx("caes",h) = 0 ;
-*STO_OUT.fx("caes",h) = 0 ;
-*STO_L.fx("caes",h) = 0 ;
+N_STO_P.fx("caes") = 0 ;
+N_STO_E.fx("caes") = 0 ;
+STO_IN.fx("caes",h) = 0 ;
+STO_OUT.fx("caes",h) = 0 ;
+STO_L.fx("caes",h) = 0 ;
+
+N_STO_P.fx("PSH") = 0 ;
+N_STO_E.fx("PSH") = 0 ;
+STO_IN.fx("PSH",h) = 0 ;
+STO_OUT.fx("PSH",h) = 0 ;
+STO_L.fx("PSH",h) = 0 ;
 
 if ((remind_storageSwitch eq 0),
 N_STO_P.fx(sto) = 0 ;
@@ -771,11 +780,6 @@ stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_stor
 stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh * stodata("e_to_p",sto);
 stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
 stodata("eta_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind));
-
-c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
-                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
-c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
-                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 );
 *======= add adjustment cost from REMIND for medium and long term periods ========
 
@@ -825,6 +829,20 @@ c_i_ovnt_res("Wind_off") = remind_CapCost("2020", "DEU", "windoff") * 1e6 ;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_i_ovnt_p2g("elh2") = remind_CapCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
+
+*adjust h2 storage cost to have the same P cost as elh2
+if ((remind_storageSwitch eq 1),
+stodata("c_inv_overnight_sto_e","hydrogen") = c_i_ovnt_p2g("elh2");
+stodata("c_inv_overnight_sto_p","hydrogen") = c_i_ovnt_p2g("elh2")/stodata("e_to_p","hydrogen");
+* import h2 cost from last iteration remind, x3 to account for transportation cost, etc...
+stodata("c_m_sto","hydrogen") = max(30,remind_h2price("2020","DEU","seh2") * 1e12 / sm_TWa_2_MWh) * 3; 
+
+c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
+                / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+);
+
 c_i_ovnt_grid("vregrid") = remind_CapCost("2020", "DEU", "gridwind") * 1e6 ;
 
 *annuitized investment cost
@@ -1107,8 +1125,6 @@ $offtext
 eq3_grid(grid)..
         N_GRID(grid) / remind_gridfac_reg
         =G=
-*        P_RES("Solar") * remind_VRECapFac("Solar") + 1.5 * P_RES("Wind_on") * remind_VRECapFac("Wind_on")
-*       + 3 * P_RES("Wind_off") * ("Wind_off")
         ( sum(h,(G_RES("Solar",h) + CU("Solar",h)))
         + 1.5 * sum(h
         ,(G_RES("Wind_on",h) + CU("Wind_on",h)))
@@ -1426,6 +1442,11 @@ residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("r
 if ((remind_wind_offshore eq 1),
 residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
 );
+
+if ((remind_storageSwitch eq 1),
+residual_demand(h) = residual_demand(h) - sum(sto,STO_OUT.l(sto,h)); 
+);
+
 ** peak residual hourly demand as a fraction of total demand
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
 
