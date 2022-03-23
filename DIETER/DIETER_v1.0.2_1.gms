@@ -95,14 +95,14 @@ $setglobal ramping_cost off
 $setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
-$setglobal nucphaseout on
+*$setglobal nucphaseout on
 *$setglobal nucphaseout off
-*$setglobal nucphaseout softupper
+$setglobal nucphaseout softupper
 
 *choose to have DIETER follow REMIND in coal phase-out
-$setglobal coalphaseout on
+*$setglobal coalphaseout on
 *$setglobal coalphaseout off
-*$setglobal coalphaseout softupper
+$setglobal coalphaseout softupper
 
 *this should be on as long as REMIND's windoff is semi-exogenous (like currently, because it is a share of wind_on)
 $setglobal windoff_fix on
@@ -841,6 +841,9 @@ c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
+                
+stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), remind_OMcost("DEU","omf",te_remind)) * c_i_sto_p(sto);
+
 );
 
 c_i_ovnt_grid("vregrid") = remind_CapCost("2020", "DEU", "gridwind") * 1e6 ;
@@ -1145,7 +1148,7 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
 *** hourly generation is constrained by ad hoc theoretical capfac 
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-        =L= 0.5 * N_CON('ror')
+        =L= 0.9* N_CON('ror')
 ;
 
 * annual average capfac on run of river to be constrained by remind theoretical capfac
@@ -1531,6 +1534,23 @@ if ((remind_priceShaveSwitch = 1),
 *** calculate market value (only in hours where there is no scarcity price)
 market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
 market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
+*
+*report_tech('DIETER',yr,reg,'genshares (%)',ct) = sum( h, G_L.l(ct,h) ) / totLoad  * 1e2;
+*report_tech('DIETER',yr,reg,'genshares (%)',res) = sum( h, G_RES.l(res,h) ) / totLoad  * 1e2;
+*
+*report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)$(N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h)) * 1e2;
+*report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , (G_RES.l(res,h) + CU.l(res,h))) / (P_RES.l(res) * card(h)) * 1e2;
+*report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res)$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h)) * 1e2;
+*report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
+*report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)','ror')$(N_CON.l('ror') ne 0 ) = sum( h , G_L.l('ror',h)) / (N_CON.l('ror') * card(h)) * 1e2;
+*
+*report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = N_CON.m(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2) * 1.2;
+*report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res) ne 0) = P_RES.m(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real avg CapFac (%)',res)/1e2) * 1.2;
+*report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad * 1.2;
+*report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)') = sum(te_dieter, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - avg ($/MWh)',te_dieter)* report_tech('DIETER',yr,reg,'genshares (%)',te_dieter)/1e2);
+*
+*market_value(ct) = market_value(ct) + report_tech('DIETER',"2020","DEU",'shadow price of capacity bound from REMIND - avg ($/MWh)',ct);
+*market_value(res) = market_value(res) + report_tech('DIETER',"2020","DEU",'shadow price of capacity bound from REMIND - avg ($/MWh)',res);
 
 * average price for both flexible and inflexible techs, with scarcity price shaved
 annual_load_weighted_price = sum(h,hourly_price(h)*d(h)) / totLoad;
@@ -1598,6 +1618,10 @@ p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) = 0) = 1;
 
 p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar;
+
+*p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price + report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)');
+*p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar + report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)');
+
 
 %P2G%$ontext
 ******************** green H2 absolute markup *****************************************
