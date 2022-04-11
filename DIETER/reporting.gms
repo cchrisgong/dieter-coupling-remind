@@ -47,7 +47,7 @@ $offtext
         report('DIETER',yr,reg,'investment interest rate') = r * 1e2;
 *       Define gross energy demand for reporting, egual to equation 5a      
         report('DIETER',yr,reg,'total energy demand (TWh)') = totLoad / 1e6;
-        report('DIETER',yr,reg,'total energy demand and curtailment (TWh)') = (totLoad + sum(res, sum( h , CU.l(res,h))) )/1e6 ;
+        report('DIETER',yr,reg,'total energy demand and curtailment (TWh)') = (totLoad + sum(res, sum( h , CU.l(res,h))) ) / 1e6 ;
         
 ***********************************************************************************************************
 ********************************* reporting for annual technology data ************************************
@@ -55,7 +55,7 @@ $offtext
 *-------------------------------- reporting for generation and capacities ---------------------------------
         report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',ct) = sum( h , G_L.l(ct,h)) /1e6 ;
         report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',res) = sum( h , G_RES.l(res,h)) /1e6 ;
-        report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',res) = sum( h , (G_RES.l(res,h)+CU.l(res,h))) /1e6 ;        
+        report_tech('DIETER',yr,reg,'Total renewable generation w/ curt (TWh)',res) = sum( h , (G_RES.l(res,h) + CU.l(res,h))) / 1e6 ;        
         report_tech('DIETER',yr,reg,'Total renewable curtailment (TWh)',res) = sum( h , CU.l(res,h)) /1e6 ;
         
 ***     capacity MW -> GW
@@ -133,7 +133,6 @@ if ((remind_adjCostSwitch eq 0),
 ***     TW -> GW; coal is split for easy comparison
         report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), added_remind_cap(yr, reg, te_remind, '1')) * 1e3;
 
-        
 *       ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','CCGT') = remind_CF(yr,reg,'ngcc')*1e2;
@@ -194,10 +193,10 @@ if ((remind_adjCostSwitch eq 0),
         report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',"ror") = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',"ror") / dieter_newInvFactor("hydro");
 
         report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',ct) = report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct);
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_on") = remind_VRECapFac("Wind_on")*1e2 * remind_highest_empty_grade_LF("wind")/remind_average_grade_LF("wind");
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = remind_VRECapFac("Wind_off")*1e2 * remind_highest_empty_grade_LF("windoff")/remind_average_grade_LF("windoff");
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Solar") = remind_VRECapFac("Solar")*1e2 * remind_highest_empty_grade_LF("spv")/remind_average_grade_LF("spv");
-        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"ror") = remind_highest_empty_grade_LF("hydro") *1e2;
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_on") = remind_VRECapFac("Wind_on") * 1e2 / dieter_newInvFactor("wind");
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Wind_off")$(remind_average_grade_LF("windoff")) = remind_VRECapFac("Wind_off") * 1e2 /dieter_newInvFactor("windoff");
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"Solar") = remind_VRECapFac("Solar") * 1e2 /dieter_newInvFactor("spv");
+        report_tech('DIETER',yr,reg,'DIETER marg CapFac (%)',"ror") = remind_HydroCapFac * 1e2 / dieter_newInvFactor("hydro");
 
         report_tech('DIETER',yr,reg,'DIETER Revenue (billionUSD)',ct) = sum( h, G_L.l(ct,h)*(-con1a_bal.m(h)))/1e9  * 1.2;
         report_tech('DIETER',yr,reg,'DIETER Revenue (billionUSD)',res) = sum( h, G_RES.l(res,h)*(-con1a_bal.m(h)))/1e9 * 1.2;
@@ -235,7 +234,7 @@ if ((remind_adjCostSwitch eq 1),
         report_tech('DIETER',yr,reg,'annualized investment cost - marg ($/MWh)',grid) = report_tech('DIETER',yr,reg,'annualized investment cost - avg ($/MWh)',grid);
  
 ** for plants that exist in the system, regardless whether or not they are dispatched (in $ terms)
-        report_tech('DIETER',yr,reg,'total annual investment cost ($)',ct) = (c_i(ct)-c_adj(ct)) * N_CON.l(ct)  * 1.2;
+        report_tech('DIETER',yr,reg,'total annual investment cost ($)',ct) = (c_i(ct) - c_adj(ct)) * N_CON.l(ct)  * 1.2;
             
 ** adjustment cost (avg and marginal) for DIETER: avg and marginal AC for non-VRE are the same
         report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',ct)$(report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct) ne 0) = c_adj(ct) / (card(h) * report_tech('DIETER',yr,reg,'DIETER avg CapFac (%)',ct)/1e2) * 1.2;

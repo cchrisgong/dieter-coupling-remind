@@ -203,6 +203,7 @@ $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $load  remind_genshare = p32_shSeElDisp
 $load  remind_h2price = pm_SEPrice
+*$load  remind_cc2injcost = pm_data
 $gdxin
 $endIf.duringRun
 
@@ -257,12 +258,14 @@ c_i_ovnt(ct)             Investment costs: Overnight
 c_i_ovnt_res(res)        Investment costs: Overnight
 c_i_ovnt_p2g(p2g)        Investment costs: Overnight
 c_i_ovnt_grid(grid)      Investment costs: Overnight
+*c_i_ovnt_ccs(ccs)      Investment costs: Overnight
 
 *--- Adjustment cost from REMIND---*
-c_adj_ovnt(ct)             Investment costs: Overnight
-c_adj_ovnt_res(res)        Investment costs: Overnight
-c_adj_ovnt_p2g(p2g)        Investment costs: Overnight
-c_adj_ovnt_grid(grid)      Investment costs: Overnight
+c_adj_ovnt(ct)             Adjustment costs: Overnight
+c_adj_ovnt_res(res)        Adjustment costs: Overnight
+c_adj_ovnt_p2g(p2g)        Adjustment costs: Overnight
+c_adj_ovnt_grid(grid)      Adjustment costs: Overnight
+*c_adj_ovnt_ccs(ccs)      Adjustment costs: Overnight
 
 *====== Time Series Data ======
 d(h)                      Demand hour h for cost minimization
@@ -334,7 +337,9 @@ $offdelim
 parameter cdata(all_cdata,ct)      "Various Data for Conventional Technologies"
 parameter p2gdata(all_p2gdata,p2g)      "Various Data for P2G Technologies"
 parameter rdata(all_rdata,res)      "Various Data for Renewable Technologies"
-parameter griddata(all_griddata,grid);
+parameter griddata(all_griddata,grid) "Various Data for grid Technologies"
+*parameter ccsdata(all_ccsdata,ccs) "Various Data for CCS Technologies"
+; 
 
 Table t_phi_res_y_reg(year,reg,h,res)      ""
 $ondelim
@@ -408,7 +413,8 @@ c_i(ct)          Annualized investment costs by conventioanl plant per MW
 c_i_res(res)     Annualized investment costs by renewable plant per MW
 c_i_p2g(p2g)     Annualized investment costs by P2G plant per MW
 c_i_grid(grid)     Annualized investment costs for grid per MW
-
+*c_i_ccs(ccs) Annualized investment costs for CCS injection (per tonne CO2)
+ 
 c_adj(ct)          Annualized adjustment costs by conventioanl plant per MW
 c_adj_res(res)     Annualized adjustment costs by renewable plant per MW
 c_adj_p2g(p2g)     Annualized adjustment costs by P2G plant per MW
