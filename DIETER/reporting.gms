@@ -249,8 +249,8 @@ if ((remind_adjCostSwitch eq 1),
         report_tech('DIETER',yr,reg,'annualized adjustment cost - marg ($/MWh)',grid) = report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',grid);
 
 *       Grid cost (if adj cost for vregrid is coupled)
-        report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) +  c_i_grid(grid) ) * N_GRID.L(grid) / totLoad  * 1.2;
-                                                        
+        report_tech('DIETER',yr,reg,'grid LCOE ($/MWh)',grid) = (griddata("c_fix_grid",grid) + c_i_grid(grid) ) * N_GRID.L(grid) / totLoad * 1.2;
+
 *only report those adjustment costs that are coupled
 *$IFTHEN.ACon2 %adj_cost% == "on_select"
 *        report_tech('DIETER',yr,reg,'annualized adjustment cost - avg ($/MWh)',te_dieter)$(not adjte_dieter(te_dieter)) = 0;
@@ -308,12 +308,13 @@ if ((remind_adjCostSwitch eq 0),
 
 *** note: in remind2/R/reportLCOE.R, grid cost is divided by total usable energy not just renewable generation, because it was calculated as system LCOE for grid, here we calculate the tech LCOE for VRE, then
 **  later it can be multiplied with generation share and add up to system LCOE same as other tech LCOE components
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Solar")*1e6)
-                                                                    * VRE_grid_ratio(yr,reg,"Solar") * dieter_newInvFactor("spv") * 1.2;
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) +  c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_on")*1e6)
-                                                                    * VRE_grid_ratio(yr,reg,"Wind_on") * dieter_newInvFactor("wind") * 1.2;    
-        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_off")$(report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_off")) = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_off")*1e6)
-                                                                    * VRE_grid_ratio(yr,reg,"Wind_off") * dieter_newInvFactor("windoff") * 1.2;    
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Solar")*1e6)
+                                                                    * VRE_grid_ratio(yr,reg,"Solar") * 1.2;
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_on")*1e6)
+                                                                    * VRE_grid_ratio(yr,reg,"Wind_on") * 1.2;    
+        report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_off")$(report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_off"))
+                                                                   = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_off")*1e6)
+                                                                    * VRE_grid_ratio(yr,reg,"Wind_off") * 1.2;    
         
 *       OM cost
         report_tech('DIETER',yr,reg,'O&M fixed cost ($/kW)',ct) = cdata('c_fix_con',ct) / 1e3 * 1.2;
@@ -338,7 +339,7 @@ if ((remind_adjCostSwitch eq 0),
 
 *       fuel cost
         report_tech('DIETER',yr,reg,'primary energy price ($/MWh)',ct) = con_fuelprice_reg_yr_avg(ct,reg) * 1.2;
-        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 )  = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) * 1.2;
+        report_tech('DIETER',yr,reg,'fuel cost - divided by eta ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0) = con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) * 1.2;
 *       CO2 cost
         report_tech('DIETER',yr,reg,'CO2 cost ($/MWh)',ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg) * 1.2;
         
