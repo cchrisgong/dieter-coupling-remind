@@ -89,7 +89,7 @@ remind_etasto(reg,char_remind,te_remind)
 *------------------------------------
 *investment cost in REMIND already annualized
 vm_costTeCapital(yr, reg, te_remind)
-remind_CapCost(yr, reg, te_remind)
+remind_capCost(yr, reg, te_remind)
 remind_storCost(yr,reg,te_remind)
 *------------------------------------
 *plant lifetime and annuity from REMIND
@@ -102,7 +102,7 @@ remind_eta1(yr,reg,te_remind)
 remind_eta2(yr,reg,te_remind)
 *------------------------------------
 *adjustment cost
-remind_adjcost(yr, reg, te_remind)
+remind_adjCost(yr, reg, te_remind)
 o_margAdjCostInv(yr, reg, te_remind)
 *-------------------------------------
 *for the purpose of comparing the decision remind and dieter make, use instead the cap. before remind's investment at the beginning of the year, not the end
@@ -181,10 +181,10 @@ $load  remind_adjCostSwitch = s32_adjCost
 $load  remind_margVRECostSwitch = s32_margVRE
 $load  remind_earlyRetiSwitch = s32_noER
 $load  remind_storageSwitch = s32_DTstor
-$load  remind_adjcost = o_margAdjCostInv
+$load  remind_adjCost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
 $load  remind_OMcost = pm_data
-$load  remind_CapCost = vm_costTeCapital.l
+$load  remind_capCost = vm_costTeCapital.l
 $load  remind_storCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l

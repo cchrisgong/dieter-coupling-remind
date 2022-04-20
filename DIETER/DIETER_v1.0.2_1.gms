@@ -108,6 +108,10 @@ $setglobal coalphaseout softupper
 $setglobal windoff_fix on
 *$setglobal windoff_fix off
 
+*let DIETER see grade dependent capital costs (for wind and solar)
+*$setglobal gradeCapex on
+$setglobal gradeCapex off
+
 * to reduce the size of lst file
 option limcol    = 0;
 option limrow    = 0;
@@ -302,6 +306,7 @@ if ( (remind_storageSwitch eq 1),
  
 
 *remind_storageSwitch = 1;
+*remind_margVRECostSwitch = 0;
 ********************************** adjustment cost ******
 
 Sets
@@ -375,9 +380,10 @@ Parameter disc_fac_res(res) Discount factor for overnight investment;
 Parameter disc_fac_p2g(p2g) Discount factor for overnight investment;
 Parameter disc_fac_grid(grid) Discount factor for overnight investment;
 Parameter disc_fac_ccs(ccs) Discount factor for overnight investment;
-Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te transfer;
+Parameter preInv_remind_cap(yr, reg, te_remind, grade) Pre investment remind cap for dispatchable te;
+Parameter preInv_remind_cap_res(res) Pre investment remind cap for renewable te;
 Parameter added_remind_cap(yr, reg, te_remind, grade) added cap in REMIND for reporting;
-Parameter RM_preInv_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share transfer;
+Parameter RM_preInv_prodSe(yr, reg, pe_remind, se_remind, te_remind) Pre investment remind prodSe for VRE gen share;
 Parameter RM_preInv_prodSe_con(yr, reg, ct) Pre investment remind prodSe for conventional tech upscaling;
 Parameter RM_postInv_cap_con(yr,reg,ct) Post-investment REMIND capacity for conventional;
 Parameter RM_postInv_cap_res(yr,reg,res) Post-investment REMIND capacity for renewable;
@@ -390,6 +396,7 @@ Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
 Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
 Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
 Parameter dieter_lifetime(ct)  DIETER plant lifetime;
+Parameter capDist(res,grade)  distributed capacities;
 
 Parameter
 remind_VRECapFac(res)   "VRE capacity factors from REMIND"
@@ -399,7 +406,7 @@ dieter_newInvFactor(te_remind) "an investment CAPEX factor for added cap in DIET
 remind_gradeMaxCap(grade,te_remind) "remind maximal capacity for each renewable grade"
 remind_highest_empty_grade_LF(te_remind) "load factor of the highest remind grade with free room for new built (less than 90% maximal capacity)"
 remind_average_grade_LF(te_remind) "average grade load factor - need to multiply with vm_capFac to get remind theoretical renewable capacity factor"
-remind_lowest_full_grade_LF(te_remind) "load factor of the lowest full remind grade"
+remind_lowest_full_grade_LF_bnd(te_remind) "load factor of the lowest full remind grade, +1e-6 to bound from above"
 remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
 remind_highest_grade_LF(te_remind) "load factor of the highest remind grade"
 ;
@@ -417,16 +424,25 @@ remind_HydroCapFac = remind_CF("2020","DEU","hydro") * remind_average_grade_LF("
 *CG*: for VRE, calculate an investment CAPEX multiplicative factor for added cap in DIETER which is indicative of the marginal grade added capacity not average grade capacity
 * dieter_newInvFactor = (average capfac over all remind grades) /
 * (capfac of the highest rlf grade that is still empty, < 0.9x maxcap = maxprod/(nur*vm_capFac) )
-remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
-remind_lowest_grade_LF(te_remind) = Smin(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
-remind_highest_grade_LF(te_remind) = Smax(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0), remind_pm_dataren("DEU", "nur", grade, te_remind));
+remind_gradeMaxCap(grade,te_remind)$(remind_pm_dataren("DEU", "nur", grade, te_remind) AND remind_CF("2020","DEU",te_remind) AND remind_vm_CapDistr("2020", "DEU", te_remind, grade)) = remind_pm_dataren("DEU", "maxprod", grade, te_remind) / (remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_CF("2020","DEU",te_remind));
+remind_lowest_grade_LF(te_remind) = Smin(grade$((remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0) and(remind_vm_CapDistr("2020", "DEU", te_remind, grade))), remind_pm_dataren("DEU", "nur", grade, te_remind));
+remind_highest_grade_LF(te_remind) = Smax(grade$((remind_pm_dataren("DEU", "nur", grade, te_remind) ne 0) and(remind_vm_CapDistr("2020", "DEU", te_remind, grade))), remind_pm_dataren("DEU", "nur", grade, te_remind));
+*** if there are grades filled more than 90% full, take the lowest grade; if nothing is full, take the highest LF
+remind_lowest_full_grade_LF_bnd(te_remind) = min(remind_highest_grade_LF(te_remind)+1e-6, SMin(grade$(remind_vm_CapDistr("2020", "DEU", te_remind, grade) > 0.9 * remind_gradeMaxCap(grade,te_remind)), remind_pm_dataren("DEU", "nur", grade, te_remind)));
+remind_lowest_full_grade_LF_bnd("hydro") = min(remind_highest_grade_LF("hydro")+1e-6, SMin(grade$(remind_vm_CapDistr("2020", "DEU", "hydro", grade) > 0.99 * remind_gradeMaxCap(grade,"hydro")), remind_pm_dataren("DEU", "nur", grade, "hydro")));
 *** if there are still empty grades, take the highest LF of the empty grades; if all grades are full, take the lowest grade load factor
-remind_lowest_full_grade_LF(te_remind) = min(remind_highest_grade_LF(te_remind), SMin(grade$(remind_vm_CapDistr("2020", "DEU", te_remind, grade) > 0.9 * remind_gradeMaxCap(grade,te_remind)), remind_pm_dataren("DEU", "nur", grade, te_remind)));
-remind_highest_empty_grade_LF(te_remind) = max(remind_lowest_grade_LF(te_remind),SMax(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) < remind_lowest_full_grade_LF(te_remind)),remind_pm_dataren("DEU", "nur", grade, te_remind)));
+remind_highest_empty_grade_LF(te_remind) = max(remind_lowest_grade_LF(te_remind),SMax(grade$(remind_pm_dataren("DEU", "nur", grade, te_remind) < remind_lowest_full_grade_LF_bnd(te_remind)),remind_pm_dataren("DEU", "nur", grade, te_remind)));
+
+**calculate new investment factor taking into account grades in REMIND
 dieter_newInvFactor(te_remind)$(remind_highest_empty_grade_LF(te_remind)) = remind_average_grade_LF(te_remind) / remind_highest_empty_grade_LF(te_remind);
-**CG: sometimes hydro grades are both full, in which case set factor to 1
-***CG: or if both are not full - but why?
-dieter_newInvFactor(te_remind)$((remind_highest_empty_grade_LF(te_remind) - remind_lowest_full_grade_LF(te_remind)) eq 0) = 1;
+
+**CG: sometimes grades are all full, in which case set factor to 1
+dieter_newInvFactor(te_remind)$(
+        (SMin(grade$(remind_vm_CapDistr("2020", "DEU", te_remind, grade) > 0.9 * remind_gradeMaxCap(grade,te_remind)), remind_pm_dataren("DEU", "nur", grade, te_remind))
+        - remind_lowest_grade_LF(te_remind)) eq 0) = 1;
+
+*** set non-vre factors to 1
+dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(h, phi_res_y_reg("2019", "DEU", h, res)) / card(h);
@@ -522,7 +538,7 @@ N_CON.up("ror") = sum(grade, remind_gradeMaxCap(grade,"hydro"))*1e6;
 ** if nuclear phase out then no nuclear should be added in DIETER
 $IFTHEN %nucphaseout% == "on"
 loop(reg,
-    N_CON.up("nuc")$(reg_nuc(reg)) = RM_postInv_cap_con("2020", reg, "nuc"); 
+    N_CON.up("nuc")$(reg_nuc(reg)) = RM_postInv_cap_con("2020", reg, "nuc");
     );
 $ENDIF
 
@@ -550,16 +566,13 @@ N_CON.up("bio") = RM_postInv_cap_con("2020", "DEU", "bio") * 1.2;
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
 *$IFTHEN.CB %cap_bound% == "validation"
-P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) / (remind_VRECapFac(res) * card(h));
+preInv_remind_cap_res(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) / (remind_VRECapFac(res) * card(h));
+
+P_RES.lo(res)$(remind_VRECapFac(res)) = preInv_remind_cap_res(res) ;
 
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), 
                     sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade))
                     ) * 1e6;
-
-**CG: somehow the coupling doesn't like this bound on electrolyzers
-*if ((remind_h2switch eq 1),
-*N_P2G.lo("elh2") = sum(   grade, preInv_remind_cap("2020", "DEU", "elh2", grade)  ) * 1e6;
-*);
 
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
@@ -614,6 +627,15 @@ $IFTHEN.windoff_fix %windoff_fix% == "on"
 P_RES.fx(res)$sameas(res,"Wind_off") = RM_postInv_cap_res("2020", "DEU","Wind_off");
 $ENDIF.windoff_fix
 );
+
+
+** prevent <1MW dispatchable capacity (very small number coming from REMIND) which will create artificially high shadow price due to low capfac (especially in end iterations)
+*** only do this after first few iteration, because some dispatchable might have small capacities from input.gdx, but which needs to grow massively in first iteration DIETER (otherwise causes infes)
+*** at end iterations this is more important
+if ((remind_iter gt 10),
+N_CON.fx(ct)$((RM_postInv_cap_con("2020", "DEU", ct) le 1) AND (RM_postInv_cap_con("2020", "DEU", ct) ne 0)) = 0;
+);
+    
 ***********************************************************************************************
 *********************** END OF COUPLED CAPACITY FIXING  ***************************************
 ***********************************************************************************************
@@ -781,22 +803,21 @@ stodata("eta_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta"
 );
 *======= add adjustment cost from REMIND for medium and long term periods ========
 
-
 *$IFTHEN.AC %adj_cost% == "on"
 if ((remind_adjCostSwitch eq 1),
 * adjustment cost don't have to multiply the new investment marginal factor dieter_newInvFactor since it is already calculated in marginal terms in REMIND
-remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) + remind_adjcost(yr,reg,te_remind);
+remind_capCost(yr,reg,te_remind) = remind_capCost(yr,reg,te_remind) + remind_adjCost(yr,reg,te_remind);
 );
 *$ENDIF.AC
 
 if((remind_margVRECostSwitch eq 1),
-remind_CapCost(yr,reg,te_remind) = remind_CapCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind);
+remind_capCost(yr,reg,te_remind) = remind_capCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind);
 );
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
 *$IFTHEN.ER %earlyReti_IC% == "on"
 if ((remind_earlyRetiSwitch eq 0),
-remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_CapCost(yr,reg,te_remind) / (1 - remind_capEarlyReti(yr, reg, te_remind));
+remind_capCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_capCost(yr,reg,te_remind) / (1 - remind_capEarlyReti(yr, reg, te_remind));
 *$ENDIF.ER
 );
 
@@ -805,33 +826,33 @@ remind_CapCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) 
 * conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_i_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_CapCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), remind_capCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * 1e6;
 
 *in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
-c_i_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
+c_i_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
 c_i_ovnt("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0)
-            = sum(NonPeakGASte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
+            = sum(NonPeakGASte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
 c_i_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
-            = sum(BIOte(te_remind), remind_CapCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
+            = sum(BIOte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
 c_i_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
-            = remind_CapCost("2020", "DEU", "tnrs") * 1e6 ;
+            = remind_capCost("2020", "DEU", "tnrs") * 1e6 ;
 c_i_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
-            = remind_CapCost("2020", "DEU", "ngt") * 1e6 ;
+            = remind_capCost("2020", "DEU", "ngt") * 1e6 ;
 c_i_ovnt("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)
-            = remind_CapCost("2020", "DEU", "hydro") * 1e6 ;
+            = remind_capCost("2020", "DEU", "hydro") * 1e6 ;
           
 
-c_i_ovnt_res("Solar") = remind_CapCost("2020", "DEU", "spv")* 1e6  ;
-c_i_ovnt_res("Wind_on") = remind_CapCost("2020", "DEU", "wind")* 1e6 ;
+c_i_ovnt_res("Solar") = remind_capCost("2020", "DEU", "spv") * 1e6  ;
+c_i_ovnt_res("Wind_on") = remind_capCost("2020", "DEU", "wind") * 1e6 ;
 if ((remind_wind_offshore eq 1),
-c_i_ovnt_res("Wind_off") = remind_CapCost("2020", "DEU", "windoff") * 1e6 ;
+c_i_ovnt_res("Wind_off") = remind_capCost("2020", "DEU", "windoff") * 1e6 ;
 );
 
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
-c_i_ovnt_p2g("elh2") = remind_CapCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
+c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
 
 *adjust h2 storage cost to have the same P cost as elh2
 if ((remind_storageSwitch eq 1),
@@ -849,8 +870,8 @@ stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), remind_OMcost("DEU","o
 
 );
 
-c_i_ovnt_grid("vregrid") = remind_CapCost("2020", "DEU", "gridwind") * 1e6 ;
-*c_i_ovnt_ccs("ccsinje") = remind_CapCost("2020", "DEU", "ccsinje") * 1e6 ;
+c_i_ovnt_grid("vregrid") = remind_capCost("2020", "DEU", "gridwind") * 1e6 ;
+*c_i_ovnt_ccs("ccsinje") = remind_capCost("2020", "DEU", "ccsinje") * 1e6 ;
 
 *annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
@@ -859,34 +880,36 @@ c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *c_i_ccs(ccs) = c_i_ovnt_ccs(ccs) * disc_fac_ccs(ccs);
 
+capDist(res,grade) = sum(DT_RM_res(res,te_remind),remind_vm_CapDistr("2020", "DEU", te_remind, grade))*1e6;
+
 *=============== adjustment cost from remind (for disaggregated reporting) ================
 *""overnight" adjustment cost
 * conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_adj_ovnt(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_adjcost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), remind_adjCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * 1e6;     
 
 *in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
-c_adj_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
+c_adj_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
 c_adj_ovnt("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0)
-            = sum(NonPeakGASte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
+            = sum(NonPeakGASte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
 c_adj_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
-            = sum(BIOte(te_remind), remind_adjcost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
+            = sum(BIOte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
 c_adj_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
-            = remind_adjcost("2020", "DEU", "tnrs") * 1e6 ;
+            = remind_adjCost("2020", "DEU", "tnrs") * 1e6 ;
 c_adj_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
-            = remind_adjcost("2020", "DEU", "ngt") * 1e6 ;
+            = remind_adjCost("2020", "DEU", "ngt") * 1e6 ;
 c_adj_ovnt("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)
-            = remind_adjcost("2020", "DEU", "hydro") * 1e6 ;
+            = remind_adjCost("2020", "DEU", "hydro") * 1e6 ;
 
-c_adj_ovnt_res(res) = sum(DT_RM_res(res,te_remind), remind_adjcost("2020","DEU",te_remind)) * 1e6;
+c_adj_ovnt_res(res) = sum(DT_RM_res(res,te_remind), remind_adjCost("2020","DEU",te_remind)) * 1e6;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
-c_adj_ovnt_p2g("elh2") = remind_adjcost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
-c_adj_ovnt_grid("vregrid") = remind_adjcost("2020", "DEU", "gridwind") * 1e6 ;
-*c_adj_ovnt_ccs("ccsinje") = remind_adjcost("2020", "DEU", "ccsinje") * 1e6 ;
+c_adj_ovnt_p2g("elh2") = remind_adjCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
+c_adj_ovnt_grid("vregrid") = remind_adjCost("2020", "DEU", "gridwind") * 1e6 ;
+*c_adj_ovnt_ccs("ccsinje") = remind_adjCost("2020", "DEU", "ccsinje") * 1e6 ;
 
 *annuitized adjustment cost
 c_adj(ct) = c_adj_ovnt(ct) * disc_fac_con(ct);
@@ -1026,8 +1049,24 @@ $offtext
                  + sum( ct , c_i(ct)*N_CON(ct) )
                  + sum( ct , cdata("c_fix_con",ct)*N_CON(ct) )
 
+$IFTHEN %gradeCapex% == "on"
+                 + sum( res ,
+*** added capacity sees marginal cost                 
+                   c_i_res(res) * (P_RES(res) - preInv_remind_cap_res(res)) * sum(DT_RM_res(res,te_remind), dieter_newInvFactor(te_remind))
+*** existing capacity sees average cost
+                 + c_i_res(res) * preInv_remind_cap_res(res)
+                 )
+                 + sum( res ,
+                   rdata("c_fix_res",res) * (P_RES(res) - preInv_remind_cap_res(res)) * sum(DT_RM_res(res,te_remind), dieter_newInvFactor(te_remind))
+                 + rdata("c_fix_res",res) * preInv_remind_cap_res(res)
+                 )
+$ENDIF
+
+$IFTHEN %gradeCapex% == "off"
                  + sum( res , c_i_res(res)*P_RES(res) )
                  + sum( res , rdata("c_fix_res",res)*P_RES(res) )
+$ENDIF
+ 
 %P2G%$ontext
 *** P2G capital and fixed O&M cost
                  + sum( p2g , c_i_p2g(p2g)*N_P2G(p2g) )
@@ -1119,7 +1158,7 @@ con2c_maxprodannual_conv_nuc("nuc")..
        sum(h, G_L("nuc",h) ) =L= 0.85 * 8760 * N_CON("nuc")
 ;
 
-** at least 0.1% avg capfac
+** at least 0.1% avg capfac (perhaps need to be turned off)
 con2c_minprodannual_conv(ct)..
        sum(h, G_L(ct,h) ) =G= 0.001 * 8760 * N_CON(ct)
 ;
@@ -1139,10 +1178,10 @@ eq3_grid(grid)..
         N_GRID(grid) / remind_gridfac_reg
         =G=
         ( sum(h,(G_RES("Solar",h) + CU("Solar",h)))
-        + 1.5 * sum(h
-        ,(G_RES("Wind_on",h) + CU("Wind_on",h)))
+        + 1.5 * sum(h,
+         (G_RES("Wind_on",h) + CU("Wind_on",h)))
         + 3 * sum(h,(G_RES("Wind_off",h) + CU("Wind_off",h))) * remind_wind_offshore
-        )/8760
+        ) / 8760
 ;
 
 * ---------------------------------------------------------------------------- *
@@ -1331,7 +1370,7 @@ $offtext
 
 con2c_maxprodannual_conv
 con2c_maxprodannual_conv_nuc
-con2c_minprodannual_conv
+*con2c_minprodannual_conv
 
 con3a_maxprod_conv
 
