@@ -492,10 +492,11 @@ earlyRetiCap_reporting(yr, reg, te_remind)$(remind_capEarlyReti(yr, reg, te_remi
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  pm_dt(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
-RM_preInv_prodSe(yr, "DEU", pe_remind, "seel", te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) = (remind_prodSe(yr, "DEU", pe_remind, "seel", te_remind)
+RM_preInv_prodSe(yr, "DEU", pe_remind, "seel", te_remind)$(remind_cap(yr, "DEU", te_remind, "1") ne 0 ) =  max(0,
+                                                                        (remind_prodSe(yr, "DEU", pe_remind, "seel", te_remind)
                                                                        - remind_pm_dt(yr) / 2  * remind_prodSe(yr, "DEU", pe_remind, "seel", te_remind)
                                                                        * remind_deltaCap(yr, "DEU", te_remind, "1")
-                                                                       /remind_cap(yr, "DEU", te_remind, "1") )  * sm_TWa_2_MWh;
+                                                                       /remind_cap(yr, "DEU", te_remind, "1") )  * sm_TWa_2_MWh);
 
 RM_preInv_prodSe_con(yr, "DEU", ct) = sum(DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe(yr, "DEU", pe_remind, "seel", te_remind)));
 **********************************************************************
@@ -529,7 +530,7 @@ RM_curt_rep(yr,reg,res) = sum(DT_RM_res(res,te_remind), remind_curt(yr, reg, te_
 *****************
 * the cap that pre-investment REMIND sees in time step t: vm_cap(t) - pm_dt(t)/2 * vm_deltaCap(t) * (1-vm_earlyRetire) (preInv_remind_cap can sometimes be negative when cap is small)
 preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0, remind_cap(yr, "DEU", te_remind, grade) - remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
-added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr)/2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
+added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
 
 **renewable upper bound is the total limit of potential grade capacity in REMIND:
 P_RES.up(res) = sum(DT_RM_res(res,te_remind), sum(grade, remind_gradeMaxCap(grade,te_remind)) ) * 1e6;
