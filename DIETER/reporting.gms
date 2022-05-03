@@ -48,6 +48,9 @@ $offtext
 *       Define gross energy demand for reporting, egual to equation 5a      
         report('DIETER',yr,reg,'total energy demand (TWh)') = totLoad / 1e6;
         report('DIETER',yr,reg,'total energy demand and curtailment (TWh)') = (totLoad + sum(res, sum( h , CU.l(res,h))) ) / 1e6 ;
+        report('DIETER',yr,reg,'peak demand (GW)') = SMax(h, d(h)) / 1e3 ;
+        report('DIETER',yr,reg,'peak residual demand (GW)') = SMax(h, residual_demand(h)) / 1e3 ;
+        
         
 ***********************************************************************************************************
 ********************************* reporting for annual technology data ************************************
@@ -308,6 +311,7 @@ if ((remind_adjCostSwitch eq 0),
 
 *** note: in remind2/R/reportLCOE.R, grid cost is divided by total usable energy not just renewable generation, because it was calculated as system LCOE for grid, here we calculate the tech LCOE for VRE, then
 **  later it can be multiplied with generation share and add up to system LCOE same as other tech LCOE components
+*** c_i_grid under adjustment cost coupling includes adjustment cost for the grid
         report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Solar") = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Solar")*1e6)
                                                                     * VRE_grid_ratio(yr,reg,"Solar") * 1.2;
         report_tech('DIETER',yr,reg,'grid cost ($/MWh)',"Wind_on") = sum(grid, (griddata("c_fix_grid",grid) + c_i_grid(grid)) * N_GRID.L(grid)) / (report_tech('DIETER',yr,reg,'DIETER post-investment generation (TWh)',"Wind_on")*1e6)

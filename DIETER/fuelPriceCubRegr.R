@@ -39,7 +39,7 @@ cReg <- pull(read.gdx(gdx, "regDTCoup", factors = FALSE))
 
 
 fitFuelPrice_linear <- function(peType){
-  # peType = "pebiolc"
+  # peType = "peur"
   
   rawFuelPrice <- read.gdx(gdx, "p32_fuelprice_avgiter", factors = FALSE, colNames = c('t', 'regi','fuel','value')) %>%
     filter(t %in% cYears) %>% 
@@ -47,7 +47,10 @@ fitFuelPrice_linear <- function(peType){
     filter(fuel %in% c(peType)) %>% 
     mutate(t = as.numeric(t)) %>% 
     mutate(value = value * 1e12 / sm_TWa_2_MWh) %>%  # unit conversion
-    mutate(label = "raw FP")
+    mutate(label = "raw FP") 
+  
+  ### if the remind data consists of one data point, simply copy the value for other years as well
+  if (!length(as.list(rawFuelPrice$value)) == 1){
   
   rawFuelPrice[rawFuelPrice < 0] <- 0 # ensure positive price
   
@@ -62,6 +65,17 @@ fitFuelPrice_linear <- function(peType){
     mutate(fittedValue = (coeff[[1]] + coeff[[2]] * t )) %>% 
     mutate(label = "fitted FP") %>% 
     select(t,regi,fuel,value = fittedValue,label)
+  }
+  
+  if (length(as.list(rawFuelPrice$value)) == 1){
+    fittedFuelPrice <- rawFuelPrice %>% 
+      select(-t) 
+    
+    fittedFuelPrice <- fittedFuelPrice %>%
+      expand(fittedFuelPrice, t = cYears) %>% 
+      mutate(t = as.numeric(t)) %>% 
+      mutate(label = "fitted FP") 
+  }
   
   FP <- list(rawFuelPrice, fittedFuelPrice) %>% 
     reduce(full_join) %>% 
@@ -78,7 +92,7 @@ fitFuelPrice_cubic <- function(peType){
   filter(regi %in% cReg) %>% 
   filter(fuel %in% c(peType)) %>% 
   mutate(t = as.numeric(t)) %>% 
-  mutate(value = value * 1e12 / sm_TWa_2_MWh * 1.2) %>%  # unit conversion
+  mutate(value = value * 1e12 / sm_TWa_2_MWh) %>%  # unit conversion
   mutate(label = "raw FP")
   
   rawFuelPrice[rawFuelPrice < 0] <- 0 # ensure positive price
@@ -125,7 +139,7 @@ p<-ggplot() +
   geom_line(data = fittedFuelPrice, aes(x = t, y = value, color = label), size = 1.2, alpha = 1) +
   scale_color_manual(name = "label", values = mycolors)+
   coord_cartesian(ylim = c(0, 80))+
-  theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))+
+  theme(axis.text=element_text(size=5), axis.title=element_text(size=5,face="bold"))+
   facet_wrap(~fuel)
 ggsave(filename = paste0(mydatapath, "checkFittedFC_",fitType,"_i=", iter,".png"), p, width = 8, height = 5, units = "in", dpi = 120)
 
@@ -169,3 +183,4 @@ write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice.csv"), sep = ",
 if (averageOverIter == 0){
 write.table(fittedFuelPrice, paste0(mydatapath, "FittedFuelPrice.csv"), sep = ",", row.names = F, col.names = F)
 }
+
