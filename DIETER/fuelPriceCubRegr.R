@@ -49,15 +49,15 @@ fitFuelPrice_linear <- function(peType){
     mutate(value = value * 1e12 / sm_TWa_2_MWh) %>%  # unit conversion
     mutate(label = "raw FP") 
   
-  ### if the remind data consists of one data point, simply copy the value for other years as well
-  if (!length(as.list(rawFuelPrice$value)) == 1){
+  #### only fit if data contains at least 2 points
+  if (length(rawFuelPrice$value) > 1){
   
   rawFuelPrice[rawFuelPrice < 0] <- 0 # ensure positive price
   
   x = unlist(rawFuelPrice$t)
   y = unlist(rawFuelPrice$value)
   
-  # fit to a cubic function
+  # fit to a linear function
   model <- lm(y ~ 1 + x) 
   coeff <- summary(model)$coefficients[, "Estimate"]
   
@@ -67,6 +67,7 @@ fitFuelPrice_linear <- function(peType){
     select(t,regi,fuel,value = fittedValue,label)
   }
   
+  ### if the remind data consists of one data point, simply copy the value for other years as well
   if (length(as.list(rawFuelPrice$value)) == 1){
     fittedFuelPrice <- rawFuelPrice %>% 
       select(-t) 
@@ -77,9 +78,29 @@ fitFuelPrice_linear <- function(peType){
       mutate(label = "fitted FP") 
   }
   
+  ### if the remind data consists of no data point, fill it with 10
+  if (length(as.list(rawFuelPrice$value)) == 0){
+    t = cYears
+    regi = cReg
+    fuel = c(peType)
+    fittedFuelPrice <- data.frame( 
+      t,
+      regi ,
+      fuel ,
+      # label = "fitted FP",
+      value = 10 
+    )
+    FP<-fittedFuelPrice %>% 
+      mutate(value = round(as.numeric(value), digits = 3))%>% 
+      mutate(label = "fitted FP") 
+      
+  }
+  
+  if (!length(as.list(rawFuelPrice$value)) == 0){
   FP <- list(rawFuelPrice, fittedFuelPrice) %>% 
     reduce(full_join) %>% 
     mutate(value = round(as.numeric(value), digits = 3))
+  }
   
   return(FP)
 }
