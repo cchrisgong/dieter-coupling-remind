@@ -125,6 +125,7 @@ Sets
 yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 t           year from remind to be loaded
+t2           year from remind to be loaded
 te_remind   tech from remind to be loaded
 COALte      coal tech from remind to be loaded
 NonPeakGASte non peaking gas type gas plants from remind to be loaded
@@ -133,8 +134,10 @@ NUCte       nuclear tech from remind to be loaded
 STOte       storage tech from remind to be loaded
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
-* remind technology					                /spv, wind, hydro, elh2, coalchp, gaschp, biochp, ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind/
+* remind technology
+*te_remind   remind technology                        /spv, wind, windoff,hydro, elh2,ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind,h2turb/
 gas_remind  remind emission gases                    /co2/
+en_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd,seh2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 *omf is for fixed O&M cost
@@ -162,11 +165,10 @@ ccs(te_dieter)       CCS Technologies            /ccsinje/
 grid      Transmission grid cost for VRE         /vregrid/
 all_dsm_cu Data for DSM curt                     /c_m_dsm_cu,c_fix_dsm_cu,c_inv_overnight_dsm_cu,inv_recovery_dsm_cu,inv_interest_dsm_cu,m_dsm_cu,t_dur_dsm_cu,t_off_dsm_cu/
 all_dsm_shift Data for DSM shift                 /c_m_dsm_shift,eta_dsm_shift,c_fix_dsm_shift,c_inv_overnight_dsm_shift,inv_recovery_dsm_shift,inv_interest_dsm_shift,m_dsm_shift,t_dur_dsm_shift,t_off_dsm_shift/
-all_storage Data for Storagge                    /c_m_sto,eta_sto,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max,e_to_p/
+all_storage Data for Storagge                    /c_m_sto,eta_sto_in,eta_sto_out,c_fix_sto,c_inv_overnight_sto_e,c_inv_overnight_sto_p,inv_lifetime_sto,inv_interest_sto,m_sto_e,m_sto_p,phi_sto_ini,etop_max,e_to_p/
 dsm_shift DSM shifting technologies              /DSM_shift1*DSM_shift5/
 dsm_curt  Set of load curtailment technologies   /DSM_curt1*DSM_curt3/
 h         hour                                   /h1*h8760/
-
 
 * ================================ lOAD REMIND SETS AND PARAMETERS ====================================
 $include dataload.gms
@@ -222,7 +224,7 @@ DT_RM_sto(te_dieter,te_remind)   "mapping DIETER and REMIND storage technologies
 /
 lith.storspv
 PSH.storwind
-hydrogen.storcsp
+hydrogen.h2turb
 caes.storwindoff
 /
 
@@ -250,7 +252,7 @@ wind.pewin
 windoff.pewin
 /
 
-DT_ct_pe(ct,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
+DT_ct_pe(ct,en_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
 /
 coal.pecoal
 CCGT.pegas
@@ -584,7 +586,7 @@ N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind"
 
 $IFTHEN.CB %cap_bound% == "softLo"
 P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) / (remind_VRECapFac(res) * card(h))* 0.8;
-N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), sum(   grade, preInv_remind_cap("2020", "DEU", te_remind, grade)) ) * 1e6 * 0.8;
+N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), sum( grade, preInv_remind_cap("2020", "DEU", te_remind, grade)) ) * 1e6 * 0.8;
 $ENDIF.CB
 
 **********************************************************************
@@ -677,14 +679,14 @@ STO_L.fx(sto,h) = 0 ;
 
 $IFTHEN.FC  %fuel_cost_iter% == "linFit"
 *** NO need for unit conversion
-con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,pe_remind), remind_fuelprice("2020",reg,pe_remind)) ;
+con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,en_remind), remind_fuelprice("2020",reg,en_remind)) ;
 $ENDIF.FC
 
 
 
 $IFTHEN.FC  %fuel_cost_iter% == "load"
 *** need unit conversion
-con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,pe_remind), remind_fuelprice("2020",reg,pe_remind)) * 1e12 / sm_TWa_2_MWh ;
+con_fuelprice_reg_remind("2020",ct,reg) = sum(DT_ct_pe(ct,en_remind), remind_fuelprice("2020",reg,en_remind)) * 1e12 / sm_TWa_2_MWh ;
 $ENDIF.FC
  
 con_fuelprice_reg_remind_reporting(ct,reg) = con_fuelprice_reg_remind("2020",ct,reg);
@@ -795,13 +797,7 @@ disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("DEU","lifetime", "elh2") / 
 disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "gridwind")) ;
 
 
-*storage cost
-if ((remind_storageSwitch eq 1),
-stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
-stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh * stodata("e_to_p",sto);
-stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
-stodata("eta_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind));
-);
+
 *======= add adjustment cost from REMIND for medium and long term periods ========
 
 *$IFTHEN.AC %adj_cost% == "on"
@@ -855,12 +851,24 @@ c_i_ovnt_res("Wind_off") = remind_capCost("2020", "DEU", "windoff") * 1e6 ;
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
 c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
 
-*adjust h2 storage cost to have the same P cost as elh2
+*storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
-stodata("c_inv_overnight_sto_e","hydrogen") = c_i_ovnt_p2g("elh2");
-stodata("c_inv_overnight_sto_p","hydrogen") = c_i_ovnt_p2g("elh2")/stodata("e_to_p","hydrogen");
-* import h2 cost from last iteration remind, x3 to account for transportation cost, etc...
-stodata("c_m_sto","hydrogen") = max(30,remind_h2price("2020","DEU","seh2") * 1e12 / sm_TWa_2_MWh); 
+stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
+stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
+stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
+** read in roundtrip efficiency from REMIND and split it into linearized version of eta^(1/2)
+stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))**(0.5);
+stodata("eta_sto_out",sto) = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))**(0.5);
+* h2 storage in efficiency is the same as elh2
+stodata("eta_sto_in","hydrogen") = remind_etasto("DEU","eta","elh2");
+* h2 storage out efficiency is the same as h2turb
+stodata("eta_sto_out","hydrogen") = remind_etasto("DEU","eta","h2turb")**(0.5);
+*adjust h2 storage cost to have the same P cost as h2turb, E cost to be derived from E to P ratio
+stodata("c_inv_overnight_sto_p","hydrogen") = remind_capCost("2020", "DEU", "h2turb") * 1e6 ;
+stodata("c_inv_overnight_sto_e","hydrogen") = stodata("c_inv_overnight_sto_p","hydrogen") / stodata("e_to_p","hydrogen");
+* import h2 cost from last iteration remind (unit conversion carried out in fuel price regression R script)
+remind_h2price("2020","DEU","seh2") = remind_fuelprice("2020","DEU","seh2");
+stodata("c_m_sto","hydrogen") = max(30,remind_h2price("2020","DEU","seh2")); 
 
 c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
@@ -1197,7 +1205,7 @@ con3a_maxprod_conv(ct,h)$(ord(ct)>1 )..
 *** hourly generation is constrained by ad hoc theoretical capfac 
 con3i_maxprod_ror(h)..
         G_L('ror',h)
-        =L= 0.9* N_CON('ror')
+        =L= 0.9 * N_CON('ror')
 ;
 
 * annual average capfac on run of river to be constrained by remind theoretical capfac
@@ -1222,13 +1230,13 @@ $offtext
 * ---------------------------------------------------------------------------- *
 *==========           Storage constraints *==========
 * ---------------------------------------------------------------------------- *
-
+**(1+stodata("eta_sto",sto))/2 is the linearization of square root, since eta_sto is "roundtrip efficiency"
 con4a_stolev_start(sto,'h1')..
-        STO_L(sto,'h1') =E= stodata("phi_sto_ini",sto) * N_STO_E(sto) + STO_IN(sto,'h1')*(1+stodata("eta_sto",sto))/2 - STO_OUT(sto,'h1')/(1+stodata("eta_sto",sto))*2
+        STO_L(sto,'h1') =E= stodata("phi_sto_ini",sto) * N_STO_E(sto) + STO_IN(sto,'h1')*stodata("eta_sto_in",sto) - STO_OUT(sto,'h1')/stodata("eta_sto_out",sto)
 ;
 
 con4b_stolev(sto,h)$( (ord(h)>1) )..
-         STO_L(sto,h) =E= STO_L(sto,h-1) + STO_IN(sto,h)*(1+stodata("eta_sto",sto))/2 - STO_OUT(sto,h)/(1+stodata("eta_sto",sto))*2
+         STO_L(sto,h) =E= STO_L(sto,h-1) + STO_IN(sto,h)*stodata("eta_sto_in",sto) - STO_OUT(sto,h)/stodata("eta_sto_out",sto)
 ;
 
 con4c_stolev_max(sto,h)..
@@ -1246,12 +1254,12 @@ con4e_maxout_sto(sto,h)..
 ;
 
 con4h_maxout_lev(sto,h)..
-        STO_OUT(sto,h) / (1+stodata("eta_sto",sto)) * 2
+        STO_OUT(sto,h) / stodata("eta_sto_out",sto)
         =L= STO_L(sto,h-1)
 ;
 
 con4i_maxin_lev(sto,h)..
-        STO_IN(sto,h) * (1+stodata("eta_sto",sto)) / 2
+        STO_IN(sto,h) * stodata("eta_sto_in",sto)
         =L= N_STO_E(sto) - STO_L(sto,h-1)
 ;
 

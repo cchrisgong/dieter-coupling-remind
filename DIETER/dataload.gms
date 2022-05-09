@@ -157,7 +157,7 @@ dieter_OLDtotdem   Old DIETER total demand
 ** remember to load sets first
 $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
-$load  te_remind= REMINDte4DT32
+$load  te_remind = REMINDte4DT32
 $load  COALte = COALte32
 $load  NonPeakGASte = NonPeakGASte32
 $load  BIOte = BIOte32
@@ -202,7 +202,7 @@ $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $load  remind_genshare = p32_shSeElDisp
-$load  remind_h2price = pm_SEPrice
+*$load  remind_h2price = pm_SEPrice
 *$load  remind_cc2injcost = pm_data
 $gdxin
 $endIf.duringRun
@@ -212,6 +212,7 @@ $IFTHEN.FC %fuel_cost_iter% == "load"
 $Ifthen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter
+$load  remind_h2price = pm_SEPrice
 $gdxin
 $endIf.duringRun
 $ENDIF.FC
@@ -220,18 +221,20 @@ $IFTHEN.FC %fuel_cost_iter% == "fixed"
 $Ifthen.duringRun exist fulldata_1.gdx
 $gdxin fulldata_1.gdx
 $load  remind_fuelprice = p32_fuelprice_avgiter
+$load  remind_h2price = pm_SEPrice
 $gdxin
 $endIf.duringRun
 $ENDIF.FC
 
 $IFTHEN.FC %fuel_cost_iter% == "linFit"
-parameter remind_fuelprice(t,reg,pe_remind)      "Fuel Price from REMIND which has been fitted to a linear function or a polynom"
+parameter remind_fuelprice(t,reg,en_remind)      "Fuel Price from REMIND which has been fitted to a linear function or a polynom"
 /
 $ondelim
 $include "FittedFuelPrice.csv"
 $offdelim
 /;
 $ENDIF.FC
+
 
 Parameters
 
