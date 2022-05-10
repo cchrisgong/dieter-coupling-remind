@@ -26,7 +26,7 @@ cYears <- pull(read.gdx(gdx, "tDT32", factors = FALSE))
 cReg <- pull(read.gdx(gdx, "regDTCoup", factors = FALSE))
 
 fitFuelPrice_linear <- function(peType){
-  # peType = "peur"
+  # peType = "pebiolc"
   
   rawFuelPrice <- read.gdx(gdx, "p32_fuelprice_avgiter", factors = FALSE, colNames = c('t', 'regi','fuel','value')) %>%
     filter(t %in% cYears) %>% 
@@ -171,7 +171,10 @@ fittedPeFuelPrice <- rbindlist(fittedPeFuelPrice0)
 fittedSeFuelPrice0 <- lapply(seTypeList_linear, fitSeFuelPrice_linear)
 fittedSeFuelPrice <- rbindlist(fittedSeFuelPrice0)
 
-fittedFuelPrice <- list(fittedPeFuelPrice, fittedSeFuelPrice) %>%
+fittedFuelPrice <- list(fittedPeFuelPrice %>% 
+                          mutate(t = as.numeric(t)), 
+                        fittedSeFuelPrice %>% 
+                          mutate(t = as.numeric(t))) %>%
   reduce(full_join)
 
 #plot raw fuel price and fitted fuel price for each iteration
