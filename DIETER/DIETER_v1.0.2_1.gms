@@ -1487,6 +1487,8 @@ solve DIETER using lp minimizing Z ;
 
 p32_report4RM(yr,reg,ct,'capacity') = N_CON.l(ct);
 p32_report4RM(yr,reg,res,'capacity') = P_RES.l(res);
+p32_report4RM(yr,reg,sto,'sto_P_capacity') = N_STO_P.l(sto);
+p32_report4RM(yr,reg,sto,'sto_E_capacity') = N_STO_E.l(sto);
 
 %P2G%$ontext
 *multiply with efficiency of el->h2 to get REMIND unit for eletrolyzer (DIETER unit: /el_equivalent, REMIND unit: /H2_equivalent)
@@ -1519,6 +1521,8 @@ p32_report4RM(yr,reg,'elh2','capfac')$(totFlexLoad ne 0 ) = sum( h , C_P2G.l("el
 $ontext
 $offtext
 
+p32_report4RM(yr,reg,sto,'capfac')$(N_STO_P.l(sto) ne 0 ) = sum( h , STO_OUT.l(sto,h)) / ( N_STO_P.l(sto) * card(h));
+
 
 p32_report4RM(yr,reg,res,'usable_generation') = sum( h , G_RES.l(res,h) );
 p32_report4RM(yr,reg,ct,'usable_generation') = sum( h , G_L.l(ct,h) );
@@ -1530,6 +1534,8 @@ p32_report4RM(yr,reg,'el','total_consumption') = sum( h , d(h) );
 p32_report4RM(yr,reg,'elh2','total_consumption') = sum( h , C_P2G.l("elh2",h) );
 $ontext
 $offtext
+
+p32_report4RM(yr,reg,sto,'usable_generation') = sum( h , STO_OUT.l(sto,h) );
 
 p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
 p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
@@ -1545,8 +1551,11 @@ p32_report4RM(yr,reg,'el','dem_share') = sum( h, d(h) ) / totLoad * 1e2;
 p32_report4RM(yr,reg,ct,'capacity')$(not p32_report4RM(yr,reg,ct,'capacity')) = eps;
 p32_report4RM(yr,reg,res,'capacity')$(not p32_report4RM(yr,reg,res,'capacity')) = eps;
 
+p32_report4RM(yr,reg,sto,'capacity')$(not p32_report4RM(yr,reg,sto,'capacity')) = eps;
+
 p32_report4RM(yr,reg,ct,'capfac')$(not p32_report4RM(yr,reg,ct,'capfac')) = eps;
 p32_report4RM(yr,reg,res,'capfac')$(not p32_report4RM(yr,reg,res,'capfac')) = eps;
+p32_report4RM(yr,reg,sto,'capfac')$(not p32_report4RM(yr,reg,sto,'capfac')) = eps;
 
 %P2G%$ontext
 p32_report4RM(yr,reg,'elh2','capfac')$(not p32_report4RM(yr,reg,'elh2','capfac')) = eps;
@@ -1558,6 +1567,7 @@ p32_report4RM(yr,reg,res,'usable_generation')$(not p32_report4RM(yr,reg,res,'usa
 
 p32_report4RM(yr,reg,ct,'total_generation')$(not p32_report4RM(yr,reg,ct,'total_generation')) = eps;
 p32_report4RM(yr,reg,res,'total_generation')$(not p32_report4RM(yr,reg,res,'total_generation')) = eps;
+p32_report4RM(yr,reg,sto,'usable_generation')$(not p32_report4RM(yr,reg,sto,'usable_generation')) = eps;
 
 p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) = eps;
 p32_report4RM(yr,reg,res,'gen_share')$(not p32_report4RM(yr,reg,res,'gen_share')) = eps;
