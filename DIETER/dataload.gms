@@ -163,6 +163,7 @@ $load  NonPeakGASte = NonPeakGASte32
 $load  BIOte = BIOte32
 $load  NUCte = NUCte32
 $load  STOte = STOte32
+$load  VREte = VREte32
 $load  remind_cap = vm_cap.l
 $load  t = tDT32
 $load  remind_iter = sm32_iter

@@ -78,9 +78,6 @@ $setglobal fuel_cost_yr no_avg
 *$setglobal ramping_cost on
 $setglobal ramping_cost off
 
-*$setglobal earlyReti_IC on
-*$setglobal earlyReti_IC off
-
 *whether adjustment cost is included in capital cost
 *$setglobal adj_cost on
 *$setglobal adj_cost on_select
@@ -132,10 +129,11 @@ NonPeakGASte non peaking gas type gas plants from remind to be loaded
 BIOte       biomass tech from remind to be loaded
 NUCte       nuclear tech from remind to be loaded
 STOte       storage tech from remind to be loaded
+VREte       VRE tech from remind to be loaded        
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 * remind technology
-*te_remind   remind technology                        /spv, wind, windoff,hydro, elh2,ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind,h2turb/
+*te_remind   remind technology                        /spv, wind, windoff,hydro, elh2,ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 en_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd,seh2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
@@ -224,7 +222,7 @@ DT_RM_sto(te_dieter,te_remind)   "mapping DIETER and REMIND storage technologies
 /
 lith.storspv
 PSH.storwind
-hydrogen.h2turb
+hydrogen.storcsp
 caes.storwindoff
 /
 
@@ -294,7 +292,8 @@ if (( (remind_wind_offshore eq 1) AND (sum(yr,remind_cap(yr, "DEU", "windoff", "
     );
 );
 
-* switch off storage in iteration 0, because capital cost due to learning is only calculated after 1st iteration
+
+* switch off storage in iteration 0, because capital cost due to learning is only calculated after 1st iteration (and default storage cost uses another unit so would give too much distortion)
 if ( (remind_storageSwitch eq 1),
     if ((remind_iter eq 0),
         remind_storageSwitch = 0;
@@ -418,7 +417,7 @@ remind_highest_grade_LF(te_remind) "load factor of the highest remind grade"
 *================ process capacity factors of VRE ===============================
 *** grade load factor is the weighted capacity averaged load factor (not multiplied by vm_capFac here since this is only the grade load factor)
 ** this is equal to prodse/cap
-remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1")) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade)) / remind_cap("2020", "DEU",te_remind, "1");
+remind_average_grade_LF(te_remind)$(remind_cap("2020", "DEU",te_remind, "1") AND VREte(te_remind) ) = sum(grade, remind_pm_dataren("DEU", "nur", grade, te_remind) * remind_vm_CapDistr("2020", "DEU", te_remind, grade)) / remind_cap("2020", "DEU",te_remind, "1");
 *AO* Calculate REMIND VRE CFs from grades
 remind_VRECapFac(res) = sum(DT_RM_res(res,te_remind), remind_CF("2020","DEU",te_remind) * remind_average_grade_LF(te_remind));
 remind_HydroCapFac = remind_CF("2020","DEU","hydro") * remind_average_grade_LF("hydro");
@@ -812,10 +811,8 @@ remind_capCost(yr,reg,te_remind) = remind_capCost(yr,reg,te_remind) * dieter_new
 );
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
-*$IFTHEN.ER %earlyReti_IC% == "on"
 if ((remind_earlyRetiSwitch eq 0),
 remind_capCost(yr,reg,te_remind)$(remind_capEarlyReti(yr, reg, te_remind) ne 1) = remind_capCost(yr,reg,te_remind) / (1 - remind_capEarlyReti(yr, reg, te_remind));
-*$ENDIF.ER
 );
 
 *======= read in overnight investment cost from remind ==========================
@@ -853,19 +850,21 @@ c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta
 
 *storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
+*stodata("e_to_p",sto) = 
 stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
 stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
 stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
-** read in roundtrip efficiency from REMIND and split it into linearized version of eta^(1/2)
+** read in roundtrip efficiency from REMIND and split it into single-trip efficiency
 stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))**(0.5);
-stodata("eta_sto_out",sto) = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))**(0.5);
-* h2 storage in efficiency is the same as elh2
+* overwrite h2 storage-in efficiency with that of electrolyzers (elh2), and storage-out eff is then the ratio between round-trip eff and elh2 eff
 stodata("eta_sto_in","hydrogen") = remind_etasto("DEU","eta","elh2");
-* h2 storage out efficiency is the same as h2turb
-stodata("eta_sto_out","hydrogen") = remind_etasto("DEU","eta","h2turb")**(0.5);
+stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)) / stodata("eta_sto_in",sto);
+*stodata("eta_sto_out","hydrogen") = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))/stodata("eta_sto_in","hydrogen");
+
 *adjust h2 storage cost to have the same P cost as h2turb, E cost to be derived from E to P ratio
-stodata("c_inv_overnight_sto_p","hydrogen") = remind_capCost("2020", "DEU", "h2turb") * 1e6 ;
-stodata("c_inv_overnight_sto_e","hydrogen") = stodata("c_inv_overnight_sto_p","hydrogen") / stodata("e_to_p","hydrogen");
+*stodata("c_inv_overnight_sto_p","hydrogen") = remind_capCost("2020", "DEU", "h2turb") * 1e6 ;
+*stodata("c_inv_overnight_sto_e","hydrogen") = stodata("c_inv_overnight_sto_p","hydrogen") / stodata("e_to_p","hydrogen");
+
 * import h2 cost from last iteration remind (unit conversion carried out in fuel price regression R script)
 remind_h2price("2020","DEU","seh2") = remind_fuelprice("2020","DEU","seh2");
 stodata("c_m_sto","hydrogen") = max(30,remind_h2price("2020","DEU","seh2")); 
@@ -905,7 +904,7 @@ c_adj_ovnt("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALt
 c_adj_ovnt("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0)
             = sum(NonPeakGASte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
 c_adj_ovnt("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0)
-            = sum(BIOte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
+            = sum(BIOte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;
 c_adj_ovnt("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0)
             = remind_adjCost("2020", "DEU", "tnrs") * 1e6 ;
 c_adj_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
@@ -1085,10 +1084,10 @@ $offtext
 *** grid cost (from REMIND), no var O&M grid cost
                  + sum( grid , c_i_grid(grid)*N_GRID(grid) )
                  + sum( grid , griddata("c_fix_grid",grid)*N_GRID(grid) )
-                 
+*** storage cost (from REMIND), no  O&M storage cost for energy capacity (since they are very low)
                  + sum( sto , c_i_sto_e(sto)*N_STO_E(sto) )
-                 + sum( sto , stodata("c_fix_sto",sto)/2*(N_STO_P(sto)+N_STO_E(sto)) )
                  + sum( sto , c_i_sto_p(sto)*N_STO_P(sto) )
+                 + sum( sto , stodata("c_fix_sto",sto) * N_STO_P(sto))
 %DSM%$ontext
                  + sum( dsm_curt , c_i_dsm_cu(dsm_curt)*N_DSM_CU(dsm_curt) )
                  + sum( dsm_curt , dsmdata_cu("c_fix_dsm_cu",dsm_curt)*N_DSM_CU(dsm_curt) )
@@ -1551,7 +1550,8 @@ p32_report4RM(yr,reg,'el','dem_share') = sum( h, d(h) ) / totLoad * 1e2;
 p32_report4RM(yr,reg,ct,'capacity')$(not p32_report4RM(yr,reg,ct,'capacity')) = eps;
 p32_report4RM(yr,reg,res,'capacity')$(not p32_report4RM(yr,reg,res,'capacity')) = eps;
 
-p32_report4RM(yr,reg,sto,'capacity')$(not p32_report4RM(yr,reg,sto,'capacity')) = eps;
+p32_report4RM(yr,reg,sto,'sto_P_capacity')$(not p32_report4RM(yr,reg,sto,'sto_P_capacity')) = eps;
+p32_report4RM(yr,reg,sto,'sto_E_capacity')$(not p32_report4RM(yr,reg,sto,'sto_E_capacity')) = eps;
 
 p32_report4RM(yr,reg,ct,'capfac')$(not p32_report4RM(yr,reg,ct,'capfac')) = eps;
 p32_report4RM(yr,reg,res,'capfac')$(not p32_report4RM(yr,reg,res,'capfac')) = eps;
@@ -1578,6 +1578,12 @@ p32_report4RM(yr,reg,p2g,'dem_share')$(not p32_report4RM(yr,reg,p2g,'dem_share')
 p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,G_RES.l(res,h));
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
 p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
+
+*ratio of storage loss from renewable generations (due to efficiency loss from storage technologies)
+p32_report4RM(yr,reg,'el','storloss_ratio') = sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
+*make sure all values are there, even 0 ones, otherwise REMIND will take input values
+p32_report4RM(yr,reg,'el','storloss_ratio')$(not p32_report4RM(yr,reg,'el','storloss_ratio')) = eps;
+
 
 p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 
@@ -1640,8 +1646,8 @@ p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) = market_value(ct);
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price;
 
-p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
-p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
+*p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
+*p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
 ******************* without scarcity price shaving ****************************
 annual_load_weighted_price_wscar = -sum(h,con1a_bal.m(h)*d(h))/totLoad ;
@@ -1653,6 +1659,10 @@ $offtext
 ******************* market values ****************************
 market_value_wscar(ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
 market_value_wscar(res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
+
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value_wscar(res);
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
+
 
 *       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
 p32_reportmk_4RM(yr,reg,ct,'value_factor')$(market_value(ct) ne 0) =
@@ -1669,9 +1679,6 @@ p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) = 0) = 1;
 
 p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar;
-
-*p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price + report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)');
-*p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar + report('DIETER',yr,reg,'total system shadow price of capacity bound - avg ($/MWh)');
 
 
 %P2G%$ontext
@@ -1691,7 +1698,7 @@ market_value_wscar('elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
 p32_reportmk_4RM(yr,reg,"elh2",'market_price') = market_value('elh2');
 p32_reportmk_4RM(yr,reg,"elh2",'market_price')$(market_value('elh2') eq 0 ) = EPS;
 
-*in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
+*in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, take 25% of full price
 *if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price),
 if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 1),
     p32_reportmk_4RM(yr,reg,"elh2",'market_price') = 0.25 * annual_load_weighted_price;
@@ -1702,11 +1709,6 @@ if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 1),
 p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = p32_reportmk_4RM(yr,reg,"elh2",'market_price')/annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,"elh2",'value_factor')$(p32_reportmk_4RM(yr,reg,"elh2",'market_price') eq 0) = 1;
 
-*in case of too low market price for elh2, to prevent next REMIND iteration from blowing up, only take 90% of full price
-*if ((p32_reportmk_4RM("2020","DEU","elh2","market_price") < 0.2 * annual_load_weighted_price),
-*if ((p32_reportmk_4RM("2020","DEU","elh2","value_factor") < 0.1),
-*    p32_reportmk_4RM(yr,reg,"elh2",'value_factor') = 0.1;
-*);
 
 
 $ontext
