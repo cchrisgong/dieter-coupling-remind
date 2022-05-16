@@ -138,8 +138,7 @@ gas_remind  remind emission gases                    /co2/
 en_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd,seh2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
-*omf is for fixed O&M cost
-char_remind remind character                         /omf, omv, lifetime,eta/
+char_remind remind character                         /omf, omv, lifetime,eta,e2p/
 char_remind_dataren remind character for renewable /nur,maxprod/
 grade 	    remind grade level for technology	    /1*12/
 reg         region set                               /DEU/
@@ -739,21 +738,21 @@ cdata("carbon_content","CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0)
 *omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1e12 to get $(2005)/TWa, divides sm_TWa_2_MWh to get $(2005)/MWh
 *================ read in variable O&M from remind ================
 cdata("c_var_con",ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_OMcost("DEU","omv",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","omv",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * 1e12/sm_TWa_2_MWh;
 
 *if there is no generation in REMIND, then just take the average omv value over techs in one given category
-cdata("c_var_con","coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_OMcost("DEU","omv",te_remind))/card(COALte)*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = sum(NonPeakGASte(te_remind), remind_OMcost("DEU","omv",te_remind))/card(NonPeakGASte)*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = sum(BIOte(te_remind), remind_OMcost("DEU","omv",te_remind))/card(BIOte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = sum(COALte(te_remind), remind_techpara("DEU","omv",te_remind))/card(COALte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = sum(NonPeakGASte(te_remind), remind_techpara("DEU","omv",te_remind))/card(NonPeakGASte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = sum(BIOte(te_remind), remind_techpara("DEU","omv",te_remind))/card(BIOte)*1e12/sm_TWa_2_MWh;
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
-cdata("c_var_con","nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_OMcost("DEU","omv","tnrs")*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_OMcost("DEU","omv","ngt")*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_OMcost("DEU","omv","hydro")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_techpara("DEU","omv","tnrs")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_techpara("DEU","omv","ngt")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_techpara("DEU","omv","hydro")*1e12/sm_TWa_2_MWh;
 
 ** there is no var OM cost for VRE or VREgrid in REMIND
-p2gdata("c_var_p2g","elh2") = remind_OMcost("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
+p2gdata("c_var_p2g","elh2") = remind_techpara("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
 
 *================ summing variable costs ================================
 ** note: for hydro/ror c_m_reg is 0
@@ -770,30 +769,30 @@ r = remind_r("2020","DEU");
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 
 **weighted average life time
-dieter_lifetime(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_lifetime("DEU","lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+dieter_lifetime(ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct);
 
 **when there is no generation in remind
-dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = remind_lifetime("DEU","lifetime", "ngcc");
-dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_lifetime("DEU","lifetime", "ngt");
-dieter_lifetime("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_lifetime("DEU","lifetime", "tnrs");
-dieter_lifetime("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = remind_lifetime("DEU","lifetime", "bioigcc");
-dieter_lifetime("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = remind_lifetime("DEU","lifetime", "igcc");
-dieter_lifetime("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_lifetime("DEU","lifetime", "hydro");
+dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("2020", "DEU","CCGT") eq 0) = remind_techpara("DEU","lifetime", "ngcc");
+dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0) = remind_techpara("DEU","lifetime", "ngt");
+dieter_lifetime("nuc")$(RM_preInv_prodSe_con("2020", "DEU","nuc") eq 0) = remind_techpara("DEU","lifetime", "tnrs");
+dieter_lifetime("bio")$(RM_preInv_prodSe_con("2020", "DEU","bio") eq 0) = remind_techpara("DEU","lifetime", "bioigcc");
+dieter_lifetime("coal")$(RM_preInv_prodSe_con("2020", "DEU","coal") eq 0) = remind_techpara("DEU","lifetime", "igcc");
+dieter_lifetime("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0) = remind_techpara("DEU","lifetime", "hydro");
 
 *discount factor for conventional
 disc_fac_con(ct)$(dieter_lifetime(ct) ne 0) = r * (1+r) ** dieter_lifetime(ct) / (-1+(1+r) ** dieter_lifetime(ct) ) ;
 
 *discount factor for renewable
-disc_fac_res("Solar") = r * (1+r) ** remind_lifetime("DEU","lifetime", "spv") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "spv")) ;
-disc_fac_res("Wind_on") = r * (1+r) ** remind_lifetime("DEU","lifetime", "wind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "wind")) ;
+disc_fac_res("Solar") = r * (1+r) ** remind_techpara("DEU","lifetime", "spv") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "spv")) ;
+disc_fac_res("Wind_on") = r * (1+r) ** remind_techpara("DEU","lifetime", "wind") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "wind")) ;
 if ((remind_wind_offshore eq 1),
-disc_fac_res("Wind_off") = r * (1+r) ** remind_lifetime("DEU","lifetime", "windoff") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "windoff")) ;
+disc_fac_res("Wind_off") = r * (1+r) ** remind_techpara("DEU","lifetime", "windoff") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "windoff")) ;
 );
 
 *discount factor for P2G and grid
-disc_fac_p2g("elh2") = r * (1+r) ** remind_lifetime("DEU","lifetime", "elh2") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "elh2")) ;
-disc_fac_grid("vregrid") = r * (1+r) ** remind_lifetime("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_lifetime("DEU","lifetime", "gridwind")) ;
+disc_fac_p2g("elh2") = r * (1+r) ** remind_techpara("DEU","lifetime", "elh2") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "elh2")) ;
+disc_fac_grid("vregrid") = r * (1+r) ** remind_techpara("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "gridwind")) ;
 
 
 
@@ -850,16 +849,15 @@ c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta
 
 *storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
-*stodata("e_to_p",sto) = 
+stodata("e_to_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","e2p", te_remind));
 stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
 stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
-stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_lifetime("DEU","lifetime", te_remind));
+stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","lifetime", te_remind));
 ** read in roundtrip efficiency from REMIND and split it into single-trip efficiency
-stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))**(0.5);
+stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)))**(0.5);
 * overwrite h2 storage-in efficiency with that of electrolyzers (elh2), and storage-out eff is then the ratio between round-trip eff and elh2 eff
-stodata("eta_sto_in","hydrogen") = remind_etasto("DEU","eta","elh2");
-stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)) / stodata("eta_sto_in",sto);
-*stodata("eta_sto_out","hydrogen") = (sum(DT_RM_sto(sto,te_remind), remind_etasto("DEU","eta", te_remind)))/stodata("eta_sto_in","hydrogen");
+stodata("eta_sto_in","hydrogen") = remind_techpara("DEU","eta","elh2");
+stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)) / stodata("eta_sto_in",sto);
 
 *adjust h2 storage cost to have the same P cost as h2turb, E cost to be derived from E to P ratio
 *stodata("c_inv_overnight_sto_p","hydrogen") = remind_capCost("2020", "DEU", "h2turb") * 1e6 ;
@@ -874,7 +872,7 @@ c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
                 
-stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), remind_OMcost("DEU","omf",te_remind)) * c_i_sto_p(sto);
+stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","omf",te_remind)) * c_i_sto_p(sto);
 
 );
 
@@ -930,16 +928,16 @@ c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 *=============== read in fixed OM cost from REMIND ================
 *note that omf is the proportion from overnight investment cost, NOT annuitized!!!
 cdata("c_fix_con",ct)$(RM_preInv_prodSe_con("2020", "DEU",ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_OMcost("DEU","omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind)))
      / RM_preInv_prodSe_con("2020", "DEU",ct)
      * c_i_ovnt(ct);
 
-rdata("c_fix_res",res) = sum(DT_RM_res(res,te_remind), remind_OMcost("DEU","omf",te_remind)) * c_i_ovnt_res(res);
+rdata("c_fix_res",res) = sum(DT_RM_res(res,te_remind), remind_techpara("DEU","omf",te_remind)) * c_i_ovnt_res(res);
 
 
-p2gdata("c_fix_p2g","elh2") = remind_OMcost("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
-griddata("c_fix_grid","vregrid") = remind_OMcost("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
-*ccsdata("c_fix_ccs","ccsinje") = remind_OMcost("DEU","omf","ccsinje") * c_i_ovnt_ccs("ccsinje");
+p2gdata("c_fix_p2g","elh2") = remind_techpara("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
+griddata("c_fix_grid","vregrid") = remind_techpara("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
+*ccsdata("c_fix_ccs","ccsinje") = remind_techpara("DEU","omf","ccsinje") * c_i_ovnt_ccs("ccsinje");
 
 remind_gridfac_reg = remind_gridfac("DEU");
 
@@ -1686,7 +1684,7 @@ p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_pric
 ***** annual average electricity price that electrolyzer "sees", calculated using shaved off hourly price
 market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) ne 0)
                       = sum( h, C_P2G.l("elh2",h) * hourly_price(h))/sum( h , C_P2G.l("elh2",h));
-             
+
 * if no generation at all, take annual electricity price as the market value         
 market_value('elh2')$(sum( h , C_P2G.l("elh2",h)) eq 0)
                       = annual_load_weighted_price;

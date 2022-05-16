@@ -82,18 +82,14 @@ p32_realCapfacVRE(yr, reg, te_remind)
 vm_usableSeTe(yr, reg, se_remind, te_remind)
 remind_prodSe_Resxcurt(yr, reg, se_remind, te_remind)
 *------------------------------------
-*fraction of OM cost over investment cost
+* REMIND technology parameters
 pm_data(reg,char_remind,te_remind)
-remind_OMcost(reg,char_remind,te_remind)
-remind_etasto(reg,char_remind,te_remind)
+remind_techpara(reg,char_remind, te_remind)
 *------------------------------------
 *investment cost in REMIND already annualized
 vm_costTeCapital(yr, reg, te_remind)
 remind_capCost(yr, reg, te_remind)
 remind_storCost(yr,reg,te_remind)
-*------------------------------------
-*plant lifetime and annuity from REMIND
-remind_lifetime(reg,char_remind, te_remind)
 *------------------------------------
 *fuel conversion efficiency, pm_dataeta and pm_eta_conv have etas for different te
 pm_dataeta(yr,reg,te_remind)
@@ -184,13 +180,11 @@ $load  remind_earlyRetiSwitch = s32_noER
 $load  remind_storageSwitch = s32_DTstor
 $load  remind_adjCost = o_margAdjCostInv
 $load  remind_co2 = p32_CO2price4DT
-$load  remind_OMcost = pm_data
 $load  remind_capCost = vm_costTeCapital.l
 $load  remind_storCost = vm_costTeCapital.l
 $load  remind_prodSe = vm_prodSe.l
 $load  remind_prodSe_Resxcurt = vm_usableSeTe.l
-$load  remind_lifetime = pm_data
-$load  remind_etasto = pm_data
+$load  remind_techpara = pm_data
 $load  remind_eta1 = pm_dataeta
 $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
@@ -399,7 +393,7 @@ $offecho
 *$GDXin Data_input.gdx
 *$load phi_ror
 *$load eta_con carbon_content c_up c_do c_fix_con c_var_con c_inv_overnight_con inv_lifetime_con inv_recovery_con inv_interest_con m_con m_con_e grad_per_min
-*$load  con_CO2price
+*$load con_CO2price
 *$load c_cu c_fix_res phi_min_res c_inv_overnight_res inv_lifetime_res inv_recovery_res inv_interest_res m_res m_res_e
 *$load c_m_sto eta_sto c_fix_sto c_inv_overnight_sto_e c_inv_overnight_sto_p inv_lifetime_sto inv_interest_sto m_sto_e m_sto_p phi_sto_ini etop_max
 *$load c_m_dsm_shift c_fix_dsm_shift c_inv_overnight_dsm_shift inv_recovery_dsm_shift inv_interest_dsm_shift m_dsm_shift t_dur_dsm_shift eta_dsm_shift t_off_dsm_shift
