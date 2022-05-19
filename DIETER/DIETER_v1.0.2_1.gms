@@ -292,7 +292,7 @@ if (( (remind_wind_offshore eq 1) AND (sum(yr,remind_cap(yr, "DEU", "windoff", "
 );
 
 
-* switch off storage in iteration 0, because capital cost due to learning is only calculated after 1st iteration (and default storage cost uses another unit so would give too much distortion)
+* 
 if ( (remind_storageSwitch eq 1),
     if ((remind_iter eq 0),
         remind_storageSwitch = 0;
@@ -850,8 +850,11 @@ c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta
 *storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
 stodata("e_to_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","e2p", te_remind));
-stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
-stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
+*stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
+*stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
+stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_capCost("2020", "DEU",te_remind)) * 1e6 ;
+stodata("c_inv_overnight_sto_e",sto) = stodata("c_inv_overnight_sto_p",sto) / stodata("e_to_p",sto);
+
 stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","lifetime", te_remind));
 ** read in roundtrip efficiency from REMIND and split it into single-trip efficiency
 stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)))**(0.5);
@@ -1641,11 +1644,9 @@ p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
 *****!!! note: all prices in p32_reportmk_4RM are in 2005$ value, to report, one needs to multiply by 1.2
 
 *** if generation is not 0, pass the market value (w/ scarcity price shaved) from DIETER to REMIND, if generation is 0, pass the average annual price to REMIND
+*** market value of dispatchables should be without scarcity price, since revenue in the scarcity hour in REMIND will be taken care of by the capacity constraint marginals
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) ne 0 ) = market_value(ct);
 p32_reportmk_4RM(yr,reg,ct,'market_value')$(sum(h, G_L.l(ct,h)) eq 0 ) = annual_load_weighted_price;
-
-*p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
-*p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
 ******************* without scarcity price shaving ****************************
 annual_load_weighted_price_wscar = -sum(h,con1a_bal.m(h)*d(h))/totLoad ;
@@ -1657,19 +1658,18 @@ $offtext
 ******************* market values ****************************
 market_value_wscar(ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
 market_value_wscar(res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
-
-p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value_wscar(res);
+*** market value of VRE (should be without scarcity price, since revenue in the scarcity hour in REMIND will be taken care of by the capacity constraint marginals)
+p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
 p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
-
-*       if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
+*  if there is generation in non-scarcity hour(s), i.e. market value is non-zero, it is equal to the market value /annual electricity price
 p32_reportmk_4RM(yr,reg,ct,'value_factor')$(market_value(ct) ne 0) =
     market_value(ct) / annual_load_weighted_price;
     
 p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) ne 0) = 
     market_value(res) / annual_load_weighted_price;
         
-*       if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
+*  if there is no generation in non-scarcity hour(s), i.e. market value is zero, the markup is 1 (i.e no tax markup in REMIND) 
 p32_reportmk_4RM(yr,reg,ct,'value_factor')$(market_value(ct) = 0) = 1;
 p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) = 0) = 1;
 
