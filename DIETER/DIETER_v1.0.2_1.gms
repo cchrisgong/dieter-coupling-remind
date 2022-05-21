@@ -130,6 +130,7 @@ BIOte       biomass tech from remind to be loaded
 NUCte       nuclear tech from remind to be loaded
 STOte       storage tech from remind to be loaded
 VREte       VRE tech from remind to be loaded        
+*VREte       VRE tech from remind to be loaded        /spv, wind, windoff,hydro/
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 * remind technology
@@ -835,7 +836,6 @@ c_i_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("2020", "DEU","OCGT_eff") eq 0)
             = remind_capCost("2020", "DEU", "ngt") * 1e6 ;
 c_i_ovnt("ror")$(RM_preInv_prodSe_con("2020", "DEU","ror") eq 0)
             = remind_capCost("2020", "DEU", "hydro") * 1e6 ;
-          
 
 c_i_ovnt_res("Solar") = remind_capCost("2020", "DEU", "spv") * 1e6  ;
 c_i_ovnt_res("Wind_on") = remind_capCost("2020", "DEU", "wind") * 1e6 ;
@@ -850,8 +850,6 @@ c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta
 *storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
 stodata("e_to_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","e2p", te_remind));
-*stodata("c_inv_overnight_sto_e",sto) = sum(DT_RM_sto(sto,te_remind), remind_storCost("2020","DEU",te_remind)$(STOte(te_remind))) * 1e12 / sm_TWa_2_MWh;
-*stodata("c_inv_overnight_sto_p",sto) = stodata("c_inv_overnight_sto_e",sto) * stodata("e_to_p",sto);
 stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_capCost("2020", "DEU",te_remind)) * 1e6 ;
 stodata("c_inv_overnight_sto_e",sto) = stodata("c_inv_overnight_sto_p",sto) / stodata("e_to_p",sto);
 
@@ -861,10 +859,6 @@ stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU"
 * overwrite h2 storage-in efficiency with that of electrolyzers (elh2), and storage-out eff is then the ratio between round-trip eff and elh2 eff
 stodata("eta_sto_in","hydrogen") = remind_techpara("DEU","eta","elh2");
 stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)) / stodata("eta_sto_in",sto);
-
-*adjust h2 storage cost to have the same P cost as h2turb, E cost to be derived from E to P ratio
-*stodata("c_inv_overnight_sto_p","hydrogen") = remind_capCost("2020", "DEU", "h2turb") * 1e6 ;
-*stodata("c_inv_overnight_sto_e","hydrogen") = stodata("c_inv_overnight_sto_p","hydrogen") / stodata("e_to_p","hydrogen");
 
 * import h2 cost from last iteration remind (unit conversion carried out in fuel price regression R script)
 remind_h2price("2020","DEU","seh2") = remind_fuelprice("2020","DEU","seh2");
@@ -1446,6 +1440,7 @@ calc_maxprice
 calc_minprice
 p32_report4RM
 hourly_price
+hourly_price2
 peak_price
 peak_gen
 peak_short_term_cost
@@ -1495,23 +1490,6 @@ p32_report4RM(yr,reg,sto,'sto_E_capacity') = N_STO_E.l(sto);
 p32_report4RM(yr,reg,'elh2','capacity') = N_P2G.l('elh2') * remind_eta2(yr,reg,"elh2");
 $ontext
 $offtext
-
-*** inflexible residual demand
-******excluding VRE and hydro
-residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("ror",h);
-******only excluding VRE
-*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h);
-
-if ((remind_wind_offshore eq 1),
-residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
-);
-
-if ((remind_storageSwitch eq 1),
-residual_demand(h) = residual_demand(h) - sum(sto,STO_OUT.l(sto,h)); 
-);
-
-** peak residual hourly demand as a fraction of total demand
-p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
 
 p32_report4RM(yr,reg,ct,'capfac')$( N_CON.l(ct) ne 0 ) = sum( h , G_L.l(ct,h)) / (N_CON.l(ct) * card(h) );
 p32_report4RM(yr,reg,res,'capfac')$(P_RES.l(res) ne 0 ) = sum( h , G_RES.l(res,h)) / (P_RES.l(res) * card(h));
@@ -1640,7 +1618,37 @@ p32_report4RM(yr,reg,ct,'peak_gen_bin')= 1;
 p32_report4RM(yr,reg,'ror','peak_gen_bin')= EPS;
 );
 
+*-------------------------- peak demand hour ---------------------------------------
+*** inflexible residual demand
+******excluding VRE and hydro
+residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h) - G_L.l("ror",h);
+******only excluding VRE
+*residual_demand(h) = d(h) - G_RES.l("Solar",h) - G_RES.l("Wind_on",h);
 
+if ((remind_wind_offshore eq 1),
+residual_demand(h) = residual_demand(h) - G_RES.l("Wind_Off",h); 
+);
+
+if ((remind_storageSwitch eq 1),
+residual_demand(h) = residual_demand(h) - sum(sto,STO_OUT.l(sto,h)); 
+);
+
+hourly_price2(h) = -con1a_bal.m(h);
+
+** peak residual hourly demand as a fraction of total demand
+p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
+** total demand in the peak residual hourly demand hour, as a fraction of total demand
+p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac') = 
+sum(h$((hourly_price2(h) eq SMax(hh, hourly_price2(hh))) AND (hourly_price2(h) > 5000)), d(h))/sum(h,d(h));
+p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac')$(p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac') eq 0 ) = EPS;
+
+** fraction of peak-residual-demand-hour generation over capacity
+p32_report4RM(yr,reg,res,"capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_RES.l(res,h))/P_RES.l(res);
+p32_report4RM(yr,reg,res,"capacity_credit")$(p32_report4RM(yr,reg,res,"capacity_credit") eq 0) = EPS;
+p32_report4RM(yr,reg,"ror","capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_L.l("ror",h))/N_CON.l("ror");
+p32_report4RM(yr,reg,"ror","capacity_credit")$(p32_report4RM(yr,reg,"ror","capacity_credit") eq 0) = EPS;
+
+*-------------------------- market value ---------------------------------------
 *****!!! note: all prices in p32_reportmk_4RM are in 2005$ value, to report, one needs to multiply by 1.2
 
 *** if generation is not 0, pass the market value (w/ scarcity price shaved) from DIETER to REMIND, if generation is 0, pass the average annual price to REMIND
