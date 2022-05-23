@@ -88,8 +88,8 @@ $setglobal ramping_cost off
 *$setglobal capex_er off
 
 *choose to print solution for debug purpose
-*$setglobal debug on
-$setglobal debug off
+$setglobal debug on
+*$setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
 $setglobal nucphaseout on
@@ -1455,6 +1455,8 @@ report_tech
 report_tech_hours
 report_hours
 res_min
+total_curt
+storloss_ratio
 ;
 
 * Min and max for prices
@@ -1558,10 +1560,14 @@ p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
 p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
 
+total_curt = sum(res,sum(h,CU.l(res,h)));
 *ratio of storage loss from renewable generations (due to efficiency loss from storage technologies)
-p32_report4RM(yr,reg,'el','storloss_ratio') = sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
+storloss_ratio =  sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
+    
+p32_report4RM(yr,reg,res,'storloss_ratio')$(total_curt) =
+    sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h)) * sum(h,CU.l(res,h))/total_curt;
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
-p32_report4RM(yr,reg,'el','storloss_ratio')$(not p32_report4RM(yr,reg,'el','storloss_ratio')) = eps;
+p32_report4RM(yr,reg,res,'storloss_ratio')$(not p32_report4RM(yr,reg,res,'storloss_ratio')) = eps;
 
 
 p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
