@@ -88,8 +88,8 @@ $setglobal ramping_cost off
 *$setglobal capex_er off
 
 *choose to print solution for debug purpose
-$setglobal debug on
-*$setglobal debug off
+*$setglobal debug on
+$setglobal debug off
 
 *choose to have DIETER follow REMIND in nuclear phase-out
 $setglobal nucphaseout on
@@ -1564,8 +1564,9 @@ total_curt = sum(res,sum(h,CU.l(res,h)));
 *ratio of storage loss from renewable generations (due to efficiency loss from storage technologies)
 storloss_ratio =  sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
     
+** splitting storage loss due to efficiency between various renewable, depending on the shares of curtailment of one VRE over all VRE curtailments
 p32_report4RM(yr,reg,res,'storloss_ratio')$(total_curt) =
-    sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h)) * sum(h,CU.l(res,h))/total_curt;
+    sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h)) * sum(h,CU.l(res,h)) / total_curt;
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
 p32_report4RM(yr,reg,res,'storloss_ratio')$(not p32_report4RM(yr,reg,res,'storloss_ratio')) = eps;
 
@@ -1591,8 +1592,8 @@ if ((remind_priceShaveSwitch = 1),
 );
 
 *** calculate market value (only in hours where there is no scarcity price)
-market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h))/sum( h , G_L.l(ct,h));
-market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h))/sum( h , G_RES.l(res,h) );
+market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h)) / sum( h , G_L.l(ct,h));
+market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h)) / sum( h , G_RES.l(res,h) );
 
 * average price for both flexible and inflexible techs, with scarcity price shaved
 annual_load_weighted_price = sum(h,hourly_price(h)*d(h)) / totLoad;
@@ -1643,7 +1644,7 @@ hourly_price2(h) = -con1a_bal.m(h);
 
 ** peak residual hourly demand as a fraction of total demand
 p32_report4RM(yr,reg,"all_te",'ResPeakDem_relFac') = SMax(h, residual_demand(h))/sum(h,d(h));
-** total demand in the peak residual hourly demand hour, as a fraction of total demand
+** total demand in the peak residual hourly demand hour, as a fraction of total demand (not stable, deprecated)
 p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac') = 
 sum(h$((hourly_price2(h) eq SMax(hh, hourly_price2(hh))) AND (hourly_price2(h) > 5000)), d(h))/sum(h,d(h));
 p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac')$(p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac') eq 0 ) = EPS;
@@ -1653,6 +1654,11 @@ p32_report4RM(yr,reg,res,"capacity_credit") = sum(h$(residual_demand(h) eq SMax(
 p32_report4RM(yr,reg,res,"capacity_credit")$(p32_report4RM(yr,reg,res,"capacity_credit") eq 0) = EPS;
 p32_report4RM(yr,reg,"ror","capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_L.l("ror",h))/N_CON.l("ror");
 p32_report4RM(yr,reg,"ror","capacity_credit")$(p32_report4RM(yr,reg,"ror","capacity_credit") eq 0) = EPS;
+** fraction of peak-residual-demand-hour storage generation over total peak residual demand
+p32_report4RM(yr,reg,"all_te","stor_cap_credit") = sum(sto,sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), STO_OUT.l(sto,h)))
+                                            / sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), d(h));
+                                            
+p32_report4RM(yr,reg,"all_te","stor_cap_credit")$(p32_report4RM(yr,reg,"all_te","stor_cap_credit") eq 0) = EPS;
 
 *-------------------------- market value ---------------------------------------
 *****!!! note: all prices in p32_reportmk_4RM are in 2005$ value, to report, one needs to multiply by 1.2
@@ -1691,7 +1697,6 @@ p32_reportmk_4RM(yr,reg,res,'value_factor')$(market_value(res) = 0) = 1;
 
 p32_reportmk_4RM(yr,reg,'all_te','elec_price') = annual_load_weighted_price;
 p32_reportmk_4RM(yr,reg,'all_te','elec_price_wscar') = annual_load_weighted_price_wscar;
-
 
 %P2G%$ontext
 ******************** green H2 absolute markup *****************************************

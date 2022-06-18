@@ -266,7 +266,7 @@ c_adj_ovnt_grid(grid)      Adjustment costs: Overnight
 *c_adj_ovnt_ccs(ccs)      Adjustment costs: Overnight
 
 *====== Time Series Data ======
-d(h)                      Demand hour h for cost minimization
+d(h)                      Demand in hour h (MWh)
 phi_res_y_reg(year,reg,h,res)
 phi_res(res,h)            Renewables availability technology res in hour h
 *phi_ror(h)               Run-of-river availability in hour h
