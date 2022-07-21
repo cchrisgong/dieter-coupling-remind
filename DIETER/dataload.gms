@@ -105,6 +105,7 @@ o_margAdjCostInv(yr, reg, te_remind)
 remind_pm_dt(yr)
 pm_dt(yr)
 remind_deltaCap(yr, reg, te_remind, grade)
+remind_deltaCapUp(yr, reg, te_remind, grade)
 vm_deltaCap(yr, reg, te_remind, grade)
 remind_capEarlyReti(yr, reg, te_remind)
 remind_capEarlyReti2(yr_before, reg, te_remind)
@@ -190,6 +191,7 @@ $load  remind_eta2 = pm_eta_conv
 $load  remind_gridfac = p32_grid_factor
 $load  remind_pm_dt = pm_dt
 $load  remind_deltaCap = vm_deltaCap.l
+$load  remind_deltaCapUp = vm_deltaCap.up
 $load  remind_capEarlyReti = vm_capEarlyReti.l
 $load  remind_capEarlyReti2 = vm_capEarlyReti.l
 $load  remind_carboncontent = fm_dataemiglob
@@ -322,6 +324,7 @@ phi_res(res,h)            Renewables availability technology res in hour h
 
 
 *repress printing out all the input data
+
 $offlisting
 *================================================================================================
 parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"

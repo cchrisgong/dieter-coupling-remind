@@ -410,7 +410,7 @@ if ((remind_adjCostSwitch eq 0),
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',res)$(report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res) ne 0) = P_RES.m(res) / (card(h) * report_tech('DIETER',yr,reg,'DIETER real marg CapFac (%)',res)/1e2) * 1.2;
         report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',grid) = N_GRID.m(grid) * N_GRID.L(grid) / totLoad * 1.2;
         report('DIETER',yr,reg,'total system shadow price of cap bound w/ grid - marg ($/MWh)') = sum(te_dieter, report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',te_dieter)* report_tech('DIETER',yr,reg,'genshares (%)',te_dieter)/1e2);
-        report('DIETER',yr,reg,'total system shadow price of cap bound - marg ($/MWh)') =
+        report('DIETER',yr,reg,'total system shadow price of capacity bound - marg ($/MWh)') =
         sum(ct(te_dieter), report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',te_dieter)* report_tech('DIETER',yr,reg,'genshares (%)',te_dieter)/1e2)+
         sum(res(te_dieter), report_tech('DIETER',yr,reg,'shadow price of capacity bound from REMIND - marg ($/MWh)',te_dieter)* report_tech('DIETER',yr,reg,'genshares (%)',te_dieter)/1e2);
         

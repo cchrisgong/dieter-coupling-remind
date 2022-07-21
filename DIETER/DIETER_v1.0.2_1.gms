@@ -410,6 +410,7 @@ remind_average_grade_LF(te_remind) "average grade load factor - need to multiply
 remind_lowest_full_grade_LF_bnd(te_remind) "load factor of the lowest full remind grade, +1e-6 to bound from above"
 remind_lowest_grade_LF(te_remind) "load factor of the lowest remind grade"
 remind_highest_grade_LF(te_remind) "load factor of the highest remind grade"
+remind_maxDeltaCap(res) "upper bound of near-term capacity additions"
 ;
 
 
@@ -533,8 +534,7 @@ RM_curt_rep(yr,reg,res) = sum(DT_RM_res(res,te_remind), remind_curt(yr, reg, te_
 preInv_remind_cap(yr, "DEU", te_remind, grade) = max(0, remind_cap(yr, "DEU", te_remind, grade) - remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind)));
 added_remind_cap(yr, "DEU", te_remind, grade) = remind_pm_dt(yr) / 2 * remind_deltaCap(yr, "DEU", te_remind, grade) * (1 - remind_capEarlyReti(yr, "DEU", te_remind));
 
-**renewable upper bound is the total limit of potential grade capacity in REMIND:
-P_RES.up(res) = sum(DT_RM_res(res,te_remind), sum(grade, remind_gradeMaxCap(grade,te_remind)) ) * 1e6;
+
 N_CON.up("ror") = sum(grade, remind_gradeMaxCap(grade,"hydro"))*1e6;
 
 ** if nuclear phase out then no nuclear should be added in DIETER
@@ -578,6 +578,13 @@ N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind),
 
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = sum(   grade, preInv_remind_cap("2020", "DEU", "gridwind", grade)  ) * 1e6;
+
+remind_maxDeltaCap(res) = sum(DT_RM_res(res, te_remind), sum(grade, remind_deltaCapUp("2020", "DEU", te_remind, grade)));
+
+**renewable upper bound is the lower of the total limit of potential grade capacity in REMIND and any deltacap upper bound in REMIND  - causes infes in some scenario, disable for now (in remind this is implemented in regipol=regiCarbonPrice)
+*P_RES.up(res) = min(sum(DT_RM_res(res, te_remind), sum(grade, remind_gradeMaxCap(grade, te_remind)) ) * 1e6,
+*                (preInv_remind_cap_res(res) + remind_pm_dt("2020") / 2 * remind_maxDeltaCap(res)* 1e6)$(remind_maxDeltaCap(res) ne 0) 
+*                );
 
 *$ENDIF.CB
 );
@@ -1503,10 +1510,6 @@ $offtext
 
 p32_report4RM(yr,reg,sto,'capfac')$(N_STO_P.l(sto) ne 0 ) = sum( h , STO_OUT.l(sto,h)) / ( N_STO_P.l(sto) * card(h));
 
-
-p32_report4RM(yr,reg,res,'usable_generation') = sum( h , G_RES.l(res,h) );
-p32_report4RM(yr,reg,ct,'usable_generation') = sum( h , G_L.l(ct,h) );
-
 p32_report4RM(yr,reg,res,'total_generation') = sum( h , G_RES.l(res,h) +CU.l(res,h));
 p32_report4RM(yr,reg,ct,'total_generation') = sum( h , G_L.l(ct,h) );
 p32_report4RM(yr,reg,'el','total_consumption') = sum( h , d(h) );
@@ -1516,9 +1519,6 @@ $ontext
 $offtext
 
 p32_report4RM(yr,reg,sto,'usable_generation') = sum( h , STO_OUT.l(sto,h) );
-
-p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))/totLoad *1e2;
-p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
 
 %P2G%$ontext
 p32_report4RM(yr,reg,p2g,'dem_share') = sum( h, C_P2G.l(p2g,h) ) / totLoad * 1e2;
@@ -1543,39 +1543,45 @@ p32_report4RM(yr,reg,'elh2','capfac')$(not p32_report4RM(yr,reg,'elh2','capfac')
 $ontext
 $offtext
 
-p32_report4RM(yr,reg,ct,'usable_generation')$(not p32_report4RM(yr,reg,ct,'usable_generation')) = eps;
-p32_report4RM(yr,reg,res,'usable_generation')$(not p32_report4RM(yr,reg,res,'usable_generation')) = eps;
-
 p32_report4RM(yr,reg,ct,'total_generation')$(not p32_report4RM(yr,reg,ct,'total_generation')) = eps;
 p32_report4RM(yr,reg,res,'total_generation')$(not p32_report4RM(yr,reg,res,'total_generation')) = eps;
 p32_report4RM(yr,reg,sto,'usable_generation')$(not p32_report4RM(yr,reg,sto,'usable_generation')) = eps;
 
-p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) = eps;
-p32_report4RM(yr,reg,res,'gen_share')$(not p32_report4RM(yr,reg,res,'gen_share')) = eps;
-
 p32_report4RM(yr,reg,p2g,'dem_share')$(not p32_report4RM(yr,reg,p2g,'dem_share')) = eps;
 
-*ratio of curtailed renewable to usable renewable generation
-p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,G_RES.l(res,h));
-*make sure all values are there, even 0 ones, otherwise REMIND will take input values
-p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
 
 total_curt = sum(res,sum(h,CU.l(res,h)));
 *ratio of storage loss from renewable generations (due to efficiency loss from storage technologies)
 storloss_ratio =  sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
     
 ** splitting storage loss due to efficiency between various renewable, depending on the shares of curtailment of one VRE over all VRE curtailments
-p32_report4RM(yr,reg,res,'storloss_ratio')$(total_curt) =
-    sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h)) * sum(h,CU.l(res,h)) / total_curt;
+p32_report4RM(yr,reg,res,'storloss_ratio')$(total_curt) = storloss_ratio * sum(h,CU.l(res,h)) / total_curt;
+
 *make sure all values are there, even 0 ones, otherwise REMIND will take input values
 p32_report4RM(yr,reg,res,'storloss_ratio')$(not p32_report4RM(yr,reg,res,'storloss_ratio')) = eps;
+
+*32_report4RM(yr,reg,res,'usable_generation') = sum( h , G_RES.l(res,h) ) ;
+p32_report4RM(yr,reg,res,'usable_generation') = sum( h , G_RES.l(res,h) ) * (1-p32_report4RM(yr,reg,res,'storloss_ratio'));
+p32_report4RM(yr,reg,ct,'usable_generation') = sum( h , G_L.l(ct,h) );
+p32_report4RM(yr,reg,ct,'usable_generation')$(not p32_report4RM(yr,reg,ct,'usable_generation')) = eps;
+p32_report4RM(yr,reg,res,'usable_generation')$(not p32_report4RM(yr,reg,res,'usable_generation')) = eps;
+
+*p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h)) / totLoad *1e2;
+p32_report4RM(yr,reg,res,'gen_share') = sum( h , G_RES.l(res,h))* (1-p32_report4RM(yr,reg,res,'storloss_ratio')) / totLoad *1e2;
+p32_report4RM(yr,reg,ct,'gen_share') = sum( h , G_L.l(ct,h))/totLoad *1e2;
+p32_report4RM(yr,reg,ct,'gen_share')$(not p32_report4RM(yr,reg,ct,'gen_share')) = eps;
+p32_report4RM(yr,reg,res,'gen_share')$(not p32_report4RM(yr,reg,res,'gen_share')) = eps;
+
+*ratio of curtailed renewable to usable renewable generation
+*p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ sum(h,G_RES.l(res,h));
+p32_report4RM(yr,reg,res,'curt_ratio')$(sum(h,G_RES.l(res,h)) ne 0) = sum(h,CU.l(res,h))/ (sum(h,G_RES.l(res,h))* (1-p32_report4RM(yr,reg,res,'storloss_ratio')));
+*make sure all values are there, even 0 ones, otherwise REMIND will take input values
+p32_report4RM(yr,reg,res,'curt_ratio')$(not p32_report4RM(yr,reg,res,'curt_ratio')) = eps;
 
 
 p32_report4RM(yr,reg,'el','model_status') = DIETER.modelstat ;
 
 *** calculate multiplicative factor - markup
-
-
 ******************* with scarcity price shaving ****************************
 *** calculate hourly price with scarcity price thrown out, i.e. setting the highest price hour prices to the price of the hour with the highest short term cost
 hourly_price(h) = -con1a_bal.m(h);
@@ -1593,7 +1599,8 @@ if ((remind_priceShaveSwitch = 1),
 
 *** calculate market value (only in hours where there is no scarcity price)
 market_value(ct)$(sum(h, G_L.l(ct,h)) ne 0 ) = sum( h, G_L.l(ct,h)*hourly_price(h)) / sum( h , G_L.l(ct,h));
-market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h)*hourly_price(h)) / sum( h , G_RES.l(res,h) );
+market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, G_RES.l(res,h) * hourly_price(h)) / sum( h , G_RES.l(res,h) );
+* market_value(res)$(sum(h, G_RES.l(res,h)) ne 0 ) = sum( h, (G_RES.l(res,h)+CU.l(res,h))*hourly_price(h)) / sum( h , (G_RES.l(res,h)+CU.l(res,h)) );
 
 * average price for both flexible and inflexible techs, with scarcity price shaved
 annual_load_weighted_price = sum(h,hourly_price(h)*d(h)) / totLoad;
@@ -1654,6 +1661,8 @@ p32_report4RM(yr,reg,res,"capacity_credit") = sum(h$(residual_demand(h) eq SMax(
 p32_report4RM(yr,reg,res,"capacity_credit")$(p32_report4RM(yr,reg,res,"capacity_credit") eq 0) = EPS;
 p32_report4RM(yr,reg,"ror","capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_L.l("ror",h))/N_CON.l("ror");
 p32_report4RM(yr,reg,"ror","capacity_credit")$(p32_report4RM(yr,reg,"ror","capacity_credit") eq 0) = EPS;
+
+
 ** fraction of peak-residual-demand-hour storage generation over total peak residual demand
 p32_report4RM(yr,reg,"all_te","stor_cap_credit") = sum(sto,sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), STO_OUT.l(sto,h)))
                                             / sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), d(h));
@@ -1679,6 +1688,7 @@ $offtext
 market_value_wscar(ct)$(sum(h, G_L.l(ct,h) ne 0 )) = sum( h , G_L.l(ct,h)*(-con1a_bal.m(h)))/sum( h , G_L.l(ct,h));
 market_value_wscar(res)$(sum(h, G_RES.l(res,h) ne 0 )) = sum( h , G_RES.l(res,h)*(-con1a_bal.m(h)))/sum( h , G_RES.l(res,h) );
 *** market value of VRE (should be without scarcity price, since revenue in the scarcity hour in REMIND will be taken care of by the capacity constraint marginals)
+*p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value_wscar(res);
 p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) ne 0 ) = market_value(res);
 p32_reportmk_4RM(yr,reg,res,'market_value')$(sum(h, G_RES.l(res,h)) eq 0 ) = annual_load_weighted_price;
 
