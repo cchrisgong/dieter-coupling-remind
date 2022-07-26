@@ -135,15 +135,15 @@ VREte       VRE tech from remind to be loaded
 
 *** note: whether CHP coupling is switched on is decided in REMIND, then the sets are exported into DIETER via coupling input gdx RMdata_4DT.gdx
 * remind technology
-*te_remind   remind technology                        /spv, wind, windoff,hydro, elh2,ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind/
+*te_remind  remind technology                       /spv, wind, windoff,hydro, elh2,ngcc, ngccc, ngt, bioigcc, bioigccc, igcc, igccc, pc, pcc, pco, storspv, storcsp, storwindoff, storwind, tnrs, fnrs, gridwind/
 gas_remind  remind emission gases                    /co2/
 en_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd,seh2/
 pe_remind   remind primary energy                    /pegas,pecoal,pewin,pesol,pebiolc,peur,pehyd/
 se_remind   remind secondary energy                  /seel,seh2/
 char_remind remind character                         /omf, omv, lifetime,eta,e2p/
-char_remind_dataren remind character for renewable /nur,maxprod/
+char_remind_dataren remind character for renewable   /nur,maxprod/
 grade 	    remind grade level for technology	    /1*12/
-*reg         region set                               /DEU/
+*reg        region set                              /DEU/
 reg_nuc     region with nuclear phase-out            /DEU/
 reg_coal    region with coal phase-out               /DEU/
 
@@ -293,8 +293,6 @@ if (( (remind_wind_offshore eq 1) AND (sum(reg,sum(yr,remind_cap(yr, reg, "windo
     );
 );
 
-
-* 
 if ( (remind_storageSwitch eq 1),
     if ((remind_iter eq 0),
         remind_storageSwitch = 0;
@@ -303,7 +301,6 @@ if ( (remind_storageSwitch eq 1),
     if ((remind_iter gt 0),
         remind_storageSwitch = 1;
     );
-
 );
  
 
@@ -385,7 +382,7 @@ Parameter disc_fac_ccs(ccs) Discount factor for overnight investment;
 Parameter preInv_remind_cap(te_remind) Pre investment remind cap for dispatchable te;
 Parameter preInv_remind_cap_res(res) Pre investment remind cap for renewable te;
 Parameter added_remind_cap(te_remind) added cap in REMIND for reporting;
-Parameter RM_preInv_prodSe(yr, pe_remind, te_remind) Pre investment remind prodSe for VRE gen share;
+Parameter RM_preInv_prodSe(pe_remind, te_remind) Pre investment remind prodSe for VRE gen share;
 Parameter RM_preInv_prodSe_con(ct) Pre investment remind prodSe for conventional tech upscaling;
 Parameter RM_postInv_cap_con(reg,ct) Post-investment REMIND capacity for conventional;
 Parameter RM_postInv_cap_res(res) Post-investment REMIND capacity for renewable;
@@ -398,7 +395,6 @@ Parameter RM_postInv_demSe(yr,reg,p2g) Post-investment REMIND demand for P2G;
 Parameter RM_curt_rep(yr,reg,res) REMIND curtailment for VRE;
 Parameter VRE_grid_ratio(yr,reg,res) grid ratio for reporting;
 Parameter dieter_lifetime(ct)  DIETER plant lifetime;
-Parameter capDist(res,grade)  distributed capacities;
 
 Parameter
 remind_VRECapFac(res)   "VRE capacity factors from REMIND"
@@ -417,11 +413,16 @@ ren(te_remind,grade) "dimension reduced REMIND grade capacity factor for VRE"
 maxprod(te_remind,grade) "dimension reduced REMIND grade based renewable potential"
 capDistr(te_remind,grade) "dimension reduced REMIND distributed capacity per grade"
 CF(te_remind) "dimension reduced REMIND capacity factor"
-prodSe(yr,pe_remind,te_remind) "dimension reduced REMIND post-investment generation"
+prodSe(pe_remind,te_remind) "dimension reduced REMIND post-investment generation"
 deltaCap(te_remind) "dimension reduced REMIND post-investment generation"
 dt  "dimension reduced REMIND dt"
 capEarlyReti(yr,te_remind)  "dimension reduced REMIND capEarlyReti - fraction of early retired capacity"
 capEarlyReti2(yr_before,te_remind)  "dimension reduced REMIND capEarlyReti - fraction of early retired capacity"
+techpara(char_remind, te_remind)  "dimension reduced REMIND technical parameters"
+capCost(te_remind) "dimension reduced REMIND capital cost"
+adjCost(te_remind) "dimension reduced REMIND adjustment cost"
+eta1(te_remind)  "dimension reduced REMIND conversion efficiency parameter"
+eta2(te_remind)  "dimension reduced REMIND conversion efficiency parameter"
 ;
 
 cap(te_remind) = sum(reg,remind_cap("2020", reg, te_remind, "1"));
@@ -429,11 +430,16 @@ ren(te_remind,grade) = sum(reg,remind_pm_dataren(reg, "nur", grade, te_remind));
 maxprod(te_remind,grade) = sum(reg,remind_pm_dataren(reg, "maxprod", grade, te_remind));
 capDistr(te_remind,grade) = sum(reg,remind_vm_CapDistr("2020", reg, te_remind, grade));
 CF(te_remind) = sum(reg,remind_CF("2020",reg,te_remind));
-prodSe(yr,pe_remind,te_remind) = sum(reg,remind_prodSe(yr, reg, pe_remind, "seel", te_remind));
+prodSe(pe_remind,te_remind) = sum(reg,remind_prodSe("2020", reg, pe_remind, "seel", te_remind));
 deltaCap(te_remind) = sum(reg,remind_deltaCap("2020", reg, te_remind,"1"));
 dt = remind_pm_dt("2020");
 capEarlyReti(yr,te_remind) = sum(reg,remind_capEarlyReti(yr, reg, te_remind));
 capEarlyReti2(yr_before,te_remind) = sum(reg,remind_capEarlyReti2(yr_before, reg, te_remind));
+techpara(char_remind,te_remind) = sum(reg,remind_techpara(reg,char_remind,te_remind));
+capCost(te_remind) = sum(reg, remind_capCost("2020", reg, te_remind));
+adjCost(te_remind) = sum(reg, remind_adjCost("2020", reg, te_remind));
+eta1(te_remind) = sum(reg, remind_eta1("2020", reg, te_remind));
+eta2(te_remind) = sum(reg, remind_eta2("2020", reg, te_remind));
 
 *================================================================================
 *================ process capacity factors of VRE ===============================
@@ -515,13 +521,13 @@ earlyRetiCap_reporting(yr, reg, te_remind)$(capEarlyReti(yr, te_remind) ne 1) = 
 *capacity = VRE_seProd / sum(h, cap.fac.(h))
 
 * the prodSe that pre-investment REMIND sees in time step t: prodSe(t) -  dt(t)/2 * prodSe(t) * (vm_deltacap(t)/vm_cap(t))
-RM_preInv_prodSe(yr,pe_remind, te_remind)$(cap(te_remind)) =  max(0,
-                                                           (prodSe(yr, pe_remind, te_remind)
-                                                             - dt / 2  * prodSe(yr, pe_remind, te_remind)
+RM_preInv_prodSe(pe_remind, te_remind)$(cap(te_remind)) =  max(0,
+                                                           (prodSe(pe_remind, te_remind)
+                                                             - dt / 2  * prodSe(pe_remind, te_remind)
                                                              * deltaCap(te_remind)
                                                               /cap(te_remind) )  * sm_TWa_2_MWh);
 
-RM_preInv_prodSe_con(ct) = sum(DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", pe_remind, te_remind)));
+RM_preInv_prodSe_con(ct) = sum(DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind)));
 **********************************************************************
 *REMIND post-investment cap ( TW-> MW )
 RM_postInv_cap_con(reg,ct) = sum(DT_RM_ct(ct,te_remind), cap(te_remind)) *1e6;
@@ -530,9 +536,9 @@ RM_postInv_cap_p2g(yr,reg,"elh2") = sum( grade, remind_cap(yr, reg, "elh2", grad
 RM_postInv_cap_grid(yr,reg,"vregrid") = sum( grade, remind_cap(yr, reg, "gridwind", grade)) * 1e6;
 
 * REMIND post-investment gen (excluding curtailment, only usable seel energy) for reporting ( TWa-> MWh )
-RM_postInv_prodSe_con(yr,reg,ct) = sum( DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), prodSe(yr, pe_remind, te_remind)) ) * sm_TWa_2_MWh;
+RM_postInv_prodSe_con(yr,reg,ct) = sum( DT_RM_ct(ct,te_remind), sum(RM_ct_pe(te_remind,pe_remind), prodSe(pe_remind, te_remind)) ) * sm_TWa_2_MWh;
 RM_postInv_prodSe_res_xcurt(yr,reg,res) = sum(DT_RM_res(res,te_remind), remind_prodSe_Resxcurt(yr, reg, "seel", te_remind)) * sm_TWa_2_MWh;
-RM_postInv_prodSe_res(yr,reg,res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), prodSe(yr, pe_remind, te_remind))) * sm_TWa_2_MWh;
+RM_postInv_prodSe_res(yr,reg,res) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), prodSe(pe_remind, te_remind))) * sm_TWa_2_MWh;
 
 * REMIND flexible demand 
 RM_postInv_demSe(yr,reg,"elh2") = totFlexLoad;
@@ -583,12 +589,12 @@ loop(reg,
 $ENDIF
 
 * for stability
-N_CON.up("bio") = RM_postInv_cap_con("DEU", "bio") * 1.2;
+N_CON.up("bio") = sum(reg, RM_postInv_cap_con(reg, "bio")) * 1.2;
  
 ** remind_coupModeSwitch=0 corresponds to validation mode, where capacities in DIETER only take lower bound (pre-invest, post-earlyreti) from REMIND
 if ((remind_coupModeSwitch eq 0), 
 *$IFTHEN.CB %cap_bound% == "validation"
-preInv_remind_cap_res(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", pe_remind, te_remind))) / (remind_VRECapFac(res) * card(h));
+preInv_remind_cap_res(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind))) / (remind_VRECapFac(res) * card(h));
 
 P_RES.lo(res)$(remind_VRECapFac(res)) = preInv_remind_cap_res(res) ;
 
@@ -597,7 +603,7 @@ N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), preInv_remind_cap(te_remind)) * 1e6;
 *** gridwind is the only grid tech in REMIND
 N_GRID.lo("vregrid") = preInv_remind_cap("gridwind") * 1e6;
 
-remind_maxDeltaCap(res) = sum(DT_RM_res(res, te_remind), sum(grade, remind_deltaCapUp("2020", "DEU", te_remind, grade)));
+remind_maxDeltaCap(res) = sum(DT_RM_res(res, te_remind), sum(reg, sum(grade, remind_deltaCapUp("2020", reg, te_remind, grade))));
 
 **renewable upper bound is the lower of the total limit of potential grade capacity in REMIND and any deltacap upper bound in REMIND  - causes infes in some scenario, disable for now (in remind this is implemented in regipol=regiCarbonPrice)
 *P_RES.up(res) = min(sum(DT_RM_res(res, te_remind), sum(grade, remind_gradeMaxCap(grade, te_remind)) ) * 1e6,
@@ -608,7 +614,7 @@ remind_maxDeltaCap(res) = sum(DT_RM_res(res, te_remind), sum(grade, remind_delta
 
 
 $IFTHEN.CB %cap_bound% == "softLo"
-P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", "DEU", pe_remind, "seel", te_remind))) / (remind_VRECapFac(res) * card(h))* 0.8;
+P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind))) / (remind_VRECapFac(res) * card(h))* 0.8;
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), preInv_remind_cap(te_remind) ) * 1e6 * 0.8;
 $ENDIF.CB
 
@@ -623,7 +629,7 @@ $ENDIF.CB
 **********************************************************************
 ** remind_coupModeSwitch=1 corresponds to dispatch mode, where capacities in DIETER take (post-invest, post-earlyreti) capacities in REMIND
 if ((remind_coupModeSwitch eq 1),
-P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", pe_remind, te_remind))) / (remind_VRECapFac(res) * card(h));
+P_RES.lo(res)$(remind_VRECapFac(res)) = sum(DT_RM_res(res,te_remind), sum(RM_res_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind))) / (remind_VRECapFac(res) * card(h));
 N_CON.lo(ct) =  sum(DT_RM_ct(ct,te_remind), preInv_remind_cap(te_remind)) * 1e6;                    
 
 if ((remind_iter gt remind_dispatch_iter_vrefix),
@@ -636,10 +642,10 @@ if ((remind_iter gt remind_dispatch_iter_fix),
     N_CON.fx("ror")= sum(reg, RM_postInv_cap_con(reg, "ror")) ;
     N_CON.fx("nuc")= sum(reg, RM_postInv_cap_con(reg, "nuc")) ;
     N_CON.fx("CCGT")= sum(reg, RM_postInv_cap_con(reg, "CCGT")) ;
-*   N_CON.fx("OCGT_eff")= RM_postInv_cap_con("2020", "DEU", "OCGT_eff") ;
+*   N_CON.fx("OCGT_eff")= sum(reg, RM_postInv_cap_con(reg, "OCGT_eff")) ;
     N_CON.fx("bio")= sum(reg, RM_postInv_cap_con(reg, "bio")) ;
     N_CON.fx("coal") = sum(reg, RM_postInv_cap_con(reg, "coal")) ;
-*   N_GRID.fx(grid) = RM_postInv_cap_grid("2020", "DEU", grid);
+*   N_GRID.fx(grid) = sum(reg, RM_postInv_cap_grid(reg, grid));
 );
 );
 
@@ -729,17 +735,17 @@ $ENDIF.FC2
 ****** fuel efficiency eta from REMIND ***** 
 ** adding eta1 and eta2 together since sometimes eta from REMIND is stored in one parameter, sometimes the other
 cdata("eta_con",ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), (remind_eta1("2020","DEU", te_remind)+remind_eta2("2020","DEU", te_remind)) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", pe_remind, te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), (eta1(te_remind)+eta2(te_remind)) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
      / (RM_preInv_prodSe_con(ct));
 
 *if there is no generation in REMIND, then just take the average eta value of REMIND techs in one category
-cdata("eta_con","coal")$(RM_preInv_prodSe_con("coal") eq 0)=sum(COALte(te_remind),(remind_eta1("2020","DEU", te_remind)+remind_eta2("2020","DEU", te_remind)))/card(COALte);
-cdata("eta_con","CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0)=sum(NonPeakGASte(te_remind),(remind_eta1("2020","DEU", te_remind)+remind_eta2("2020","DEU", te_remind) ) )/card(NonPeakGASte);
-cdata("eta_con","bio")$(RM_preInv_prodSe_con("bio") eq 0)=sum(BIOte(te_remind), (remind_eta1("2020","DEU", te_remind) + remind_eta2("2020","DEU", te_remind)))/card(BIOte);
+cdata("eta_con","coal")$(RM_preInv_prodSe_con("coal") eq 0)=sum(COALte(te_remind),(eta1(te_remind)+eta2(te_remind)))/card(COALte);
+cdata("eta_con","CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0)=sum(NonPeakGASte(te_remind),(eta1(te_remind)+eta2(te_remind) ) )/card(NonPeakGASte);
+cdata("eta_con","bio")$(RM_preInv_prodSe_con("bio") eq 0)=sum(BIOte(te_remind), (eta1(te_remind) + eta2(te_remind)))/card(BIOte);
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
-cdata("eta_con","nuc")$(RM_preInv_prodSe_con("nuc") eq 0)=remind_eta2("2020","DEU","tnrs");
-cdata("eta_con","OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0)=remind_eta1("2020","DEU","ngt");
-cdata("eta_con","ror")$(RM_preInv_prodSe_con("ror") eq 0)=remind_eta2("2020","DEU","hydro");
+cdata("eta_con","nuc")$(RM_preInv_prodSe_con("nuc") eq 0)=eta2("tnrs");
+cdata("eta_con","OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0)=eta1("ngt");
+cdata("eta_con","ror")$(RM_preInv_prodSe_con("ror") eq 0)=eta2("hydro");
 
 *================ read in carbon content from remind ================
 
@@ -747,11 +753,11 @@ cdata("eta_con","ror")$(RM_preInv_prodSe_con("ror") eq 0)=remind_eta2("2020","DE
 ***** carbon content from REMIND (average over REMIND te since CCS plants have lower carbon content) ***** 
 *dieter value (tCO2/MWh) = REMIND value (GtC/TWa) * (sm_c_2_co2 * sm_Gt_2_t) / sm_TWa_2_MWh) = REMIND value * (44/12 * 1e9) / (8760000000) 
 cdata("carbon_content","coal")$(RM_preInv_prodSe_con("coal") ne 0)
-    = sum(COALte(te_remind), remind_carboncontent("pecoal","seel",te_remind,"co2") * remind_prodSe("2020", "DEU", "pecoal", "seel", te_remind))
-     / sum(COALte(te_remind), remind_prodSe("2020", "DEU", "pecoal", "seel", te_remind)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+    = sum(COALte(te_remind), remind_carboncontent("pecoal","seel",te_remind,"co2") * prodSe("pecoal",te_remind))
+     / sum(COALte(te_remind), prodSe("pecoal", te_remind)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","CCGT")$(RM_preInv_prodSe_con("CCGT") ne 0)
-    = sum(NonPeakGASte(te_remind), remind_carboncontent("pegas","seel",te_remind,"co2") * remind_prodSe("2020", "DEU", "pegas", "seel",te_remind))
-     / sum(NonPeakGASte(te_remind), remind_prodSe("2020", "DEU", "pegas", "seel",te_remind)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
+    = sum(NonPeakGASte(te_remind), remind_carboncontent("pegas","seel",te_remind,"co2") * prodSe("pegas",te_remind))
+     / sum(NonPeakGASte(te_remind), prodSe("pegas",te_remind)) * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 cdata("carbon_content","OCGT_eff") = remind_carboncontent("pegas","seel","ngt","co2") * sm_c_2_co2 * sm_Gt_2_t / sm_TWa_2_MWh;
 
 *if there is no generation in REMIND, then just take the average carbon content value of REMIND techs
@@ -763,27 +769,26 @@ cdata("carbon_content","CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0)
 *omv's unit in fulldata.gdx is T$(2005)/TWa, multiply by 1e12 to get $(2005)/TWa, divides sm_TWa_2_MWh to get $(2005)/MWh
 *================ read in variable O&M from remind ================
 cdata("c_var_con",ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","omv",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", pe_remind, te_remind)))
-     / RM_preInv_prodSe_con(ct)
-     * 1e12/sm_TWa_2_MWh;
+    = sum(DT_RM_ct(ct,te_remind), techpara("omv",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
+     / RM_preInv_prodSe_con(ct) * 1e12/sm_TWa_2_MWh;
 
 *if there is no generation in REMIND, then just take the average omv value over techs in one given category
-cdata("c_var_con","coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), remind_techpara("DEU","omv",te_remind))/card(COALte)*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0) = sum(NonPeakGASte(te_remind), remind_techpara("DEU","omv",te_remind))/card(NonPeakGASte)*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","bio")$(RM_preInv_prodSe_con("bio") eq 0) = sum(BIOte(te_remind), remind_techpara("DEU","omv",te_remind))/card(BIOte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), techpara("omv",te_remind))/card(COALte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0) = sum(NonPeakGASte(te_remind), techpara("omv",te_remind))/card(NonPeakGASte)*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","bio")$(RM_preInv_prodSe_con("bio") eq 0) = sum(BIOte(te_remind), techpara("omv",te_remind))/card(BIOte)*1e12/sm_TWa_2_MWh;
 *not averaging for nuclear since fnrs is small for the most part: though this should be checked
-cdata("c_var_con","nuc")$(RM_preInv_prodSe_con("nuc") eq 0) = remind_techpara("DEU","omv","tnrs")*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0) = remind_techpara("DEU","omv","ngt")*1e12/sm_TWa_2_MWh;
-cdata("c_var_con","ror")$(RM_preInv_prodSe_con("ror") eq 0) = remind_techpara("DEU","omv","hydro")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","nuc")$(RM_preInv_prodSe_con("nuc") eq 0) = techpara("omv","tnrs")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0) = techpara("omv","ngt")*1e12/sm_TWa_2_MWh;
+cdata("c_var_con","ror")$(RM_preInv_prodSe_con("ror") eq 0) = techpara("omv","hydro")*1e12/sm_TWa_2_MWh;
 
 ** there is no var OM cost for VRE or VREgrid in REMIND
-p2gdata("c_var_p2g","elh2") = remind_techpara("DEU","omv","elh2")  * 1e12 / sm_TWa_2_MWh;
+p2gdata("c_var_p2g","elh2") = techpara("omv","elh2")  * 1e12 / sm_TWa_2_MWh;
 
 *================ summing variable costs ================================
 ** note: for hydro/ror c_m_reg is 0
 ***** summing variable cost components
 c_m_reg(ct,reg)$(cdata("eta_con",ct)) = con_fuelprice_reg_yr_avg(ct,reg)/cdata("eta_con",ct) + cdata("carbon_content",ct)/cdata("eta_con",ct) * remind_co2("2020",reg)  + cdata("c_var_con",ct) ;
-c_m(ct) = c_m_reg(ct,"DEU");
+c_m(ct) = sum(reg,c_m_reg(ct,reg));
 
 *================================================================
 *======================= FIXED COST =============================
@@ -794,30 +799,30 @@ r = sum(reg,remind_r("2020",reg));
 *disc.fac = r * (1+r)^lifetime/(-1+(1+r)^lifetime)
 
 **weighted average life time
-dieter_lifetime(ct)$(RM_preInv_prodSe_con(ct) ne 0) = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", pe_remind, te_remind)))
+dieter_lifetime(ct)$(RM_preInv_prodSe_con(ct) ne 0) = sum(DT_RM_ct(ct,te_remind), techpara("lifetime", te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
      / RM_preInv_prodSe_con(ct);
 
 **when there is no generation in remind
-dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0) = remind_techpara("DEU","lifetime", "ngcc");
-dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0) = remind_techpara("DEU","lifetime", "ngt");
-dieter_lifetime("nuc")$(RM_preInv_prodSe_con("nuc") eq 0) = remind_techpara("DEU","lifetime", "tnrs");
-dieter_lifetime("bio")$(RM_preInv_prodSe_con("bio") eq 0) = remind_techpara("DEU","lifetime", "bioigcc");
-dieter_lifetime("coal")$(RM_preInv_prodSe_con("coal") eq 0) = remind_techpara("DEU","lifetime", "igcc");
-dieter_lifetime("ror")$(RM_preInv_prodSe_con("ror") eq 0) = remind_techpara("DEU","lifetime", "hydro");
+dieter_lifetime("CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0) = techpara("lifetime", "ngcc");
+dieter_lifetime("OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0) = techpara("lifetime", "ngt");
+dieter_lifetime("nuc")$(RM_preInv_prodSe_con("nuc") eq 0) = techpara("lifetime", "tnrs");
+dieter_lifetime("bio")$(RM_preInv_prodSe_con("bio") eq 0) = techpara("lifetime", "bioigcc");
+dieter_lifetime("coal")$(RM_preInv_prodSe_con("coal") eq 0) = techpara("lifetime", "igcc");
+dieter_lifetime("ror")$(RM_preInv_prodSe_con("ror") eq 0) = techpara("lifetime", "hydro");
 
 *discount factor for conventional
 disc_fac_con(ct)$(dieter_lifetime(ct) ne 0) = r * (1+r) ** dieter_lifetime(ct) / (-1+(1+r) ** dieter_lifetime(ct) ) ;
 
 *discount factor for renewable
-disc_fac_res("Solar") = r * (1+r) ** remind_techpara("DEU","lifetime", "spv") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "spv")) ;
-disc_fac_res("Wind_on") = r * (1+r) ** remind_techpara("DEU","lifetime", "wind") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "wind")) ;
+disc_fac_res("Solar") = r * (1+r) ** techpara("lifetime", "spv") / (-1+(1+r) ** techpara("lifetime", "spv")) ;
+disc_fac_res("Wind_on") = r * (1+r) ** techpara("lifetime", "wind") / (-1+(1+r) ** techpara("lifetime", "wind")) ;
 if ((remind_wind_offshore eq 1),
-disc_fac_res("Wind_off") = r * (1+r) ** remind_techpara("DEU","lifetime", "windoff") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "windoff")) ;
+disc_fac_res("Wind_off") = r * (1+r) ** techpara("lifetime", "windoff") / (-1+(1+r) ** techpara("lifetime", "windoff")) ;
 );
 
 *discount factor for P2G and grid
-disc_fac_p2g("elh2") = r * (1+r) ** remind_techpara("DEU","lifetime", "elh2") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "elh2")) ;
-disc_fac_grid("vregrid") = r * (1+r) ** remind_techpara("DEU","lifetime", "gridwind") / (-1+(1+r) ** remind_techpara("DEU","lifetime", "gridwind")) ;
+disc_fac_p2g("elh2") = r * (1+r) ** techpara("lifetime", "elh2") / (-1+(1+r) ** techpara("lifetime", "elh2")) ;
+disc_fac_grid("vregrid") = r * (1+r) ** techpara("lifetime", "gridwind") / (-1+(1+r) ** techpara("lifetime", "gridwind")) ;
 
 
 
@@ -826,17 +831,17 @@ disc_fac_grid("vregrid") = r * (1+r) ** remind_techpara("DEU","lifetime", "gridw
 *$IFTHEN.AC %adj_cost% == "on"
 if ((remind_adjCostSwitch eq 1),
 * adjustment cost don't have to multiply the new investment marginal factor dieter_newInvFactor since it is already calculated in marginal terms in REMIND
-remind_capCost(yr,reg,te_remind) = remind_capCost(yr,reg,te_remind) + remind_adjCost(yr,reg,te_remind);
+capCost(te_remind) = capCost(te_remind) + adjCost(te_remind);
 );
 *$ENDIF.AC
 
 if((remind_margVRECostSwitch eq 1),
-remind_capCost(yr,reg,te_remind) = remind_capCost(yr,reg,te_remind) * dieter_newInvFactor(te_remind);
+capCost(te_remind) = capCost(te_remind) * dieter_newInvFactor(te_remind);
 );
 
 *** turn on the effect of early retirement in REMIND have on investment cost, note: only an approximate formula here (ask Robert for detailed one when needed)
 if ((remind_earlyRetiSwitch eq 0),
-remind_capCost(yr,reg,te_remind)$(capEarlyReti(yr, te_remind) ne 1) = remind_capCost(yr,reg,te_remind) / (1 - capEarlyReti(yr, te_remind));
+capCost(te_remind)$(capEarlyReti("2020",te_remind) ne 1) = capCost(te_remind) / (1 - capEarlyReti("2020", te_remind));
 );
 
 *======= read in overnight investment cost from remind ==========================
@@ -844,61 +849,63 @@ remind_capCost(yr,reg,te_remind)$(capEarlyReti(yr, te_remind) ne 1) = remind_cap
 * conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_i_ovnt(ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_capCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe("2020", pe_remind, te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), capCost(te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind)))
      / RM_preInv_prodSe_con(ct)
      * 1e6;
 
 *in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
-c_i_ovnt("coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
+c_i_ovnt("coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), capCost(te_remind))/card(COALte) * 1e6 ;
 c_i_ovnt("CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0)
-            = sum(NonPeakGASte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
+            = sum(NonPeakGASte(te_remind), capCost(te_remind))/card(NonPeakGASte) * 1e6 ;
 c_i_ovnt("bio")$(RM_preInv_prodSe_con("bio") eq 0)
-            = sum(BIOte(te_remind), remind_capCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;              
+            = sum(BIOte(te_remind), capCost(te_remind))/card(BIOte) * 1e6 ;              
 c_i_ovnt("nuc")$(RM_preInv_prodSe_con("nuc") eq 0)
-            = remind_capCost("2020", "DEU", "tnrs") * 1e6 ;
+            = capCost("tnrs") * 1e6 ;
 c_i_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0)
-            = remind_capCost("2020", "DEU", "ngt") * 1e6 ;
+            = capCost("ngt") * 1e6 ;
 c_i_ovnt("ror")$(RM_preInv_prodSe_con("ror") eq 0)
-            = remind_capCost("2020", "DEU", "hydro") * 1e6 ;
+            = capCost("hydro") * 1e6 ;
 
-c_i_ovnt_res("Solar") = remind_capCost("2020", "DEU", "spv") * 1e6  ;
-c_i_ovnt_res("Wind_on") = remind_capCost("2020", "DEU", "wind") * 1e6 ;
+c_i_ovnt_res("Solar") = capCost("spv") * 1e6  ;
+c_i_ovnt_res("Wind_on") = capCost("wind") * 1e6 ;
 if ((remind_wind_offshore eq 1),
-c_i_ovnt_res("Wind_off") = remind_capCost("2020", "DEU", "windoff") * 1e6 ;
+c_i_ovnt_res("Wind_off") = capCost("windoff") * 1e6 ;
 );
 
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
-c_i_ovnt_p2g("elh2") = remind_capCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
+c_i_ovnt_p2g("elh2") = capCost("elh2") * 1e6  * eta2("elh2");
 
 *storage cost (note the capital overnight cost for storage in remind data is given in energy terms)
 if ((remind_storageSwitch eq 1),
-stodata("e_to_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","e2p", te_remind));
-stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), remind_capCost("2020", "DEU",te_remind)) * 1e6 ;
+stodata("e_to_p",sto) = sum(DT_RM_sto(sto,te_remind), techpara("e2p", te_remind));
+stodata("c_inv_overnight_sto_p",sto) = sum(DT_RM_sto(sto,te_remind), capCost(te_remind)) * 1e6 ;
 stodata("c_inv_overnight_sto_e",sto) = stodata("c_inv_overnight_sto_p",sto) / stodata("e_to_p",sto);
 
-stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","lifetime", te_remind));
+stodata("inv_lifetime_sto",sto) = sum(DT_RM_sto(sto,te_remind), techpara("lifetime", te_remind));
 ** read in roundtrip efficiency from REMIND and split it into single-trip efficiency
-stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)))**(0.5);
+stodata("eta_sto_in",sto) = (sum(DT_RM_sto(sto,te_remind), techpara("eta", te_remind)))**(0.5);
 * overwrite h2 storage-in efficiency with that of electrolyzers (elh2), and storage-out eff is then the ratio between round-trip eff and elh2 eff
-stodata("eta_sto_in","hydrogen") = remind_techpara("DEU","eta","elh2");
-stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","eta", te_remind)) / stodata("eta_sto_in",sto);
+stodata("eta_sto_in","hydrogen") = techpara("eta","elh2");
+stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), techpara("eta", te_remind)) / stodata("eta_sto_in",sto);
 
 * import h2 cost from last iteration remind (unit conversion carried out in fuel price regression R script)
-remind_h2price("2020","DEU","seh2") = remind_fuelprice("2020","DEU","seh2");
-stodata("c_m_sto","hydrogen") = max(30,remind_h2price("2020","DEU","seh2")); 
+$IFTHEN.FC %fuel_cost_iter% == "linFit"
+remind_h2price("2020",reg,"seh2") = remind_fuelprice("2020",reg,"seh2");
+$ENDIF.FC
+stodata("c_m_sto","hydrogen") = max(30,sum(reg,remind_h2price("2020",reg,"seh2")));
 
 c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
 c_i_sto_p(sto) = stodata("c_inv_overnight_sto_p",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
                 / ( (1+r)**(stodata("inv_lifetime_sto",sto))-1 )       ;
                 
-stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), remind_techpara("DEU","omf",te_remind)) * c_i_sto_p(sto);
+stodata("c_fix_sto",sto) =  sum(DT_RM_sto(sto,te_remind), techpara("omf",te_remind)) * c_i_sto_p(sto);
 
 );
 
-c_i_ovnt_grid("vregrid") = remind_capCost("2020", "DEU", "gridwind") * 1e6 ;
-*c_i_ovnt_ccs("ccsinje") = remind_capCost("2020", "DEU", "ccsinje") * 1e6 ;
+c_i_ovnt_grid("vregrid") = capCost("gridwind") * 1e6 ;
+*c_i_ovnt_ccs("ccsinje") = capCost("ccsinje") * 1e6 ;
 
 *annuitized investment cost
 c_i(ct) = c_i_ovnt(ct) * disc_fac_con(ct);
@@ -907,36 +914,34 @@ c_i_p2g(p2g) = c_i_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_i_grid(grid) = c_i_ovnt_grid(grid) * disc_fac_grid(grid);
 *c_i_ccs(ccs) = c_i_ovnt_ccs(ccs) * disc_fac_ccs(ccs);
 
-capDist(res,grade) = sum(DT_RM_res(res,te_remind),remind_vm_CapDistr("2020", "DEU", te_remind, grade))*1e6;
-
 *=============== adjustment cost from remind (for disaggregated reporting) ================
 *""overnight" adjustment cost
 * conversion from tr USD_twothousandfive/TW to USD_twothousandfive/MW
 ** weighted average of many techs in REMIND
 c_adj_ovnt(ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_adjCost("2020","DEU",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", pe_remind, te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), adjCost(te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
      / RM_preInv_prodSe_con(ct)
      * 1e6;     
 
 *in case no generation in remind, take the average (except nuc, nuc just uses tnrs)
-c_adj_ovnt("coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(COALte) * 1e6 ;
+c_adj_ovnt("coal")$(RM_preInv_prodSe_con("coal") eq 0) = sum(COALte(te_remind), adjCost(te_remind))/card(COALte) * 1e6 ;
 c_adj_ovnt("CCGT")$(RM_preInv_prodSe_con("CCGT") eq 0)
-            = sum(NonPeakGASte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(NonPeakGASte) * 1e6 ;
+            = sum(NonPeakGASte(te_remind), adjCost(te_remind))/card(NonPeakGASte) * 1e6 ;
 c_adj_ovnt("bio")$(RM_preInv_prodSe_con("bio") eq 0)
-            = sum(BIOte(te_remind), remind_adjCost("2020", "DEU", te_remind))/card(BIOte) * 1e6 ;
+            = sum(BIOte(te_remind), adjCost(te_remind))/card(BIOte) * 1e6 ;
 c_adj_ovnt("nuc")$(RM_preInv_prodSe_con("nuc") eq 0)
-            = remind_adjCost("2020", "DEU", "tnrs") * 1e6 ;
+            = adjCost("tnrs") * 1e6 ;
 c_adj_ovnt("OCGT_eff")$(RM_preInv_prodSe_con("OCGT_eff") eq 0)
-            = remind_adjCost("2020", "DEU", "ngt") * 1e6 ;
+            = adjCost("ngt") * 1e6 ;
 c_adj_ovnt("ror")$(RM_preInv_prodSe_con("ror") eq 0)
-            = remind_adjCost("2020", "DEU", "hydro") * 1e6 ;
+            = adjCost("hydro") * 1e6 ;
 
-c_adj_ovnt_res(res) = sum(DT_RM_res(res,te_remind), remind_adjCost("2020","DEU",te_remind)) * 1e6;
+c_adj_ovnt_res(res) = sum(DT_RM_res(res,te_remind), adjCost(te_remind)) * 1e6;
 
 * since capacity of elh2 is in MW H2 unit (not MW_el like in DIETER, we need to multiply the efficiency of electrolyzer to obtain the capex for elh2)
-c_adj_ovnt_p2g("elh2") = remind_adjCost("2020", "DEU", "elh2") * 1e6  * remind_eta2("2020","DEU","elh2");
-c_adj_ovnt_grid("vregrid") = remind_adjCost("2020", "DEU", "gridwind") * 1e6 ;
-*c_adj_ovnt_ccs("ccsinje") = remind_adjCost("2020", "DEU", "ccsinje") * 1e6 ;
+c_adj_ovnt_p2g("elh2") = adjCost("elh2") * 1e6  * eta2("elh2");
+c_adj_ovnt_grid("vregrid") = adjCost("gridwind") * 1e6 ;
+*c_adj_ovnt_ccs("ccsinje") = adjCost("ccsinje") * 1e6 ;
 
 *annuitized adjustment cost
 c_adj(ct) = c_adj_ovnt(ct) * disc_fac_con(ct);
@@ -949,16 +954,16 @@ c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 *=============== read in fixed OM cost from REMIND ================
 *note that omf is the proportion from overnight investment cost, NOT annuitized!!!
 cdata("c_fix_con",ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), remind_techpara("DEU","omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe("2020", pe_remind, te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), techpara("omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
      / RM_preInv_prodSe_con(ct)
      * c_i_ovnt(ct);
 
-rdata("c_fix_res",res) = sum(DT_RM_res(res,te_remind), remind_techpara("DEU","omf",te_remind)) * c_i_ovnt_res(res);
+rdata("c_fix_res",res) = sum(DT_RM_res(res,te_remind), techpara("omf",te_remind)) * c_i_ovnt_res(res);
 
 
-p2gdata("c_fix_p2g","elh2") = remind_techpara("DEU","omf","elh2") * c_i_ovnt_p2g("elh2");
-griddata("c_fix_grid","vregrid") = remind_techpara("DEU","omf","gridwind") * c_i_ovnt_grid("vregrid");
-*ccsdata("c_fix_ccs","ccsinje") = remind_techpara("DEU","omf","ccsinje") * c_i_ovnt_ccs("ccsinje");
+p2gdata("c_fix_p2g","elh2") = techpara("omf","elh2") * c_i_ovnt_p2g("elh2");
+griddata("c_fix_grid","vregrid") = techpara("omf","gridwind") * c_i_ovnt_grid("vregrid");
+*ccsdata("c_fix_ccs","ccsinje") = techpara("omf","ccsinje") * c_i_ovnt_ccs("ccsinje");
 
 remind_gridfac_reg = sum(reg,remind_gridfac(reg));
 

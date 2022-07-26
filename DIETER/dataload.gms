@@ -200,7 +200,6 @@ $load  remind_CF = vm_capFac.l
 $load  remind_pm_dataren = pm_dataren
 $load  remind_vm_capDistr = vm_capDistr.l
 $load  remind_genshare = p32_shSeElDisp
-*$load  remind_h2price = pm_SEPrice
 *$load  remind_cc2injcost = pm_data
 $gdxin
 $endIf.duringRun
