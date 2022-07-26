@@ -154,6 +154,8 @@ dieter_OLDtotdem   Old DIETER total demand
 ** remember to load sets first
 $ifThen.duringRun exist RMdata_4DT.gdx
 $gdxin RMdata_4DT.gdx
+$load  t = tDT32
+$load  reg = regDTCoup
 $load  te_remind = REMINDte4DT32
 $load  COALte = COALte32
 $load  NonPeakGASte = NonPeakGASte32
@@ -162,7 +164,6 @@ $load  NUCte = NUCte32
 $load  STOte = STOte32
 $load  VREte = VREte32
 $load  remind_cap = vm_cap.l
-$load  t = tDT32
 $load  remind_iter = sm32_iter
 $load  remind_dispatch_iter_vrefix = cm_DT_dispatch_i1
 $load  remind_dispatch_iter_fix = cm_DT_dispatch_i2

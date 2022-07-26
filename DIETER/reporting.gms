@@ -70,11 +70,11 @@ $offtext
         report_tech('DIETER',yr,reg,'DIETER post-investment capacities (GW)',res) =  P_RES.l(res) / 1e3 ;
         
 ***     reporting on remind run (can be used as a check against reporting in R or as validation)
-        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)',te_dieter) =  sum(DT_RM(te_dieter,te_remind), sum(grade, preInv_remind_cap(yr,reg,te_remind, grade))) * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND pre-investment capacities (GW)',te_dieter) =  sum(DT_RM(te_dieter,te_remind), preInv_remind_cap(te_remind)) * 1e3;
         
 *       MW -GW
-        report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',ct) = RM_postInv_cap_con(yr,reg,ct)/ 1e3;
-        report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',res) = RM_postInv_cap_res(yr,reg,res)/ 1e3;
+        report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',ct) = RM_postInv_cap_con(reg,ct)/ 1e3;
+        report_tech('REMIND',yr,reg,'REMIND post-investment capacities (GW)',res) = RM_postInv_cap_res(res)/ 1e3;
 
 ***     generation MWh -> TWh
         report_tech('REMIND',yr,reg,'REMIND post-investment generation (TWh)',ct) = RM_postInv_prodSe_con(yr,reg,ct) /1e6;
@@ -92,22 +92,22 @@ $offtext
 *$IFTHEN.ACon not %adj_cost% == "off"
 if ((remind_adjCostSwitch eq 1),
 *conventional 
-        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct)-c_adj(ct)) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
-        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
+        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct)-c_adj(ct)) * RM_postInv_cap_con(reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
+        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)  * 1.2;
 *renewable
-        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = (c_i_res(res)-c_adj_res(res))*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
-        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = (c_i_res(res)-c_adj_res(res))*  RM_postInv_cap_res(res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
 *$ENDIF.ACon
 );
 
 *$IFTHEN.ACoff %adj_cost% == "off"
 if ((remind_adjCostSwitch eq 0),
 *conventional 
-        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = c_i(ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
-        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
+        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = c_i(ct) * RM_postInv_cap_con(reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
+        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = cdata('c_fix_con',ct) * RM_postInv_cap_con(reg,ct) / RM_postInv_prodSe_con(yr,reg,ct) * 1.2;
 *renewable
-        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = c_i_res(res)*  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
-        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'annualized investment cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = c_i_res(res)*  RM_postInv_cap_res(res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'O&M cost ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) =  rdata('c_fix_res',res) * RM_postInv_cap_res(res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
 *$ENDIF.ACoff
 );
 
@@ -124,9 +124,9 @@ if ((remind_adjCostSwitch eq 0),
 *       IC cost: $/MW, CAP: MW, PRODSE: MWh
 ***     This is LCOE for REMIND iteration before (so if this outputs to report_DIETER_i5.gdx, it reports REMIND_LCOE of fulldata_5.gdx run, even though fulldata_5 is produced after DIETER gdxes)
         report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',ct)$(RM_postInv_prodSe_con(yr,reg,ct) ne 0) = (c_i(ct) + cdata('c_fix_con',ct))
-                                                                                    *  RM_postInv_cap_con(yr,reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)
+                                                                                    *  RM_postInv_cap_con(reg,ct) / RM_postInv_prodSe_con(yr,reg,ct)
                                                                                     + con_fuelprice_reg_yr_avg(ct,reg)/cdata('eta_con',ct) + cdata('carbon_content',ct)/cdata('eta_con',ct) * remind_co2(yr,reg)  * 1.2;
-        report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(yr,reg,res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
+        report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',res)$(RM_postInv_prodSe_res_xcurt(yr,reg,res) ne 0) = ( c_i_res(res) + rdata('c_fix_res',res) ) *  RM_postInv_cap_res(res) / RM_postInv_prodSe_res_xcurt(yr,reg,res)  * 1.2;
         report_tech('REMIND',yr,reg,'REMIND LCOE_avg ($/MWh)',p2g)$(totFlexLoad ne 0) = ( c_i_p2g(p2g) + p2gdata('c_fix_p2g',p2g) ) * RM_postInv_cap_p2g(yr,reg,p2g) / RM_postInv_demSe(yr,reg,p2g) * 1.2;
 
 *       ========== divestment and investment capacities ============ REMIND ============
@@ -134,7 +134,7 @@ if ((remind_adjCostSwitch eq 0),
         report_tech('REMIND',yr,reg,'REMIND divestment (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), earlyRetiCap_reporting(yr, reg, te_remind)) * 1e3;
                 
 ***     TW -> GW; coal is split for easy comparison
-        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), added_remind_cap(yr, reg, te_remind, '1')) * 1e3;
+        report_tech('REMIND',yr,reg,'REMIND added capacities (GW)',te_dieter) = sum(DT_RM(te_dieter,te_remind), added_remind_cap(te_remind)) * 1e3;
 
 *       ========== capacity factors ============ REMIND ============
         report_tech('REMIND',yr,reg,'REMIND CapFac (%)','coal') = remind_CF(yr,reg,'pc')*1e2;
