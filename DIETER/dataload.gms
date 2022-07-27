@@ -269,7 +269,7 @@ c_adj_ovnt_grid(grid)      Adjustment costs: Overnight
 
 *====== Time Series Data ======
 d(h)                      Demand in hour h (MWh)
-phi_res_y_reg(year,reg,h,res)
+phi_res_y_reg(reg,h,res)
 phi_res(res,h)            Renewables availability technology res in hour h
 *phi_ror(h)               Run-of-river availability in hour h
 
@@ -327,31 +327,39 @@ phi_res(res,h)            Renewables availability technology res in hour h
 
 $offlisting
 *================================================================================================
-parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
+*parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
+*/
+*$ondelim
+*$include "Load_DEU_2019.csv"
+**$include "Load_USA_2019.csv"
+*$offdelim
+*/;
+
+parameter d_y_reg(region,h)      "Hourly demand for regions"
 /
 $ondelim
-$include "Load_DEU_2019.csv"
-*$include "Load_USA_2019.csv"
+$include "timeseries_wide.csv"
 $offdelim
 /;
 
 parameter cdata(all_cdata,ct)      "Various Data for Conventional Technologies"
-parameter p2gdata(all_p2gdata,p2g)      "Various Data for P2G Technologies"
-parameter rdata(all_rdata,res)      "Various Data for Renewable Technologies"
-parameter griddata(all_griddata,grid) "Various Data for grid Technologies"
-*parameter ccsdata(all_ccsdata,ccs) "Various Data for CCS Technologies"
-; 
+parameter p2gdata(all_p2gdata,p2g) "Various Data for P2G Technologies"
+parameter rdata(all_rdata,res)     "Various Data for Renewable Technologies"
+parameter griddata(all_griddata,grid)    "Various Data for grid Technologies"
+*parameter ccsdata(all_ccsdata,ccs)      "Various Data for CCS Technologies"
+;
 
-Table t_phi_res_y_reg(year,reg,h,res)      ""
+Table t_phi_res_y_reg(region,h,res)             "VRE hourly potential"
 $ondelim
-$include "VRE_potential_DEU_2019.csv"
+*$include "VRE_potential_DEU_2019.csv"
+$include "VRE_potential_CHA_2019.csv"
 *$include "VRE_potential_USA_renewNinja.csv"
 $offdelim
 ;
 
-phi_res_y_reg(year,reg,h,res) = t_phi_res_y_reg(year,reg,h,res);
+phi_res_y_reg(reg,h,res) = t_phi_res_y_reg(reg,h,res);
 
-*parameter phi_ror(year,reg,h)      "Run-of-river availability in hour h"
+*parameter phi_ror(year,reg,h)                  "Run-of-river availability in hour h"
 */
 *$ondelim
 *$include "Time_Data.csv"

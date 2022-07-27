@@ -8,12 +8,15 @@ library(nnls)
 # mydatapath = paste0("~/DIETER/dieter-coupling-remind/DIETER/")
 # igdx("/opt/gams/gams30.2_linux_x64_64_sfx")
 mydatapath = "./"
-# should read cYears and cReg from the gdx in the future
-cReg <- "DEU"
+
 
 #"RMdata_4DT.gdx" is the in-between iteration gdx produced by REMIND (before fulldata.gdx is produced)
 gdx <- paste0(mydatapath,"RMdata_4DT.gdx")
 
+# should read cYears and cReg from the gdx in the future
+#cReg <- "DEU"
+DTcoupreg <- read.gdx(gdx,"regDTcoup", factor = FALSE) 
+cReg <- as.character(DTcoupreg)
 
 peTypeList_linear = c("pebiolc", "pecoal", "pegas", "peur")
 seTypeList_linear = c("seh2")

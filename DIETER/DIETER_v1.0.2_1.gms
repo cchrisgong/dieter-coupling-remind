@@ -123,7 +123,6 @@ yr          year for remind power sector             /2020/
 yr_before   previous year from remind                /2015/
 t           year from remind to be coupled
 t2          year from remind to be coupled
-reg         region from remind to be coupled
 te_remind   tech from remind to be loaded
 COALte      coal tech from remind to be loaded
 NonPeakGASte non peaking gas type gas plants from remind to be loaded
@@ -148,7 +147,9 @@ reg_nuc     region with nuclear phase-out            /DEU/
 reg_coal    region with coal phase-out               /DEU/
 
 * ================================ DIETER sets ====================================
-year      yearly time data                       /2011, 2012, 2013, 2013_windonsmooth,2019/
+year       time series year                      /2018/
+region    all regions to load data               /CAZ	,CHA,EUR,IND,JPN,LAM,MEA,NEU,OAS,REF,SSA,USA/
+reg(region)       region from remind to be coupled
 te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid,ccsinje,lith,PSH,hydrogen,caes/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
 all_rdata Data for Renewable Technologies        /c_cu,c_fix_res,c_var_res,phi_min_res,c_inv_overnight_res,inv_lifetime_res,inv_recovery_res,inv_interest_res,m_res,m_res_e/
@@ -276,33 +277,20 @@ ror.pehyd
 *remind_priceShaveSwitch = 0;
 *remind_priceShaveSwitch = 1;
 
-
 * always account for earlyReti in DIETER's IC
 remind_earlyRetiSwitch = 0;
-
 ************************************** FUTHER CUSTOMIZING COUPLING SWITCH ******************************************************
 *** wind offshore switch 
 * there might be situation where input.gdx has no windoff as technology, in which case, skip first iter
 if (( (remind_wind_offshore eq 1) AND (sum(reg,sum(yr,remind_cap(yr, reg, "windoff", "1"))) eq 0) ), 
-    if ((remind_iter eq 0),
-        remind_wind_offshore = 0;
-    );
-    
-    if ((remind_iter gt 0),
-        remind_wind_offshore = 1;
-    );
+    remind_wind_offshore$(remind_iter eq 0) = 0;
 );
 
 if ( (remind_storageSwitch eq 1),
-    if ((remind_iter eq 0),
-        remind_storageSwitch = 0;
-    );
-    
-    if ((remind_iter gt 0),
-        remind_storageSwitch = 1;
-    );
+    remind_storageSwitch$(remind_iter eq 0) = 0;
 );
- 
+
+display remind_wind_offshore;
 
 *remind_storageSwitch = 1;
 *remind_margVRECostSwitch = 0;
@@ -310,7 +298,7 @@ if ( (remind_storageSwitch eq 1),
 
 Sets
 adjte_remind(te_remind)                              /wind, spv, gridwind, ngcc, ngccc/
-adjte_dieter(te_dieter)                                 /Wind_on, Solar, vregrid,CCGT/
+adjte_dieter(te_dieter)                              /Wind_on, Solar, vregrid,CCGT/
 
 ********************************** alias ******
 Alias (h,hh) ;
@@ -475,15 +463,15 @@ dieter_newInvFactor(te_remind)$(
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
 *AO* Calculate DIETER VRE CFs as given by the input data
-dieter_VRECapFac(res) = sum(reg,sum(h, phi_res_y_reg("2019", reg, h, res))) / card(h);
+dieter_VRECapFac(res) = sum(reg, sum(h, phi_res_y_reg(reg, h, res))) / card(h);
 
-phi_res(res, h) = sum(reg, phi_res_y_reg("2019", reg, h, res)) * remind_VRECapFac(res) / ( sum(reg, sum(hh, phi_res_y_reg("2019", reg, hh, res))) / card(hh));
+phi_res(res, h) = sum(reg, phi_res_y_reg(reg, h, res)) * remind_VRECapFac(res) / ( sum(reg, sum(hh, phi_res_y_reg(reg, hh, res))) / card(hh));
 
 *disable this to minimize distortion?
-phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1)  = 0.99;
+phi_res("Wind_on", h)$(phi_res("Wind_on", h) > 1) = 0.99;
 
 if ((remind_wind_offshore eq 1),
-phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1)  = 1;
+phi_res("Wind_off", h)$(phi_res("Wind_off", h) > 1) = 1;
 );
 
 *
@@ -493,7 +481,7 @@ capfac_ror = remind_HydroCapFac;
 *================================================================================
 *================ scale up demand ===============================================
 
-DIETER_OLDtotdem = sum(reg, sum( h , d_y_reg('2019',reg,h)));
+DIETER_OLDtotdem = sum(reg, sum(h, d_y_reg(reg,h)));
 
 totLoad = sum(reg,remind_totseelDem("2020", reg, "seel")) * sm_TWa_2_MWh;
 
@@ -506,7 +494,7 @@ totFlexLoad = sum(reg,remind_totseh2Dem("2020", reg, "seh2")) * sm_TWa_2_MWh;
 );
 
 totFixedLoad = totLoad - totFlexLoad;
-d(h) = sum(reg, d_y_reg('2019',reg,h)) * totFixedLoad / DIETER_OLDtotdem;
+d(h) = sum(reg, d_y_reg(reg,h)) * totFixedLoad / DIETER_OLDtotdem;
 
 
 ****************
