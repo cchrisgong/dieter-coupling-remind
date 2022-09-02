@@ -148,7 +148,7 @@ reg_coal    region with coal phase-out               /DEU/
 
 * ================================ DIETER sets ====================================
 year       time series year                      /2018/
-region    all regions to load data               /CAZ	,CHA,EUR,IND,JPN,LAM,MEA,NEU,OAS,REF,SSA,USA/
+region    all regions to load data               /OAS,ENC,NES,MEA,SSA,LAM,REF,CAZ,EWN,ECS,CHA,ESC,ECE,FRA,DEU,UKI,NEN,IND,JPN,ESW,USA,EUR/
 reg(region)       region from remind to be coupled
 te_dieter all dieter techs                       /ror, nuc, coal, CCGT, OCGT_eff, bio, Wind_on, Wind_off, Solar,elh2,vregrid,ccsinje,lith,PSH,hydrogen,caes/
 all_cdata Data for Conventional Technologies     /eta_con,carbon_content,c_up,c_do,c_fix_con,c_var_con,c_inv_overnight_con,inv_lifetime_con,inv_recovery_con,inv_interest_con,m_con,m_con_e,grad_per_min/
@@ -225,7 +225,7 @@ DT_RM_sto(te_dieter,te_remind)   "mapping DIETER and REMIND storage technologies
 lith.storspv
 PSH.storwind
 hydrogen.storcsp
-caes.storwindoff
+*caes.storwindoff
 /
 
 RM_ct_pe(te_remind,pe_remind)   "mapping DIETER and REMIND conventional technologies and primary energy in remind"
@@ -881,6 +881,7 @@ stodata("eta_sto_out",sto) = sum(DT_RM_sto(sto,te_remind), techpara("eta", te_re
 $IFTHEN.FC %fuel_cost_iter% == "linFit"
 remind_h2price("2020",reg,"seh2") = remind_fuelprice("2020",reg,"seh2");
 $ENDIF.FC
+* put a 30$ floor on the H2 cost from REMIND as it is too low
 stodata("c_m_sto","hydrogen") = max(30,sum(reg,remind_h2price("2020",reg,"seh2")));
 
 c_i_sto_e(sto) = stodata("c_inv_overnight_sto_e",sto)*( r * (1+r)**(stodata("inv_lifetime_sto",sto)) )
@@ -938,11 +939,10 @@ c_adj_p2g(p2g) = c_adj_ovnt_p2g(p2g) * disc_fac_p2g(p2g);
 c_adj_grid(grid) = c_adj_ovnt_grid(grid) * disc_fac_grid(grid);
 *c_adj_ccs(ccs) = c_adj_ovnt_ccs(ccs) * disc_fac_ccs(ccs);
 
-
 *=============== read in fixed OM cost from REMIND ================
 *note that omf is the proportion from overnight investment cost, NOT annuitized!!!
 cdata("c_fix_con",ct)$(RM_preInv_prodSe_con(ct) ne 0)
-    = sum(DT_RM_ct(ct,te_remind), techpara("omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind),RM_preInv_prodSe(pe_remind, te_remind)))
+    = sum(DT_RM_ct(ct,te_remind), techpara("omf",te_remind) * sum(RM_ct_pe(te_remind,pe_remind), RM_preInv_prodSe(pe_remind, te_remind)))
      / RM_preInv_prodSe_con(ct)
      * c_i_ovnt(ct);
 
@@ -1561,7 +1561,7 @@ p32_report4RM(yr,reg,p2g,'dem_share')$(not p32_report4RM(yr,reg,p2g,'dem_share')
 
 
 total_curt = sum(res,sum(h,CU.l(res,h)));
-*ratio of storage loss from renewable generations (due to efficiency loss from storage technologies)
+*ratio of storage loss from renewable generations (due to efficiency loss from storage technologies), note it is over total demand!
 storloss_ratio =  sum(sto, (sum(h, STO_IN.l(sto,h)) - sum(h, STO_OUT.l(sto,h)))) / sum(h,d(h));
     
 ** splitting storage loss due to efficiency between various renewable, depending on the shares of curtailment of one VRE over all VRE curtailments
@@ -1667,7 +1667,7 @@ sum(h$((hourly_price2(h) eq SMax(hh, hourly_price2(hh))) AND (hourly_price2(h) >
 p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac')$(p32_report4RM(yr,reg,"all_te",'ResPeakDemHrTotDem_relFrac') eq 0 ) = EPS;
 
 ** fraction of peak-residual-demand-hour generation over capacity
-p32_report4RM(yr,reg,res,"capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_RES.l(res,h))/P_RES.l(res);
+p32_report4RM(yr,reg,res,"capacity_credit")$(P_RES.l(res)) = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_RES.l(res,h))/P_RES.l(res);
 p32_report4RM(yr,reg,res,"capacity_credit")$(p32_report4RM(yr,reg,res,"capacity_credit") eq 0) = EPS;
 p32_report4RM(yr,reg,"ror","capacity_credit") = sum(h$(residual_demand(h) eq SMax(hh, residual_demand(hh))), G_L.l("ror",h))/N_CON.l("ror");
 p32_report4RM(yr,reg,"ror","capacity_credit")$(p32_report4RM(yr,reg,"ror","capacity_credit") eq 0) = EPS;

@@ -224,7 +224,7 @@ $endIf.duringRun
 $ENDIF.FC
 
 $IFTHEN.FC %fuel_cost_iter% == "linFit"
-parameter remind_fuelprice(t,reg,en_remind)      "Fuel Price from REMIND which has been fitted to a linear function or a polynom"
+parameter remind_fuelprice(t,region,en_remind)      "Fuel Price from REMIND which has been fitted to a linear function or a polynom"
 /
 $ondelim
 $include "FittedFuelPrice.csv"
@@ -232,6 +232,7 @@ $offdelim
 /;
 $ENDIF.FC
 
+display reg;
 
 Parameters
 
@@ -327,20 +328,21 @@ phi_res(res,h)            Renewables availability technology res in hour h
 
 $offlisting
 *================================================================================================
-*parameter d_y_reg(year,reg,h)      "Demand hour h for cost minimization for different years and specific regions"
-*/
-*$ondelim
-*$include "Load_DEU_2019.csv"
-**$include "Load_USA_2019.csv"
-*$offdelim
-*/;
-
-parameter d_y_reg(region,h)      "Hourly demand for regions"
+parameter d_y_reg(reg,h)      "Demand hour h for cost minimization for different years and specific regions"
 /
 $ondelim
-$include "timeseries_wide.csv"
+$include "Load_DEU_2019.csv"
+*$include "Load_USA_2019.csv"
 $offdelim
 /;
+
+*for CHina
+*parameter d_y_reg(reg,h)      "Hourly demand for regions"
+*/
+*$ondelim
+*$include "timeseries_wide.csv"
+*$offdelim
+*/;
 
 parameter cdata(all_cdata,ct)      "Various Data for Conventional Technologies"
 parameter p2gdata(all_p2gdata,p2g) "Various Data for P2G Technologies"
@@ -351,8 +353,8 @@ parameter griddata(all_griddata,grid)    "Various Data for grid Technologies"
 
 Table t_phi_res_y_reg(region,h,res)             "VRE hourly potential"
 $ondelim
-*$include "VRE_potential_DEU_2019.csv"
-$include "VRE_potential_CHA_2019.csv"
+$include "VRE_potential_DEU_2019.csv"
+*$include "VRE_potential_CHA_2019.csv"
 *$include "VRE_potential_USA_renewNinja.csv"
 $offdelim
 ;
