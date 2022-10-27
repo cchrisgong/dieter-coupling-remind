@@ -462,6 +462,8 @@ dieter_newInvFactor(te_remind)$(
 *** set non-vre factors to 1
 dieter_newInvFactor(te_remind)$(dieter_newInvFactor(te_remind) eq 0) = 1;
 
+dieter_newInvFactor("hydro") = 1;
+
 *AO* Calculate DIETER VRE CFs as given by the input data
 dieter_VRECapFac(res) = sum(reg, sum(h, phi_res_y_reg(reg, h, res))) / card(h);
 
